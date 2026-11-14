@@ -29,7 +29,9 @@ const ReferenceVerdict = z.object({
 export async function checkReference(label: string, crops: string[], reference: string) {
   const res = await generateStructured({
     schema: ReferenceVerdict,
-    system: "You check product reference images made from real-estate photos before they are turned into 3D models. Be strict about identity and completeness, lenient about lighting and background.",
+    system:
+      "You check product reference images made from real-estate photos before they are turned into 3D models. Be strict about identity and completeness, lenient about lighting and background. " +
+      "Logos, brand names, labels and watermarks are removed on purpose: never count their absence as a difference.",
     parts: [
       text(`Photos of a ${label} in a home (crops; other things may be at the edges):`),
       ...(await Promise.all(crops.map((c) => img(c, 768)))),

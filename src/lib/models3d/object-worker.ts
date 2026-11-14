@@ -10,6 +10,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { NO_NEW_JOBS } from "@/lib/fal/client";
 import { checkReference, pickModel } from "./critic";
 import { meshBoth } from "./mesh";
 import { cleanReference, cropViews } from "./reference";
@@ -48,7 +49,7 @@ export async function runObjectWorker(brief: ObjectBrief, log: (m: string) => vo
     const a = await attempt(brief, crops, dir, n, problem, say).catch((err): Attempt => ({ n, reason: `error: ${(err as Error).message}`, good: false }));
     attempts.push(a);
     say(`attempt ${n}: ${a.good ? "ok" : "not good"} — ${a.reason}`);
-    if (a.good) break;
+    if (a.good || a.reason.includes(NO_NEW_JOBS)) break;
     problem = a.reason;
   }
 
