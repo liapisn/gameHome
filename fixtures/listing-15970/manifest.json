@@ -1,0 +1,367 @@
+{
+  "listingId": "15970",
+  "name": "Marousi house",
+  "source": "theprosperty.com listing 15970 (third-party, watermarked; internal testing only, do not publish)",
+  "labelledBy": "manual review, 2026-11-14",
+  "purpose": "Ground truth for photo→room assignment and floor plan parsing tests",
+  "levels": [
+    {
+      "id": "ground",
+      "name": "Ground floor (entry level)",
+      "floorplan": "floorplans/01.jpg"
+    },
+    {
+      "id": "upper",
+      "name": "Upper floor (main living level)",
+      "floorplan": "floorplans/02.jpg"
+    },
+    {
+      "id": "unit-b",
+      "name": "Second unit (unfurnished, garden level)",
+      "floorplan": null,
+      "note": "Has its own living room, kitchen, 2+ bedrooms and 3 bathrooms. Not on either floor plan."
+    },
+    {
+      "id": "outdoor",
+      "name": "Outdoor",
+      "floorplan": null
+    }
+  ],
+  "photos": [
+    {
+      "file": "photos/01.jpg",
+      "level": "upper",
+      "room": "Living room",
+      "confidence": "high",
+      "note": "Fireplace wall, matches the fireplace on the plan's west wall"
+    },
+    {
+      "file": "photos/02.jpg",
+      "level": "upper",
+      "room": "Living room",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/03.jpg",
+      "level": "upper",
+      "room": "Living room",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/04.jpg",
+      "level": "upper",
+      "room": "Dining room",
+      "confidence": "high",
+      "note": "Looking from living toward dining and the hallway"
+    },
+    {
+      "file": "photos/05.jpg",
+      "level": "upper",
+      "room": "Dining room",
+      "confidence": "high",
+      "note": "Display-niche partition between dining and living"
+    },
+    {
+      "file": "photos/06.jpg",
+      "level": "upper",
+      "room": "Kitchen",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/07.jpg",
+      "level": "upper",
+      "room": "Kitchen",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/08.jpg",
+      "level": "upper",
+      "room": "Kitchen",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/09.jpg",
+      "level": "upper",
+      "room": "Hallway 5.06×1.35",
+      "confidence": "high",
+      "note": "Built-in storage cupboards, matches the hallway storage"
+    },
+    {
+      "file": "photos/10.jpg",
+      "level": "upper",
+      "room": "Primary bedroom",
+      "confidence": "medium",
+      "note": "Large room with wall of wardrobes"
+    },
+    {
+      "file": "photos/11.jpg",
+      "level": "upper",
+      "room": "Primary bedroom",
+      "confidence": "medium",
+      "note": "En-suite door visible"
+    },
+    {
+      "file": "photos/12.jpg",
+      "level": "upper",
+      "room": "Bedroom",
+      "confidence": "medium",
+      "candidates": [
+        "Bedroom 3.39×3.59",
+        "Bedroom 3.34×3.30"
+      ],
+      "note": "Red feature wall, desk, bookshelves"
+    },
+    {
+      "file": "photos/13.jpg",
+      "level": "upper",
+      "room": "Bedroom",
+      "confidence": "medium",
+      "candidates": [
+        "Bedroom 3.39×3.59",
+        "Bedroom 3.34×3.30"
+      ],
+      "note": "Same room as 12"
+    },
+    {
+      "file": "photos/14.jpg",
+      "level": "upper",
+      "room": "Bedroom",
+      "confidence": "medium",
+      "candidates": [
+        "Bedroom 3.39×3.59",
+        "Bedroom 3.34×3.30"
+      ],
+      "note": "Pink carpet"
+    },
+    {
+      "file": "photos/15.jpg",
+      "level": "upper",
+      "room": "Bedroom",
+      "confidence": "medium",
+      "candidates": [
+        "Bedroom 3.39×3.59",
+        "Bedroom 3.34×3.30"
+      ],
+      "note": "Same room as 14"
+    },
+    {
+      "file": "photos/16.jpg",
+      "level": "upper",
+      "room": "Bedroom",
+      "confidence": "medium",
+      "candidates": [
+        "Bedroom 3.39×3.59",
+        "Bedroom 3.34×3.30"
+      ],
+      "note": "Same room as 14"
+    },
+    {
+      "file": "photos/17.jpg",
+      "level": "ground",
+      "room": "Office",
+      "confidence": "high",
+      "note": "Patio doors match the office's glazed door on the plan"
+    },
+    {
+      "file": "photos/18.jpg",
+      "level": "ground",
+      "room": "Office",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/19.jpg",
+      "level": "upper",
+      "room": "Bathroom 1.80×3.59",
+      "confidence": "high",
+      "note": "Bathtub + double vanity, matches the plan"
+    },
+    {
+      "file": "photos/20.jpg",
+      "level": "upper",
+      "room": "Balcony",
+      "confidence": "medium",
+      "note": "Elevated view, off the living room. Not drawn on the plan"
+    },
+    {
+      "file": "photos/21.jpg",
+      "level": "upper",
+      "room": "Balcony",
+      "confidence": "medium",
+      "note": "Same table as 20"
+    },
+    {
+      "file": "photos/22.jpg",
+      "level": "outdoor",
+      "room": "Garden pergola & BBQ",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/23.jpg",
+      "level": "unit-b",
+      "room": "Living room",
+      "confidence": "medium",
+      "note": "Double doors through to the kitchen (29)"
+    },
+    {
+      "file": "photos/24.jpg",
+      "level": "unit-b",
+      "room": "Living room",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/25.jpg",
+      "level": "unit-b",
+      "room": "Living room",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/26.jpg",
+      "level": "unit-b",
+      "room": "Living room",
+      "confidence": "high",
+      "note": "Garden doors"
+    },
+    {
+      "file": "photos/27.jpg",
+      "level": "unit-b",
+      "room": "Bedroom (blue)",
+      "confidence": "medium"
+    },
+    {
+      "file": "photos/28.jpg",
+      "level": "unit-b",
+      "room": "Bedroom (blue)",
+      "confidence": "medium",
+      "note": "Built-in wardrobes"
+    },
+    {
+      "file": "photos/29.jpg",
+      "level": "unit-b",
+      "room": "Kitchen",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/30.jpg",
+      "level": "unit-b",
+      "room": "Hallway",
+      "confidence": "medium",
+      "note": "Toward a garden door"
+    },
+    {
+      "file": "photos/31.jpg",
+      "level": "unit-b",
+      "room": "Hallway",
+      "confidence": "medium"
+    },
+    {
+      "file": "photos/32.jpg",
+      "level": "unit-b",
+      "room": "Hallway",
+      "confidence": "medium",
+      "note": "Bathroom visible through door"
+    },
+    {
+      "file": "photos/33.jpg",
+      "level": "unit-b",
+      "room": "Bathroom A",
+      "confidence": "medium",
+      "note": "Wood vanity"
+    },
+    {
+      "file": "photos/34.jpg",
+      "level": "unit-b",
+      "room": "Bathroom A",
+      "confidence": "low",
+      "note": "Shower + toilet, likely same bathroom as 33"
+    },
+    {
+      "file": "photos/35.jpg",
+      "level": "unit-b",
+      "room": "Bathroom B",
+      "confidence": "medium",
+      "note": "White vanity"
+    },
+    {
+      "file": "photos/36.jpg",
+      "level": "unit-b",
+      "room": "Bathroom B",
+      "confidence": "medium"
+    },
+    {
+      "file": "photos/37.jpg",
+      "level": "unit-b",
+      "room": "Bedroom (red stripe)",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/38.jpg",
+      "level": "unit-b",
+      "room": "Bedroom (red stripe)",
+      "confidence": "high",
+      "note": "Built-in wardrobes"
+    },
+    {
+      "file": "photos/39.jpg",
+      "level": "unit-b",
+      "room": "Shower room",
+      "confidence": "low",
+      "note": "Could also be Bathroom B"
+    },
+    {
+      "file": "photos/40.jpg",
+      "level": "ground",
+      "room": "Entry",
+      "confidence": "high",
+      "note": "Front door and stairs up, matches the plan's entry"
+    },
+    {
+      "file": "photos/41.jpg",
+      "level": "outdoor",
+      "room": "Side veranda",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/42.jpg",
+      "level": "outdoor",
+      "room": "Side veranda",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/43.jpg",
+      "level": "outdoor",
+      "room": "Front garden & gate",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/44.jpg",
+      "level": "outdoor",
+      "room": "Front façade",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/45.jpg",
+      "level": "outdoor",
+      "room": "Side path",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/46.jpg",
+      "level": "outdoor",
+      "room": "Side passage",
+      "confidence": "high"
+    },
+    {
+      "file": "photos/47.jpg",
+      "level": "outdoor",
+      "room": "Rear patio",
+      "confidence": "high",
+      "note": "Spiral stair to upper level"
+    },
+    {
+      "file": "photos/48.jpg",
+      "level": "outdoor",
+      "room": "Garden",
+      "confidence": "high"
+    }
+  ]
+}

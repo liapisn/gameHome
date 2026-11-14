@@ -59,7 +59,9 @@ export function TourViewer({ plan }: { plan: FloorPlan }) {
           gameHome
         </Link>
         <div>
-          <p className="text-xs uppercase tracking-[0.14em] text-neutral-500">Demo tour</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-neutral-500">
+            {plan.source?.kind === "parsed" ? "Parsed from floor plan" : "Demo tour"}
+          </p>
           <h1 className="mt-1 text-lg font-semibold leading-snug text-neutral-900">{plan.title}</h1>
           <p className="mt-1 text-sm text-neutral-600">
             {interiorArea(plan).toFixed(0)} m² interior ·{" "}
@@ -97,8 +99,9 @@ export function TourViewer({ plan }: { plan: FloorPlan }) {
         </button>
 
         <p className="mt-auto text-xs leading-relaxed text-neutral-500">
-          Generated from structured floor plan geometry. In the product this comes from the
-          uploaded plan, with photos and video layered on top.
+          {plan.source?.kind === "parsed"
+            ? `Geometry read from the floor plan image by ${plan.source.model ?? "Claude"}. Walls are derived from the room outlines.`
+            : "Generated from structured floor plan geometry. In the product this comes from the uploaded plan, with photos and video layered on top."}
         </p>
       </aside>
 

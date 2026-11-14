@@ -6,14 +6,20 @@
 
 export type Point = [number, number];
 
-export type RoomType =
-  | "living"
-  | "kitchen"
-  | "bedroom"
-  | "bathroom"
-  | "hallway"
-  | "balcony"
-  | "storage";
+export const ROOM_TYPES = [
+  "living",
+  "kitchen",
+  "dining",
+  "bedroom",
+  "bathroom",
+  "hallway",
+  "office",
+  "storage",
+  "stairs",
+  "balcony",
+] as const;
+
+export type RoomType = (typeof ROOM_TYPES)[number];
 
 export interface Wall {
   id: string;
@@ -41,12 +47,16 @@ export interface Room {
   name: string;
   type: RoomType;
   polygon: Point[];
+  /** Dimensions printed on the source plan, if any (meters). */
+  labeled?: { width: number; depth: number };
 }
 
 export interface FloorPlan {
   id: string;
   title: string;
   ceilingHeight: number;
+  /** Where the geometry came from. */
+  source?: { kind: "manual" | "parsed"; image?: string; model?: string; parsedAt?: string };
   walls: Wall[];
   openings: Opening[];
   rooms: Room[];

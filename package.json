@@ -6,15 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "parse:plan": "tsx --env-file=.env.local scripts/parse-floorplan.mts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "three": "^0.187.0"
+    "server-only": "^0.0.1",
+    "three": "^0.187.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
@@ -25,6 +29,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
