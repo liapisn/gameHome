@@ -1,0 +1,473 @@
+{
+  "tourId": "listing-15970",
+  "levelId": "upper",
+  "roomId": "r1",
+  "roomName": "Kitchen",
+  "look": {
+    "floor": "#d8c3b0",
+    "walls": "#f5ebd9"
+  },
+  "items": [
+    {
+      "id": "diningTable-1",
+      "kind": "diningTable",
+      "label": "dining table",
+      "x": 2.206,
+      "y": 3.69,
+      "rot": 1.571,
+      "w": 0.85,
+      "d": 0.51,
+      "h": 0.764,
+      "seed": 4267921103,
+      "color": "#e5d4b5",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "06",
+        "07",
+        "08"
+      ],
+      "detections": [
+        "06:5",
+        "07:6",
+        "08:0"
+      ],
+      "confidence": 0.77,
+      "chairs": 2
+    },
+    {
+      "id": "generic-1",
+      "kind": "generic",
+      "label": "wall cabinet",
+      "x": 0.25,
+      "y": 2.851,
+      "rot": 1.571,
+      "w": 0.34,
+      "d": 0.5,
+      "h": 0.991,
+      "seed": 501933280,
+      "color": "#eb874a",
+      "material": "wood",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "08",
+        "07"
+      ],
+      "detections": [
+        "08:4",
+        "07:5"
+      ],
+      "confidence": 0.64,
+      "elevation": 1.893
+    },
+    {
+      "id": "rug-1",
+      "kind": "rug",
+      "label": "rug",
+      "x": 0.477,
+      "y": 4.919,
+      "rot": 1.571,
+      "w": 2.427,
+      "d": 0.679,
+      "h": 0.01,
+      "seed": 4205485111,
+      "color": "#803020",
+      "material": "fabric",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "07",
+        "08",
+        "06"
+      ],
+      "detections": [
+        "07:7",
+        "08:8",
+        "06:7"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "id": "art-1",
+      "kind": "art",
+      "label": "framed picture middle",
+      "x": 3.17,
+      "y": 4.237,
+      "rot": -1.571,
+      "w": 0.298,
+      "d": 0.04,
+      "h": 0.083,
+      "seed": 3287190998,
+      "color": "#000000",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "06"
+      ],
+      "detections": [
+        "06:9"
+      ],
+      "confidence": 0.47,
+      "elevation": 2.658
+    },
+    {
+      "id": "art-2",
+      "kind": "art",
+      "label": "framed picture left",
+      "x": 3.17,
+      "y": 3.619,
+      "rot": -1.571,
+      "w": 0.333,
+      "d": 0.04,
+      "h": 0.098,
+      "seed": 3362315177,
+      "color": "#000000",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "06"
+      ],
+      "detections": [
+        "06:8"
+      ],
+      "confidence": 0.47,
+      "elevation": 2.651
+    },
+    {
+      "id": "kitchen-1",
+      "kind": "kitchen",
+      "label": "kitchen base cabinets (back)",
+      "x": 0.48,
+      "y": 2.494,
+      "rot": 1.571,
+      "w": 1.2,
+      "d": 0.96,
+      "h": 1.111,
+      "seed": 3483106885,
+      "color": "#eb8f5c",
+      "material": "wood",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "06"
+      ],
+      "detections": [
+        "06:1"
+      ],
+      "confidence": 0.47,
+      "uppers": false
+    },
+    {
+      "id": "generic-2",
+      "kind": "generic",
+      "label": "wall cabinet",
+      "x": 0.25,
+      "y": 4.363,
+      "rot": 1.571,
+      "w": 1.345,
+      "d": 0.5,
+      "h": 1.262,
+      "seed": 3632313901,
+      "color": "#eb874a",
+      "material": "wood",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "08"
+      ],
+      "detections": [
+        "08:3"
+      ],
+      "confidence": 0.47,
+      "elevation": 1.999
+    },
+    {
+      "id": "generic-3",
+      "kind": "generic",
+      "label": "tall larder unit",
+      "x": 1.235,
+      "y": 1.85,
+      "rot": 0,
+      "w": 0.4,
+      "d": 0.8,
+      "h": 2.7,
+      "seed": 3675374613,
+      "color": "#c0c0c0",
+      "material": "metal",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "06",
+        "07"
+      ],
+      "detections": [
+        "06:2",
+        "07:8"
+      ],
+      "confidence": 0.64
+    },
+    {
+      "id": "fridge-1",
+      "kind": "fridge",
+      "label": "fridge",
+      "x": 1.755,
+      "y": 1.97,
+      "rot": 0,
+      "w": 0.682,
+      "d": 1.04,
+      "h": 2.169,
+      "seed": 3599743835,
+      "color": "#c0c0c0",
+      "material": "metal",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "06",
+        "07"
+      ],
+      "detections": [
+        "06:3",
+        "07:3"
+      ],
+      "confidence": 0.64
+    },
+    {
+      "id": "kitchen-2",
+      "kind": "kitchen",
+      "label": "kitchen cabinets",
+      "x": 0.18,
+      "y": 3.376,
+      "rot": 1.571,
+      "w": 1.276,
+      "d": 0.36,
+      "h": 0.918,
+      "seed": 4130620325,
+      "color": "#f48c5a",
+      "material": "wood",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "07",
+        "08",
+        "06"
+      ],
+      "detections": [
+        "07:1",
+        "08:1",
+        "06:0"
+      ],
+      "confidence": 0.77,
+      "uppers": false
+    },
+    {
+      "id": "generic-4",
+      "kind": "generic",
+      "label": "tall built-in unit",
+      "x": 0.4,
+      "y": 2.877,
+      "rot": 1.571,
+      "w": 0.5,
+      "d": 0.8,
+      "h": 2.469,
+      "seed": 3235806078,
+      "color": "#f48c5a",
+      "material": "wood",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "07",
+        "08",
+        "06"
+      ],
+      "detections": [
+        "07:2",
+        "08:5",
+        "06:4"
+      ],
+      "confidence": 0.77
+    },
+    {
+      "id": "generic-5",
+      "kind": "generic",
+      "label": "wall cabinets",
+      "x": 0.561,
+      "y": 1.7,
+      "rot": 0,
+      "w": 1.123,
+      "d": 0.5,
+      "h": 0.656,
+      "seed": 1327219941,
+      "color": "#f0cc78",
+      "material": "wood",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "06"
+      ],
+      "detections": [
+        "06:6"
+      ],
+      "confidence": 0.47,
+      "elevation": 2.372
+    },
+    {
+      "id": "kitchen-3",
+      "kind": "kitchen",
+      "label": "kitchen cabinets",
+      "x": 0.18,
+      "y": 5.467,
+      "rot": 1.571,
+      "w": 3.245,
+      "d": 0.36,
+      "h": 0.841,
+      "seed": 3072276238,
+      "color": "#f48c5a",
+      "material": "wood",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "07",
+        "08"
+      ],
+      "detections": [
+        "07:0",
+        "08:2"
+      ],
+      "confidence": 0.64,
+      "uppers": false
+    },
+    {
+      "id": "generic-6",
+      "kind": "generic",
+      "label": "wall cabinets",
+      "x": 0.25,
+      "y": 6.706,
+      "rot": 1.571,
+      "w": 0.608,
+      "d": 0.5,
+      "h": 1.025,
+      "seed": 3628691702,
+      "color": "#f48c5a",
+      "material": "wood",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "07"
+      ],
+      "detections": [
+        "07:4"
+      ],
+      "confidence": 0.3,
+      "elevation": 1.804
+    },
+    {
+      "id": "shelves-1",
+      "kind": "shelves",
+      "label": "open shelves",
+      "x": 0.175,
+      "y": 2.545,
+      "rot": 1.571,
+      "w": 0.65,
+      "d": 0.35,
+      "h": 1.304,
+      "seed": 3780756341,
+      "color": "#d2a77a",
+      "material": "wood",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "08"
+      ],
+      "detections": [
+        "08:6"
+      ],
+      "confidence": 0.3,
+      "elevation": 2.032
+    },
+    {
+      "id": "art-3",
+      "kind": "art",
+      "label": "framed picture right",
+      "x": 3.17,
+      "y": 4.88,
+      "rot": -1.571,
+      "w": 0.328,
+      "d": 0.04,
+      "h": 0.161,
+      "seed": 3037099301,
+      "color": "#000000",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "06"
+      ],
+      "detections": [
+        "06:10"
+      ],
+      "confidence": 0.3,
+      "elevation": 2.619
+    },
+    {
+      "id": "generic-7",
+      "kind": "generic",
+      "label": "tall cabinet",
+      "x": 2.812,
+      "y": 6.954,
+      "rot": -1.571,
+      "w": 0.5,
+      "d": 0.755,
+      "h": 0.8,
+      "seed": 1858981709,
+      "color": "#e1ccad",
+      "material": "wood",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "08"
+      ],
+      "detections": [
+        "08:7"
+      ],
+      "confidence": 0.3
+    }
+  ],
+  "photos": [
+    {
+      "id": "06",
+      "gate": "pass",
+      "reason": "geometric checks only"
+    },
+    {
+      "id": "07",
+      "gate": "pass",
+      "reason": "geometric checks only"
+    },
+    {
+      "id": "08",
+      "gate": "pass",
+      "reason": "geometric checks only"
+    }
+  ],
+  "score": 0.387,
+  "rounds": [
+    {
+      "round": 0,
+      "score": 0.387,
+      "kept": true,
+      "changes": 0
+    },
+    {
+      "round": 1,
+      "score": 0.344,
+      "kept": false,
+      "changes": 35
+    }
+  ],
+  "model": "gemini-3.1-pro-preview",
+  "builtAt": "2026-11-14T15:47:38.676Z"
+}

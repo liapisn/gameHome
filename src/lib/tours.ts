@@ -4,9 +4,12 @@ import path from "node:path";
 import type { FloorPlan } from "@/lib/floorplan";
 import { getPlan } from "@/lib/plans";
 import { resolveLevels } from "@/lib/tour/resolve";
-import type { ResolvedTour, Tour } from "@/lib/tour/types";
+import type { RoomScene } from "@/lib/scene/types";
+import type { Furnishing } from "@/lib/tour/furnish";
+import { type ResolvedTour, type Tour, roomKey } from "@/lib/tour/types";
 
 const TOURS_DIR = path.join(process.cwd(), "src/data/tours");
+const SCENES_DIR = path.join(process.cwd(), "src/data/scenes");
 const isDev = process.env.NODE_ENV !== "production";
 
 /**
@@ -36,10 +39,26 @@ export function resolveTour(id: string): ResolvedTour | null {
       ...tour,
       levels,
       mediaUrl: isDev ? `/api/tour-media/${tour.id}` : null,
+      scenes: getScenes(tour.id),
     };
   }
   const plan = getPlan(id);
   return plan ? planAsTour(plan) : null;
+}
+
+/** Rooms furnished from photos (npm run build:scene), keyed by roomKey. Only the viewer's fields are kept. */
+export function getScenes(tourId: string): Record<string, Furnishing[]> | undefined {
+  const dir = path.join(SCENES_DIR, tourId);
+  if (!fs.existsSync(dir)) return undefined;
+  const out: Record<string, Furnishing[]> = {};
+  for (const f of fs.readdirSync(dir).filter((n) => n.endsWith(".json"))) {
+    const scene = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")) as RoomScene;
+    out[roomKey(scene.levelId, scene.roomId)] = scene.items.map(
+      ({ id, kind, x, y, rot, w, d, h, elevation, seed, uppers, chairs, ceiling, color, label }) =>
+        ({ id, kind, x, y, rot, w, d, h, elevation, seed, uppers, chairs, ceiling, color, label }) as Furnishing,
+    );
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 function planAsTour(plan: FloorPlan): ResolvedTour {

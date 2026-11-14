@@ -1,4 +1,5 @@
 import type { FloorPlan, Point } from "@/lib/floorplan";
+import type { Furnishing } from "./furnish";
 
 /**
  * Where a photo was taken from, in its level's plan space.
@@ -87,6 +88,8 @@ export interface ResolvedTour extends Omit<Tour, "levels"> {
   mediaUrl: string | null;
   /** Per-photo URLs keyed by `src` (e.g. signed Storage URLs); takes precedence over `mediaUrl`. */
   photoUrls?: Record<string, { view: string; thumb: string }>;
+  /** Furniture reconstructed from photos, keyed by roomKey (see lib/scene); replaces rule-based staging there. */
+  scenes?: Record<string, Furnishing[]>;
 }
 
 export const roomKey = (levelId: string, roomId: string) => `${levelId}/${roomId}`;

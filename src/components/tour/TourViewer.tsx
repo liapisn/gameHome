@@ -10,7 +10,7 @@ import { type Room, interiorArea, planBounds, polygonArea, polygonCentroid } fro
 import { EYE_HEIGHT, framingPitch, toWorld, vfovOf } from "@/lib/tour/space";
 import { type ResolvedTour, type TourPhoto, roomKey } from "@/lib/tour/types";
 import { BALCONY_DROP } from "@/lib/dollhouse-geometry";
-import { furnishPlan, roomViewpoint } from "@/lib/tour/furnish";
+import { type Furnishing, furnishPlan, roomViewpoint } from "@/lib/tour/furnish";
 import { Dollhouse, type DollhouseLook } from "./Dollhouse";
 import { Furnishings } from "./Furnishings";
 import { Surroundings } from "./Surroundings";
@@ -38,8 +38,11 @@ export function TourViewer({ tour, embedded = false }: { tour: ResolvedTour; emb
   const [walkTarget, setWalkTarget] = useState<WalkTarget | null>(null);
   const [walkLevelId, setWalkLevelId] = useState<string>(tour.levels[0].id);
   const [lightbox, setLightbox] = useState<TourPhoto | null>(null);
-  // Virtual staging: on by default when there are no photos to show the real rooms.
-  const [staged, setStaged] = useState(tour.photos.length === 0);
+  // Virtual staging: on by default when there are no photos to show the real rooms, or when rooms
+  // were furnished from their photos.
+  const [staged, setStaged] = useState(tour.photos.length === 0 || !!tour.scenes);
+  // Standing at a photo in a room furnished from photos: show the photo, or the 3D reconstruction.
+  const [photoView, setPhotoView] = useState(true);
 
   const levelById = useMemo(() => new Map(tour.levels.map((l) => [l.id, l])), [tour.levels]);
   const posed = useMemo(() => tour.photos.filter((p) => p.pose && p.levelId && p.roomId), [tour.photos]);
@@ -85,15 +88,20 @@ export function TourViewer({ tour, embedded = false }: { tour: ResolvedTour; emb
     return out;
   }, [tour.levels, tour.looks]);
 
-  // Rooms shown through their photos stay empty, so furniture never hides the projected photo.
+  // Rooms furnished from their photos use that furniture. Other photographed rooms stay empty, so
+  // guessed furniture never hides the projected photo; the rest are staged by rules.
   const furnishings = useMemo(() => {
-    const out: Record<string, ReturnType<typeof furnishPlan>> = {};
+    const out: Record<string, Furnishing[]> = {};
     for (const l of tour.levels) {
       const photographed = new Set(posed.filter((p) => p.levelId === l.id).map((p) => p.roomId!));
-      out[l.id] = furnishPlan(l.plan, photographed);
+      for (const r of l.plan.rooms) if (tour.scenes?.[roomKey(l.id, r.id)]) photographed.add(r.id);
+      out[l.id] = [
+        ...furnishPlan(l.plan, photographed),
+        ...l.plan.rooms.flatMap((r) => (tour.scenes?.[roomKey(l.id, r.id)] ?? []).map((f) => ({ ...f, id: `${r.id}:${f.id}` }))),
+      ];
     }
     return out;
-  }, [tour.levels, posed]);
+  }, [tour.levels, tour.scenes, posed]);
 
   const roomPhotos = useCallback(
     (ref: RoomRef) => posed.filter((p) => p.levelId === ref.levelId && p.roomId === ref.roomId),
@@ -241,6 +249,9 @@ export function TourViewer({ tour, embedded = false }: { tour: ResolvedTour; emb
     tour.photoUrls?.[p.src]?.[kind] ?? (tour.mediaUrl ? `${tour.mediaUrl}/${kind}/${p.src}` : null);
   const thumb = (p: TourPhoto) => photoUrl(p, "thumb");
   const activeUrl = activePhoto ? photoUrl(activePhoto, "view") : null;
+  // A room furnished from its photos can be seen as the photo or as the 3D reconstruction.
+  const activeScene = activePhoto?.levelId && activePhoto.roomId ? tour.scenes?.[roomKey(activePhoto.levelId, activePhoto.roomId)] : undefined;
+  const showPhoto = mode === "walk" && !!activePhoto && !!activeUrl && (!activeScene || photoView);
 
   return (
     <div
@@ -438,7 +449,17 @@ export function TourViewer({ tour, embedded = false }: { tour: ResolvedTour; emb
                 ceilings={mode === "walk"}
                 staged={staged}
               />
-              {staged && <Furnishings items={furnishings[level.id]} balconyDrop={BALCONY_DROP} />}
+              {staged && (
+                <Furnishings
+                  items={
+                    // The projected photo already shows its room's real furniture.
+                    showPhoto && activeScene && activePhoto?.levelId === level.id
+                      ? furnishings[level.id].filter((f) => !f.id.startsWith(`${activePhoto.roomId}:`))
+                      : furnishings[level.id]
+                  }
+                  balconyDrop={BALCONY_DROP}
+                />
+              )}
             </group>
           ))}
 
@@ -449,7 +470,7 @@ export function TourViewer({ tour, embedded = false }: { tour: ResolvedTour; emb
             compact={mode === "walk"}
           />
 
-          {mode === "walk" && activePhoto && activeUrl && (
+          {showPhoto && activePhoto && activeUrl && (
             <ProjectedPhoto
               key={activePhoto.id}
               level={levelById.get(activePhoto.levelId!)!}
@@ -505,6 +526,20 @@ export function TourViewer({ tour, embedded = false }: { tour: ResolvedTour; emb
                     {activePhoto.confidence === "low" && " · approximate position"}
                   </p>
                 </div>
+                {activeScene && (
+                  <div className="flex rounded-md border border-black/10 p-0.5 text-xs font-medium" role="group" aria-label="Room view">
+                    {(["photo", "3d"] as const).map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setPhotoView(v === "photo")}
+                        aria-pressed={photoView === (v === "photo")}
+                        className={`rounded px-2 py-0.5 ${photoView === (v === "photo") ? "bg-neutral-900 text-white" : "text-neutral-700 hover:bg-black/5"}`}
+                      >
+                        {v === "photo" ? "Photo" : "3D"}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button
                   onClick={() => setLightbox(activePhoto)}
                   className="rounded-md border border-black/10 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-black/5"

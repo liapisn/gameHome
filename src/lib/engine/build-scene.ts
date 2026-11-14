@@ -1,0 +1,251 @@
+/**
+ * Photos → furnished room, as a library: gate → detect → lift → check loop → RoomScene.
+ * See docs/blender-loop-plan.md. Used by the `build:scene` CLI.
+ *
+ * Every model answer is cached as JSON in `workDir`, so re-running only re-does the geometry
+ * unless `fresh` is set. Overlays and the top-down view are written there too, for checking by eye.
+ */
+import { createHash } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import sharp from "sharp";
+import type { FloorPlan, Room } from "@/lib/floorplan";
+import { applyCheck, checkPhoto, scoreScene, type CheckAnswer } from "@/lib/scene/check";
+import { detectPhoto } from "@/lib/scene/detect";
+import { gatePhoto, type GateAnswer } from "@/lib/scene/gate";
+import { fillFromRules, liftDetection, mergeCandidates, type Candidate } from "@/lib/scene/lift";
+import { boxesOverlay, topDown } from "@/lib/scene/overlay";
+import { photoCamera, type PhotoCamera } from "@/lib/scene/project";
+import type { PhotoDetection, PhotoGate, RoomScene, SceneItem } from "@/lib/scene/types";
+import { type Tour, type TourPhoto, roomKey } from "@/lib/tour/types";
+
+export interface BuildSceneOptions {
+  tour: Tour;
+  plan: FloorPlan;
+  levelId: string;
+  roomId: string;
+  /** Folder for cached model answers, overlays and the top-down view. */
+  workDir: string;
+  /** Check-loop rounds (0 = detect + lift only). */
+  rounds?: number;
+  /** Ignore cached model answers. */
+  fresh?: boolean;
+  /** Ask the model to check each photo's placement (opt-in: see scripts/eval-gate.mts for how it scores). */
+  modelGate?: boolean;
+  /** Photo ids whose owner-assigned level differs from this one (fail at the gate). */
+  ownerMismatch?: Set<string>;
+  log?: (m: string) => void;
+}
+
+interface PhotoCtx {
+  photo: TourPhoto;
+  cam: PhotoCamera;
+  file: string;
+  jpeg: Buffer;
+}
+
+/** Floor points outside the room above this share fail the photo. */
+const MAX_OUTSIDE = 0.4;
+const MIN_GAIN = 0.02;
+
+async function cached<T>(file: string, fresh: boolean, make: () => Promise<T>): Promise<T> {
+  if (!fresh && fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf8")) as T;
+  const v = await make();
+  fs.writeFileSync(file, JSON.stringify(v, null, 2));
+  return v;
+}
+
+export function scenePhotos(tour: Tour, levelId: string, roomId: string) {
+  return tour.photos.filter((p) => p.levelId === levelId && p.roomId === roomId && p.pose);
+}
+
+export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: RoomScene; usage: number }> {
+  const log = opts.log ?? (() => {});
+  const { tour, plan, levelId, roomId, workDir } = opts;
+  const fresh = !!opts.fresh;
+  fs.mkdirSync(workDir, { recursive: true });
+  const level = tour.levels.find((l) => l.id === levelId);
+  const room = plan.rooms.find((r) => r.id === roomId);
+  if (!level || !room) throw new Error(`No room ${levelId}/${roomId}`);
+  const ceiling = level.ceilingHeight ?? plan.ceilingHeight;
+  let calls = 0;
+  let model = "";
+
+  const ctxs: PhotoCtx[] = await Promise.all(
+    scenePhotos(tour, levelId, roomId).map(async (photo) => {
+      const file = path.join(tour.mediaRoot, photo.src);
+      const jpeg = await sharp(file).rotate().resize(1600).jpeg({ quality: 88 }).toBuffer();
+      return { photo, file, jpeg, cam: photoCamera(photo.pose!, photo.height / photo.width) };
+    }),
+  );
+  log(`${room.name} (${levelId}/${roomId}): ${ctxs.length} posed photo(s)`);
+
+  // ------------------------------------------------------------------ 0. gate
+  const gates: PhotoGate[] = [];
+  const passed: PhotoCtx[] = [];
+  await Promise.all(
+    ctxs.map(async (c) => {
+      if (!opts.modelGate) {
+        const mismatch = opts.ownerMismatch?.has(c.photo.id);
+        gates.push({ id: c.photo.id, gate: mismatch ? "fail" : "pass", reason: mismatch ? "owner filed the photo under another floor" : "geometric checks only" });
+        if (mismatch) return;
+        passed.push(c);
+        return;
+      }
+      const g = await cached<{ pass: boolean; reason: string; answer: GateAnswer | null }>(path.join(workDir, `gate-${c.photo.id}.json`), fresh, async () => {
+        calls++;
+        const r = await gatePhoto({
+          photoFile: c.file, photoJpeg: c.jpeg, cam: c.cam, plan, room, ceiling, fit: c.photo.fit,
+          levelName: level.name, ownerLevelMismatch: opts.ownerMismatch?.has(c.photo.id),
+        });
+        fs.writeFileSync(path.join(workDir, `gate-${c.photo.id}.jpg`), r.overlay);
+        model = r.model ?? model;
+        return { pass: r.pass, reason: r.reason, answer: r.answer };
+      });
+      gates.push({ id: c.photo.id, gate: g.pass ? "pass" : "fail", reason: g.reason });
+      if (g.pass) passed.push(c);
+      log(`  gate ${c.photo.id}: ${g.pass ? "pass" : "FAIL"} — ${g.reason}`);
+    }),
+  );
+  passed.sort((a, b) => a.photo.id.localeCompare(b.photo.id));
+  gates.sort((a, b) => a.id.localeCompare(b.id));
+
+  // ------------------------------------------------------------------ 1. detect
+  let dets: PhotoDetection[] = [];
+  await Promise.all(
+    passed.map(async (c) => {
+      const d = await cached(path.join(workDir, `detect-${c.photo.id}.json`), fresh, async () => {
+        calls++;
+        const r = await detectPhoto({ photoJpeg: c.jpeg, room, levelName: level.name });
+        model = r.model;
+        return r.items;
+      });
+      dets.push(...d.map((x, i) => ({ ...x, faceCorners: x.faceCorners ?? [], id: `${c.photo.id}:${i}`, photoId: c.photo.id })));
+      log(`  detect ${c.photo.id}: ${d.length} object(s) — ${d.map((x) => x.label).join(", ")}`);
+    }),
+  );
+
+  // ------------------------------------------------------------------ 2. lift (+ floor-point sanity)
+  const cams = new Map(passed.map((c) => [c.photo.id, c.cam]));
+  const lift = (ds: PhotoDetection[]) => {
+    const cands: Candidate[] = [];
+    const stats = new Map<string, { inside: number; outside: number }>();
+    for (const d of ds) {
+      const r = liftDetection(d, cams.get(d.photoId)!, room, ceiling);
+      const s = stats.get(d.photoId) ?? { inside: 0, outside: 0 };
+      s.inside += r.floorInside;
+      s.outside += r.floorOutside;
+      stats.set(d.photoId, s);
+      if (r.candidate) cands.push(r.candidate);
+    }
+    return { cands, stats };
+  };
+
+  const first = lift(dets);
+  for (const [photoId, s] of first.stats) {
+    const total = s.inside + s.outside;
+    if (total >= 6 && s.outside / total > MAX_OUTSIDE) {
+      const g = gates.find((x) => x.id === photoId)!;
+      g.gate = "fail";
+      g.reason = `${s.outside}/${total} floor contacts land outside the room`;
+      log(`  gate ${photoId}: FAIL after detect — ${g.reason}`);
+      cams.delete(photoId);
+      dets = dets.filter((d) => d.photoId !== photoId);
+    }
+  }
+  const usable = passed.filter((c) => cams.has(c.photo.id));
+
+  const assemble = (ds: PhotoDetection[]) => {
+    const { cands } = lift(ds);
+    const items = mergeCandidates(cands, room, ceiling);
+    return { items, ...scoreScene(items, ds, cams) };
+  };
+
+  let state = { dets, ...assemble(dets) };
+  log(`  lift: ${state.items.length} item(s), score ${state.score}`);
+  await writeOverlays(usable, state.items, workDir, "r0", room);
+
+  // ------------------------------------------------------------------ 3. check loop
+  const rounds: RoomScene["rounds"] = [{ round: 0, score: state.score, kept: true, changes: 0 }];
+  for (let round = 1; round <= (opts.rounds ?? 3); round++) {
+    let next = state.dets;
+    let changes = 0;
+    const answers = await Promise.all(
+      usable.map(async (c) => {
+        const visible = state.items; // the model sees every box drawn; ones out of frame it marks out-of-view
+        const overlay = await boxesOverlay({ photoFile: c.file, cam: c.cam, items: visible });
+        // Keyed by what was drawn, so a cached answer is only reused for the same boxes.
+        const key = createHash("sha1").update(JSON.stringify(visible.map((i) => [i.id, i.x, i.y, i.w, i.d, i.h, i.rot]))).digest("hex").slice(0, 8);
+        const a = await cached<CheckAnswer>(path.join(workDir, `check-r${round}-${c.photo.id}-${key}.json`), fresh, async () => {
+          calls++;
+          const r = await checkPhoto({ photoJpeg: c.jpeg, overlay, items: visible, roomName: room.name });
+          model = r.model;
+          return r.answer;
+        });
+        return { c, a };
+      }),
+    );
+    for (const { c, a } of answers) {
+      const r = applyCheck(next, state.items, c.photo.id, { ...a, missing: a.missing.map((m) => ({ ...m, faceCorners: m.faceCorners ?? [] })) });
+      next = r.dets;
+      changes += r.changes;
+      const bad = a.items.filter((v) => v.verdict === "misplaced" || v.verdict === "nothing-there");
+      log(`  check r${round} ${c.photo.id}: ${bad.map((v) => `${v.id} ${v.verdict}`).join(", ") || "all good"}${a.missing.length ? `; missing ${a.missing.map((m) => m.label).join(", ")}` : ""}`);
+    }
+    if (!changes) {
+      rounds.push({ round, score: state.score, kept: false, changes });
+      log(`  round ${round}: no changes, stop`);
+      break;
+    }
+    const cand = { dets: next, ...assemble(next) };
+    const gain = cand.score - state.score;
+    const kept = gain > 0;
+    rounds.push({ round, score: cand.score, kept, changes });
+    log(`  round ${round}: ${changes} change(s), score ${state.score} → ${cand.score} ${kept ? "kept" : "rejected"}`);
+    if (kept) {
+      state = cand;
+      await writeOverlays(usable, state.items, workDir, `r${round}`, room);
+    }
+    if (gain < MIN_GAIN) break;
+  }
+
+  // ------------------------------------------------------------------ fill + write
+  const items: SceneItem[] = [...state.items, ...fillFromRules(plan, room, state.items)];
+  fs.writeFileSync(
+    path.join(workDir, "topdown.png"),
+    await topDown({ plan, room, items, cameras: usable.map((c) => ({ id: c.photo.id, pose: c.photo.pose! })) }),
+  );
+  fs.writeFileSync(path.join(workDir, "detections.json"), JSON.stringify(state.dets, null, 2));
+
+  const scene: RoomScene = {
+    tourId: tour.id,
+    levelId,
+    roomId,
+    roomName: room.name,
+    look: tour.looks[roomKey(levelId, roomId)] ?? null,
+    items: items.map(round3),
+    photos: gates,
+    score: state.score,
+    rounds,
+    model: model || tour.model,
+    builtAt: new Date().toISOString(),
+  };
+  log(`  done: ${state.items.length} from photos + ${items.length - state.items.length} from rules, score ${state.score}, ${calls} model call(s)`);
+  return { scene, usage: calls };
+}
+
+async function writeOverlays(ctxs: PhotoCtx[], items: SceneItem[], dir: string, tag: string, room: Room) {
+  await Promise.all(
+    ctxs.map(async (c) =>
+      fs.writeFileSync(
+        path.join(dir, `boxes-${tag}-${c.photo.id}.jpg`),
+        await boxesOverlay({ photoFile: c.file, cam: c.cam, items, title: `${c.photo.id} · ${room.name} · ${tag}` }),
+      ),
+    ),
+  );
+}
+
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
+function round3(i: SceneItem): SceneItem {
+  return { ...i, x: r3(i.x), y: r3(i.y), w: r3(i.w), d: r3(i.d), h: r3(i.h), rot: r3(i.rot), ...(i.elevation != null ? { elevation: r3(i.elevation) } : {}) };
+}
