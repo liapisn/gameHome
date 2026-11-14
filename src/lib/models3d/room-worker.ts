@@ -290,6 +290,7 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     placements: placements.map((p) => ({ id: p.id, assetId: p.assetId, turn: p.turn, scale: Math.round(p.scale * 1000) / 1000 })),
     builtToMeasure: items.filter((i) => builtToMeasure(i)).map((i) => i.id),
     pictures: [...pictures.keys()],
+    sizeConflicts: [...results.values()].filter((r) => r.sizeConflict).map((r) => ({ assetId: r.assetId, ...r.sizeConflict })),
     standIns: generated.filter((i) => !placements.some((p) => p.id === i.id)).map((i) => ({ id: i.id, reason: results.get(assetFor.get(i.id)!)?.reason ?? "no model" })),
     checks: final.checks,
     compare: final.cameras.map((c) => path.join(dir, `compare-${c.id}.jpg`)),

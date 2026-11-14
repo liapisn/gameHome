@@ -108,6 +108,7 @@ def build(gh, size):
 
 Rules:
 - Origin at the centre of the object's footprint, on the floor (z = 0). Its FRONT faces -Y.
+- The target size is measured and fixed: never change it, even if photos or feedback suggest other overall proportions.
 - Build exactly the target size: the parts together span w along X, d along Y and h along Z.
   Derive every dimension from w, d, h (e.g. leg_h = h * 0.4), so the proportions hold.
 - Build this one object and nothing else: no floor, walls, rug, lights, cameras or other furniture.
@@ -148,9 +149,13 @@ const Critique = z.object({
   score: z.number().describe("0–10: 10 = the same design at this level of detail; 7 = clearly the same object, right parts, proportions and colours, small differences; 4 = right kind of object, wrong design; 0–2 = wrong object or broken"),
   missing: z.array(z.string()).describe("Parts the real object has that the model lacks; empty if none"),
   facing: z.boolean().describe("The front render shows the object's front"),
+  sizeWrong: z
+    .boolean()
+    .describe("The overall size given is clearly not the real object's (e.g. a long low unit given as a narrow tall box): the real object's overall proportions differ by more than about 30%"),
+  realSize: z.array(z.number()).describe("If sizeWrong: your estimate of the real [w, d, h] in metres; else empty"),
   fixes: z
     .array(z.object({ part: z.string(), problem: z.string(), fix: z.string().describe("Concrete: sizes in metres, hex colours, shapes") }))
-    .describe("Most damaging first; empty if nothing to fix"),
+    .describe("Most damaging first; empty if nothing to fix. Never ask to change the overall size (it is measured and fixed): report that as sizeWrong instead"),
   summary: z.string().describe("One line"),
 });
 type Critique = z.infer<typeof Critique>;
@@ -165,7 +170,8 @@ async function critique(brief: ObjectBrief, crops: string[], renders: Record<str
   parts.push(
     text(
       "Compare the model with the real object. The model is meant to be clean, simplified geometry: do not mark down missing wood grain, fabric texture, wrinkles or photographic lighting. " +
-        "Do mark down wrong or missing parts, wrong proportions, wrong shapes, wrong colours or materials, and a model facing the wrong way.",
+        "Do mark down wrong or missing parts, wrong proportions of parts, wrong shapes, wrong colours or materials, and a model facing the wrong way. " +
+        `The overall size (${fmt(brief.size)}) was measured elsewhere and the model is stretched to it: score the design within that size, and if the real object's overall proportions are clearly different, set sizeWrong instead of scoring it down.`,
     ),
   );
   const res = await generateStructured({
@@ -184,6 +190,7 @@ const feedbackFrom = (c: Critique) =>
     ...(c.facing ? [] : ["The front render does not show the object's front: its front must face -Y."]),
     ...c.missing.map((m) => `Missing: ${m}`),
     ...c.fixes.map((f, i) => `${i + 1}. ${f.part}: ${f.problem} → ${f.fix}`),
+    "Keep the overall size exactly as given.",
   ].join("\n");
 
 // --------------------------------------------------------------------------- worker
@@ -217,6 +224,9 @@ export async function runCodeObjectWorker(brief: ObjectBrief, log: (m: string) =
   say(`design sheet: ${sheet.parts.length} part(s) — ${sheet.summary.slice(0, 120)}`);
 
   const runs: Run[] = [];
+  let sizeFlags = 0;
+  let sizeErrors = 0;
+  let sizeConflict: ObjectResult["sizeConflict"];
   for (let n = 1; n <= MAX_RUNS; n++) {
     const dir = path.join(brief.workDir, `r${n}`);
     fs.mkdirSync(dir, { recursive: true });
@@ -256,6 +266,10 @@ export async function runCodeObjectWorker(brief: ObjectBrief, log: (m: string) =
     run.result = JSON.parse(fs.readFileSync(resultFile, "utf8")) as RunResult;
     if (!run.result.ok) {
       run.feedback = `The code did not produce a usable model.\n${run.result.error}`;
+      if (run.result.error?.startsWith("Size off")) {
+        sizeErrors++;
+        run.feedback += `\nThe target size is measured and fixed: build exactly ${fmt(brief.size)}, whatever the photos seem to show.`;
+      }
       say(`run ${n}: error — ${run.result.error?.split("\n").filter(Boolean).at(-1)}`);
       continue;
     }
@@ -265,10 +279,25 @@ export async function runCodeObjectWorker(brief: ObjectBrief, log: (m: string) =
     run.feedback = feedbackFrom(run.critique);
     say(`run ${n}: ${run.critique.score}/10${passes(run.critique) ? " pass" : ""} — ${run.critique.summary}`);
     if (passes(run.critique)) break;
+    if (run.critique.sizeWrong) sizeFlags++;
+    // The photos and the measured size disagree: more code can't fix that. Keep the best run and
+    // report the conflict, so the scene's size gets corrected instead.
+    if (sizeFlags >= 2 || (sizeFlags >= 1 && sizeErrors >= 1)) {
+      const est = run.critique.realSize.length === 3 ? run.critique.realSize : undefined;
+      sizeConflict = { target: brief.size, ...(est ? { estimate: { w: est[0], d: est[1], h: est[2] } } : {}) };
+      say(`size conflict: target ${fmt(brief.size)}${est ? `, photos suggest ${est.map((v) => v.toFixed(2)).join(" × ")} m` : ""}; stopping`);
+      break;
+    }
   }
 
   const scored = runs.filter((r) => r.result?.ok && r.critique);
   const best = scored.sort((a, b) => b.critique!.score - a.critique!.score)[0] ?? runs.find((r) => r.result?.ok);
+  // A passing run can still say the measured size is wrong: report that too.
+  if (!sizeConflict && best?.critique?.sizeWrong) {
+    const est = best.critique.realSize.length === 3 ? best.critique.realSize : undefined;
+    sizeConflict = { target: brief.size, ...(est ? { estimate: { w: est[0], d: est[1], h: est[2] } } : {}) };
+    say(`size conflict: target ${fmt(brief.size)}${est ? `, photos suggest ${est.map((v) => v.toFixed(2)).join(" × ")} m` : ""}`);
+  }
   let result: ObjectResult;
   if (best?.result?.ok && best.result.dims) {
     const [w, d, h] = best.result.dims;
@@ -284,6 +313,7 @@ export async function runCodeObjectWorker(brief: ObjectBrief, log: (m: string) =
       script: path.join(dir, "code.py"),
       reason: best.critique ? `run ${best.n}, ${best.critique.score}/10: ${best.critique.summary}` : `run ${best.n}, not reviewed`,
       invented: brief.views.length === 0,
+      ...(sizeConflict ? { sizeConflict } : {}),
     };
   } else {
     result = {

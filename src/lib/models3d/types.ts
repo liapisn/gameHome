@@ -55,4 +55,6 @@ export interface ObjectResult {
   /** Code worker: the critic's score (0–10) of the chosen run, and the Blender code it ran. */
   score?: number;
   script?: string;
+  /** The photos show a clearly different overall size than the target: the scene's size needs fixing. */
+  sizeConflict?: { target: { w: number; d: number; h: number }; estimate?: { w: number; d: number; h: number } };
 }
