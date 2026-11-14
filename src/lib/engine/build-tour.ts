@@ -13,7 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
-import { type FloorPlan, OPEN_PLAN, type Point, polygonCentroid, type RoomType } from "@/lib/floorplan";
+import { type FloorPlan, OPEN_PLAN, ownerRoomIds, type Point, polygonCentroid, type RoomType } from "@/lib/floorplan";
 import { parseFloorPlanImage } from "@/lib/floorplan-parser/parse";
 import { buildFloorPlan } from "@/lib/floorplan-parser/build";
 import { estimatePose } from "@/lib/tour/estimate-pose";
@@ -36,6 +36,8 @@ export interface ManifestPhoto {
   level?: string;
   /** Owner's room type ("kitchen", "bedroom"…). */
   roomType?: RoomType;
+  /** Owner's room: a room id on the plan of `level` (its stored plan, so ids match the build's). */
+  roomId?: string;
 }
 
 export interface Manifest {
@@ -87,7 +89,7 @@ export type Placements = Record<string, CacheEntry>;
  * Null when the owner said nothing that bounds it.
  */
 export function ownerBounds(
-  p: Pick<ManifestPhoto, "level" | "roomType">,
+  p: Pick<ManifestPhoto, "level" | "roomType" | "roomId">,
   manifestLevels: ManifestLevel[],
   levels: { id: string; plan: FloorPlan }[],
 ): { fits: (levelId: string, roomId: string | null) => boolean; describe: string; levelId: string | null } | null {
@@ -96,6 +98,18 @@ export function ownerBounds(
     return { fits: (levelId) => levelId === "none", describe: `It belongs to "${owned.name}", which has no plan: set levelId to "none".`, levelId: "none" };
   }
   const onLevels = owned ? levels.filter((l) => l.id === owned.id) : levels;
+  // A room picked on the plan: that room, or an open-plan room touching it.
+  const ownedPlan = owned && onLevels[0]?.plan;
+  const roomIds = ownedPlan && p.roomId ? ownerRoomIds(ownedPlan, p.roomId) : new Set<string>();
+  if (owned && ownedPlan && roomIds.size) {
+    const list = ownedPlan.rooms.filter((r) => roomIds.has(r.id)).map((r) => `${r.id} (${r.name})`).join(", ");
+    const room = ownedPlan.rooms.find((r) => r.id === p.roomId)!;
+    return {
+      fits: (levelId, roomId) => levelId === owned.id && roomId != null && roomIds.has(roomId),
+      describe: `The owner says it was taken in ${room.name}: set levelId to "${owned.id}" and roomId to one of ${list}.`,
+      levelId: owned.id,
+    };
+  }
   const types = p.roomType ? new Set<RoomType>([p.roomType, ...OPEN_PLAN.filter((g) => g.includes(p.roomType!)).flat()]) : null;
   const rooms = types ? onLevels.flatMap((l) => l.plan.rooms.filter((r) => types.has(r.type)).map((r) => ({ level: l.id, room: r }))) : [];
   if (types && rooms.length) {
@@ -222,7 +236,7 @@ export async function placePhotos(
   const ownerHint = (p: ManifestPhoto, bounds: ReturnType<typeof ownerBounds>) =>
     [
       p.level && levelName.has(p.level) ? `The owner filed this photo under "${levelName.get(p.level)}".` : "",
-      p.roomType ? `The owner says it shows a ${p.roomType}.` : "",
+      p.roomType && !p.roomId ? `The owner says it shows a ${p.roomType}.` : "",
       p.hint ? `The owner's note: "${p.hint}".` : "",
       bounds ? `This is a hard constraint: ${bounds.describe}` : "",
     ]
@@ -292,7 +306,10 @@ export async function assembleTour(
     progress({ step: "poses", label: "Solving camera positions", done: posed++, total: manifest.photos.length });
     const entry = cache[p.file];
     const m = await derive(folder, p.file);
-    const owner = p.level || p.roomType ? { ...(p.level ? { levelId: p.level } : {}), ...(p.roomType ? { roomType: p.roomType } : {}) } : undefined;
+    const owner =
+      p.level || p.roomType || p.roomId
+        ? { ...(p.level ? { levelId: p.level } : {}), ...(p.roomType ? { roomType: p.roomType } : {}), ...(p.roomId ? { roomId: p.roomId } : {}) }
+        : undefined;
     const base = { id: idOf(p.file), src: p.file, width: m.width, height: m.height, ...(owner ? { owner } : {}) };
     if (!entry) {
       tourPhotos.push({ ...base, caption: "", levelId: null, roomId: null, location: "unplaced", confidence: "low", pose: null, fit: null });

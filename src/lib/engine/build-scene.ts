@@ -9,7 +9,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
-import type { FloorPlan, Room, RoomType } from "@/lib/floorplan";
+import { type FloorPlan, ownerRoomIds, type Room, type RoomType } from "@/lib/floorplan";
 import { applyCheck, checkPhoto, scoreScene, type CheckAnswer } from "@/lib/scene/check";
 import { detectPhoto, roomKindConflict } from "@/lib/scene/detect";
 import { gatePhoto, type GateAnswer } from "@/lib/scene/gate";
@@ -139,9 +139,13 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
     ctxs.map(async (c) => {
       // What the owner said decides before any model call.
       const ownerType = opts.ownerRoomType?.get(c.photo.id) ?? c.photo.owner?.roomType;
+      const ownerRoom = c.photo.owner?.roomId;
+      const ownerRooms = ownerRoom ? ownerRoomIds(plan, ownerRoom) : null;
       const ownerFail = otherFloor(c.photo)
         ? "owner filed the photo under another floor"
-        : ownerType && roomKindConflict(room.type, ownerType)
+        : ownerRooms?.size && !ownerRooms.has(room.id)
+          ? `owner says it was taken in ${plan.rooms.find((r) => r.id === ownerRoom)?.name ?? ownerRoom}`
+          : ownerType && roomKindConflict(room.type, ownerType)
           ? `owner says it shows a ${ownerType}, not a ${room.type}`
           : null;
       if (ownerFail) {

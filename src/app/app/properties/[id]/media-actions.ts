@@ -79,20 +79,42 @@ export async function recordPhotos(propertyId: string, items: z.input<typeof Rec
   return data.map((row) => ({ id: row.id, fileId: row.storage_path.split("/").pop()!.replace(".webp", "") }));
 }
 
-export async function updatePhoto(propertyId: string, mediaId: string, patch: { levelId?: string | null; hint?: string; roomType?: RoomType | null }) {
+/**
+ * Update what the owner says about a photo. A room (`roomId`, from the stored plan of `levelId`)
+ * also sets the floor and the kind of room; a new floor or a bare room type clears the room.
+ */
+export async function updatePhoto(
+  propertyId: string,
+  mediaId: string,
+  patch: { levelId?: string | null; hint?: string; roomType?: RoomType | null; roomId?: string | null },
+) {
   Uuid.parse(mediaId);
   const update = z
-    .object({ levelId: Uuid.nullable().optional(), hint: z.string().trim().max(120).optional(), roomType: z.enum(ROOM_TYPES).nullable().optional() })
+    .object({
+      levelId: Uuid.nullable().optional(),
+      hint: z.string().trim().max(120).optional(),
+      roomType: z.enum(ROOM_TYPES).nullable().optional(),
+      roomId: z.string().max(40).nullable().optional(),
+    })
     .parse(patch);
   const { supabase } = await accessibleProperty(propertyId);
 
+  const row: { level_id?: string | null; hint?: string | null; room_type?: RoomType | null; room_id?: string | null } = {};
+  if (update.levelId !== undefined) row.level_id = update.levelId;
+  if (update.hint !== undefined) row.hint = update.hint || null;
+  if (update.roomType !== undefined) row.room_type = update.roomType;
+  if (update.levelId !== undefined || update.roomType !== undefined) row.room_id = null;
+  if (update.roomId) {
+    if (!update.levelId) throw new Error("Pick the floor along with the room.");
+    const { level } = await accessibleLevel(propertyId, update.levelId);
+    const room = (level.plan as unknown as FloorPlan | null)?.rooms.find((r) => r.id === update.roomId);
+    if (!room) throw new Error("That room is no longer on the plan. Reload the page.");
+    Object.assign(row, { level_id: update.levelId, room_id: room.id, room_type: room.type });
+  } else if (update.roomId === null) row.room_id = null;
+
   const { error } = await supabase
     .from("media")
-    .update({
-      ...(update.levelId !== undefined ? { level_id: update.levelId } : {}),
-      ...(update.hint !== undefined ? { hint: update.hint || null } : {}),
-      ...(update.roomType !== undefined ? { room_type: update.roomType } : {}),
-    })
+    .update(row)
     .eq("id", mediaId)
     .eq("property_id", propertyId);
   if (error) throw new Error(error.message);
@@ -176,6 +198,7 @@ export async function setFloorplan(propertyId: string, levelId: string, file: z.
   // A new drawing invalidates the rooms read from the old one.
   const { error } = await supabase.from("levels").update({ floorplan_path: path, plan: null }).eq("id", levelId);
   if (error) throw new Error(error.message);
+  await clearRoomTags(supabase, levelId);
   refresh(propertyId);
 }
 
@@ -184,7 +207,14 @@ export async function removeFloorplan(propertyId: string, levelId: string) {
   await removeFloorplanFiles(supabase, levelId, level.floorplan_path);
   const { error } = await supabase.from("levels").update({ floorplan_path: null, plan: null }).eq("id", levelId);
   if (error) throw new Error(error.message);
+  await clearRoomTags(supabase, levelId);
   refresh(propertyId);
+}
+
+/** Room ids belong to one reading of a plan: clear the floor's photo room tags when it changes (their room type stays). */
+async function clearRoomTags(supabase: Awaited<ReturnType<typeof createClient>>, levelId: string) {
+  const { error } = await supabase.from("media").update({ room_id: null }).eq("level_id", levelId).not("room_id", "is", null);
+  if (error) throw new Error(error.message);
 }
 
 /** Read the floor's plan drawing into rooms (one model call, up to a minute or two) and store it. */
@@ -205,6 +235,7 @@ export async function readFloorplan(propertyId: string, levelId: string) {
     .eq("id", levelId)
     .eq("floorplan_path", level.floorplan_path);
   if (error) throw new Error(error.message);
+  await clearRoomTags(supabase, levelId);
   refresh(propertyId);
 }
 

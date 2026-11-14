@@ -24,6 +24,7 @@ import { preparePhoto } from "@/lib/image-resize";
 import { MAX_PHOTOS_PER_PROPERTY, MEDIA_BUCKET, photoPath, thumbPathFor } from "@/lib/admin/media-paths";
 import type { PropertyMedia } from "@/lib/admin/data";
 import { ROOM_TYPES, type RoomType } from "@/lib/floorplan";
+import { ROOM_TYPE_LABEL } from "./plan-rooms";
 import { deletePhotos, recordPhotos, reorderPhotos, updatePhoto } from "@/app/app/properties/[id]/media-actions";
 import { DropZone } from "./drop-zone";
 
@@ -232,12 +233,16 @@ export function PhotoManager({
                 index={i}
                 levels={levels}
                 onLevel={(levelId) => {
-                  setPhotos((list) => list.map((p) => (p.id === photo.id ? { ...p, levelId } : p)));
+                  setPhotos((list) => list.map((p) => (p.id === photo.id ? { ...p, levelId, roomId: null } : p)));
                   act(() => updatePhoto(propertyId, photo.id, { levelId }));
+                }}
+                onRoom={(levelId, roomId, roomType) => {
+                  setPhotos((list) => list.map((p) => (p.id === photo.id ? { ...p, levelId, roomId, roomType } : p)));
+                  act(() => updatePhoto(propertyId, photo.id, { levelId, roomId }));
                 }}
                 onHint={(hint) => act(() => updatePhoto(propertyId, photo.id, { hint }))}
                 onRoomType={(roomType) => {
-                  setPhotos((list) => list.map((p) => (p.id === photo.id ? { ...p, roomType } : p)));
+                  setPhotos((list) => list.map((p) => (p.id === photo.id ? { ...p, roomType, roomId: null } : p)));
                   act(() => updatePhoto(propertyId, photo.id, { roomType }));
                 }}
                 onDelete={() => {
@@ -263,6 +268,7 @@ function PhotoCard({
   levels,
   onLevel,
   onHint,
+  onRoom,
   onRoomType,
   onDelete,
 }: {
@@ -271,9 +277,21 @@ function PhotoCard({
   levels: Level[];
   onLevel: (levelId: string | null) => void;
   onHint: (hint: string) => void;
+  onRoom: (levelId: string, roomId: string, roomType: RoomType) => void;
   onRoomType: (roomType: RoomType | null) => void;
   onDelete: () => void;
 }) {
+  // Rooms come from the stored plans: the photo's floor, or every floor with a plan when it has none.
+  const roomLevels = levels.filter((l) => l.plan && (!photo.levelId || l.id === photo.levelId));
+  const roomValue = photo.roomId && photo.levelId ? `room:${photo.levelId}:${photo.roomId}` : photo.roomType ? `type:${photo.roomType}` : "";
+  const pickRoom = (value: string) => {
+    if (value.startsWith("room:")) {
+      const [, levelId, roomId] = value.split(":");
+      const room = levels.find((l) => l.id === levelId)?.plan?.rooms.find((r) => r.id === roomId);
+      if (room) onRoom(levelId, roomId, room.type);
+    } else onRoomType(value ? (value.slice(5) as RoomType) : null);
+  };
+
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: photo.id,
   });
@@ -328,17 +346,36 @@ function PhotoCard({
           ))}
         </select>
         <select
-          aria-label="Room type"
-          value={photo.roomType ?? ""}
-          onChange={(e) => onRoomType((e.target.value || null) as RoomType | null)}
+          aria-label="Room"
+          value={roomValue}
+          onChange={(e) => pickRoom(e.target.value)}
           className="w-full rounded-md border border-black/10 bg-white px-2 py-1 text-xs"
         >
           <option value="">Room: let the engine decide</option>
-          {ROOM_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {ROOM_TYPE_LABEL[t]}
-            </option>
-          ))}
+          {roomLevels.map((l) =>
+            roomLevels.length > 1 ? (
+              <optgroup key={l.id} label={l.name}>
+                {l.plan!.rooms.map((r) => (
+                  <option key={r.id} value={`room:${l.id}:${r.id}`}>
+                    {r.name}
+                  </option>
+                ))}
+              </optgroup>
+            ) : (
+              l.plan!.rooms.map((r) => (
+                <option key={r.id} value={`room:${l.id}:${r.id}`}>
+                  {r.name}
+                </option>
+              ))
+            ),
+          )}
+          <optgroup label={roomLevels.length ? "Kind of room only" : "Kind of room"}>
+            {ROOM_TYPES.map((t) => (
+              <option key={t} value={`type:${t}`}>
+                {roomLevels.length ? `Some ${ROOM_TYPE_LABEL[t].toLowerCase()}` : ROOM_TYPE_LABEL[t]}
+              </option>
+            ))}
+          </optgroup>
         </select>
         <input
           aria-label="Note"
@@ -354,18 +391,6 @@ function PhotoCard({
   );
 }
 
-const ROOM_TYPE_LABEL: Record<RoomType, string> = {
-  living: "Living room",
-  kitchen: "Kitchen",
-  dining: "Dining room",
-  bedroom: "Bedroom",
-  bathroom: "Bathroom",
-  hallway: "Hallway / entry",
-  office: "Office",
-  storage: "Storage",
-  stairs: "Stairs",
-  balcony: "Balcony / terrace",
-};
 
 const STATUS_LABEL: Record<Upload["status"], string> = {
   queued: "Waiting…",

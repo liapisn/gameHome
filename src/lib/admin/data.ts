@@ -73,7 +73,7 @@ export async function getPropertyMedia(id: string) {
   const { supabase } = await requireSession();
   const { data: property, error } = await supabase
     .from("properties")
-    .select("id, org_id, title, levels ( id, name, sort, floorplan_path, plan ), media ( id, kind, storage_path, level_id, hint, room_type, sort, width, height )")
+    .select("id, org_id, title, levels ( id, name, sort, floorplan_path, plan ), media ( id, kind, storage_path, level_id, hint, room_type, room_id, sort, width, height )")
     .eq("id", id)
     .order("sort", { referencedTable: "levels" })
     .order("sort", { referencedTable: "media" })
@@ -111,6 +111,7 @@ export async function getPropertyMedia(id: string) {
       levelId: p.level_id,
       hint: p.hint ?? "",
       roomType: p.room_type,
+      roomId: p.room_id,
       thumbUrl: urls.get(thumbPathFor(p.storage_path)) ?? urls.get(p.storage_path) ?? null,
       fullUrl: urls.get(p.storage_path) ?? null,
     })),
