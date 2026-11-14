@@ -1,0 +1,184 @@
+{
+  "listingId": "16841",
+  "name": "One-bedroom ground-floor apartment",
+  "source": "theprosperty.com listing 16841 (third-party; photos 08-10 are virtually staged 'Photorealistic Design' renders; internal testing only, do not publish)",
+  "labelledBy": "manual review, 2026-11-14",
+  "purpose": "Ground truth for photo→room assignment and floor plan parsing tests; includes virtually staged renders and building common areas as distractors",
+  "levels": [
+    {
+      "id": "main",
+      "name": "Apartment (single level)",
+      "floorplan": "floorplans/01.jpg",
+      "note": "Rooms on plan: Living room 2.84 x 5.09 m and Dining room 2.94 x 2.26 m (one open space, entry at the living end), Kitchen 4.86 x 2.44 m, Bedroom 4.24 x 3.17 m with closet, Bathroom 1.74 x 2.16 m, small inner hall, Balcony along the kitchen and bedroom."
+    },
+    {
+      "id": "building",
+      "name": "Building common areas",
+      "floorplan": null
+    },
+    {
+      "id": "outdoor",
+      "name": "Outdoor",
+      "floorplan": null
+    }
+  ],
+  "photos": [
+    {
+      "file": "photos/01.jpg",
+      "level": "outdoor",
+      "room": "Front façade & gate",
+      "confidence": "high",
+      "note": "Garden gate with arch of climbing plant, building above"
+    },
+    {
+      "file": "photos/02.jpg",
+      "level": "main",
+      "room": "Bedroom",
+      "confidence": "high",
+      "note": "Yellow/green walls, sliding door to the balcony"
+    },
+    {
+      "file": "photos/03.jpg",
+      "level": "main",
+      "room": "Living room",
+      "confidence": "high",
+      "note": "Looking toward the entry door; bedroom door open on the left"
+    },
+    {
+      "file": "photos/04.jpg",
+      "level": "main",
+      "room": "Kitchen",
+      "confidence": "high",
+      "note": "Sink and cooker run; door out to the balcony"
+    },
+    {
+      "file": "photos/05.jpg",
+      "level": "main",
+      "room": "Kitchen",
+      "confidence": "high",
+      "note": "Corner units; door to the inner hall on the left"
+    },
+    {
+      "file": "photos/06.jpg",
+      "level": "main",
+      "room": "Dining room",
+      "confidence": "high",
+      "note": "Windowed end of the living/dining space"
+    },
+    {
+      "file": "photos/07.jpg",
+      "level": "main",
+      "room": "Living room",
+      "confidence": "high",
+      "note": "Long view from the living area toward the dining windows"
+    },
+    {
+      "file": "photos/08.jpg",
+      "level": "main",
+      "room": "Living room",
+      "confidence": "medium",
+      "note": "Virtually staged render of the living/dining windowed end, not the real state",
+      "virtuallyStaged": true
+    },
+    {
+      "file": "photos/09.jpg",
+      "level": "main",
+      "room": "Kitchen",
+      "confidence": "medium",
+      "note": "Virtually staged render of the kitchen, not the real state",
+      "virtuallyStaged": true
+    },
+    {
+      "file": "photos/10.jpg",
+      "level": "main",
+      "room": "Bathroom",
+      "confidence": "medium",
+      "note": "Virtually staged render of the bathroom, not the real state",
+      "virtuallyStaged": true
+    },
+    {
+      "file": "photos/11.jpg",
+      "level": "main",
+      "room": "Balcony",
+      "confidence": "high",
+      "note": "Looking along the balcony from the bedroom sliding door"
+    },
+    {
+      "file": "photos/12.jpg",
+      "level": "main",
+      "room": "Bedroom",
+      "confidence": "high",
+      "note": "Built-in wardrobe wall; door to the inner hall"
+    },
+    {
+      "file": "photos/13.jpg",
+      "level": "main",
+      "room": "Bathroom",
+      "confidence": "high",
+      "note": "Bath under the window, vanity, WC"
+    },
+    {
+      "file": "photos/14.jpg",
+      "level": "building",
+      "room": "Stairwell & apartment door",
+      "confidence": "high",
+      "note": "Common stair landing outside the flat"
+    },
+    {
+      "file": "photos/15.jpg",
+      "level": "building",
+      "room": "Lobby corridor",
+      "confidence": "high",
+      "note": "Ground-floor corridor toward the rear doors"
+    },
+    {
+      "file": "photos/16.jpg",
+      "level": "outdoor",
+      "room": "Street façade",
+      "confidence": "high",
+      "note": "Whole building from the street"
+    },
+    {
+      "file": "photos/17.jpg",
+      "level": "main",
+      "room": "Balcony",
+      "confidence": "high",
+      "note": "Looking back along the balcony toward the sliding door"
+    },
+    {
+      "file": "photos/18.jpg",
+      "level": "outdoor",
+      "room": "Building entrance (pilotis)",
+      "confidence": "high",
+      "note": "Covered area beside the glass entrance doors"
+    },
+    {
+      "file": "photos/19.jpg",
+      "level": "main",
+      "room": "Kitchen",
+      "confidence": "high",
+      "note": "Sink and cooker corner under the window"
+    },
+    {
+      "file": "photos/20.jpg",
+      "level": "outdoor",
+      "room": "Building entrance (pilotis)",
+      "confidence": "high",
+      "note": "Approach to the glass entrance doors"
+    },
+    {
+      "file": "photos/21.jpg",
+      "level": "main",
+      "room": "Hall",
+      "confidence": "high",
+      "note": "Inner hall: bathroom on the left, kitchen ahead, bedroom on the right"
+    },
+    {
+      "file": "photos/22.jpg",
+      "level": "main",
+      "room": "Dining room",
+      "confidence": "high",
+      "note": "Windowed dining end; doors to the inner hall on the right"
+    }
+  ]
+}
