@@ -1,18 +1,19 @@
 /**
  * The tour engine as a library: a listing folder in → a Tour plus its floor plans out.
  *
- *   <folder>/manifest.json   { levels: [{ id, name, floorplan, note? }], photos: [{ file, hint?, level? }] }
+ *   <folder>/manifest.json   { levels: [{ id, name, floorplan, note? }], photos: [{ file, hint?, level?, roomType? }] }
  *   <folder>/floorplans/…    one drawing per level that has a plan
  *   <folder>/photos/…        photos (JPEG/PNG/WebP), in display order
  *
  * Used by the `build:tour` CLI (fixtures, with plan + placement caches) and by the admin worker
- * (owner uploads, no caches). `hint` and `level` are owner notes passed to the model as context;
- * nothing else in the manifest is sent (fixtures keep ground-truth labels there for scoring).
+ * (owner uploads, no caches). `hint`, `level` and `roomType` are the owner's notes: the hint is
+ * context for the model, the level and room type bound where a photo may be placed. Nothing else in
+ * the manifest is sent (fixtures keep ground-truth labels there for scoring).
  */
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
-import { type FloorPlan, type Point, polygonCentroid } from "@/lib/floorplan";
+import { type FloorPlan, OPEN_PLAN, type Point, polygonCentroid, type RoomType } from "@/lib/floorplan";
 import { parseFloorPlanImage } from "@/lib/floorplan-parser/parse";
 import { buildFloorPlan } from "@/lib/floorplan-parser/build";
 import { estimatePose } from "@/lib/tour/estimate-pose";
@@ -33,6 +34,8 @@ export interface ManifestPhoto {
   hint?: string;
   /** Owner's floor assignment: a level id from the manifest. */
   level?: string;
+  /** Owner's room type ("kitchen", "bedroom"…). */
+  roomType?: RoomType;
 }
 
 export interface Manifest {
@@ -61,6 +64,8 @@ export interface BuildTourOptions {
   /** Re-place only these photo ids (file name without extension), keeping the rest cached. */
   only?: string[];
   concurrency?: number;
+  /** Ignore the manifest's per-photo `level` and `roomType` (fixtures keep ground truth there). */
+  ignoreOwnerNotes?: boolean;
 }
 
 export interface BuildTourResult {
@@ -74,6 +79,35 @@ export interface BuildTourResult {
 export type CacheEntry = { placement: Placement; model: string; at: string };
 /** Placements by photo file: what the placement phase produces and the assembly phase consumes. */
 export type Placements = Record<string, CacheEntry>;
+
+/**
+ * Where the owner's notes allow a photo to go: on the floor they filed it under (levelId "none" for
+ * a floor without a plan), in a room of the type they gave (open-plan partners count as one). A
+ * room type no allowed floor has is ignored rather than making the photo unplaceable.
+ * Null when the owner said nothing that bounds it.
+ */
+export function ownerBounds(
+  p: Pick<ManifestPhoto, "level" | "roomType">,
+  manifestLevels: ManifestLevel[],
+  levels: { id: string; plan: FloorPlan }[],
+): { fits: (levelId: string, roomId: string | null) => boolean; describe: string; levelId: string | null } | null {
+  const owned = p.level ? manifestLevels.find((l) => l.id === p.level) : undefined;
+  if (owned && !owned.floorplan) {
+    return { fits: (levelId) => levelId === "none", describe: `It belongs to "${owned.name}", which has no plan: set levelId to "none".`, levelId: "none" };
+  }
+  const onLevels = owned ? levels.filter((l) => l.id === owned.id) : levels;
+  const types = p.roomType ? new Set<RoomType>([p.roomType, ...OPEN_PLAN.filter((g) => g.includes(p.roomType!)).flat()]) : null;
+  const rooms = types ? onLevels.flatMap((l) => l.plan.rooms.filter((r) => types.has(r.type)).map((r) => ({ level: l.id, room: r }))) : [];
+  if (types && rooms.length) {
+    const ok = new Set(rooms.map((r) => `${r.level}/${r.room.id}`));
+    const list = rooms.map((r) => `${r.level}/${r.room.id} (${r.room.name})`).join(", ");
+    return { fits: (levelId, roomId) => ok.has(`${levelId}/${roomId}`), describe: `The owner says it shows a ${p.roomType}: place it in one of ${list}.`, levelId: owned?.id ?? null };
+  }
+  if (owned) {
+    return { fits: (levelId) => levelId === owned.id, describe: `The owner filed it under "${owned.name}": set levelId to "${owned.id}".`, levelId: owned.id };
+  }
+  return null;
+}
 
 /** Resized copies: `model` is what the vision model sees, `view` the dev texture, `thumb` the sidebar. */
 const SIZES = { model: 1600, view: 2048, thumb: 480 } as const;
@@ -140,8 +174,9 @@ export async function buildPlans(folder: string, opts: PhaseOptions): Promise<Fl
 }
 
 /** Plans + their drawings, as the placement model sees them. Cheap: no model calls. */
-export async function prepareBuild(folder: string, plans: FloorPlan[]) {
-  const manifest = readManifest(folder);
+export async function prepareBuild(folder: string, plans: FloorPlan[], opts: { ignoreOwnerNotes?: boolean } = {}) {
+  const read = readManifest(folder);
+  const manifest: Manifest = opts.ignoreOwnerNotes ? { ...read, photos: read.photos.map((p) => ({ file: p.file, hint: p.hint })) } : read;
   const mapped = manifest.levels.filter((l) => l.floorplan);
   const levelInputs = await Promise.all(
     mapped.map(async (l, i) => ({
@@ -178,16 +213,18 @@ async function derive(folder: string, file: string) {
 /** Phase 2: place these photos (by manifest file) with the vision model. Failed photos are left out. */
 export async function placePhotos(
   folder: string,
-  { manifest, prepared }: Prepared,
+  { manifest, prepared, levelInputs }: Prepared,
   files: string[],
   opts: PhaseOptions & { onPlaced?: (file: string) => void },
 ): Promise<{ placements: Placements; failures: number; lastError: string; usage: { input: number; output: number } }> {
   const log = opts.log ?? (() => {});
   const levelName = new Map(manifest.levels.map((l) => [l.id, l.name]));
-  const ownerHint = (p: ManifestPhoto) =>
+  const ownerHint = (p: ManifestPhoto, bounds: ReturnType<typeof ownerBounds>) =>
     [
       p.level && levelName.has(p.level) ? `The owner filed this photo under "${levelName.get(p.level)}".` : "",
+      p.roomType ? `The owner says it shows a ${p.roomType}.` : "",
       p.hint ? `The owner's note: "${p.hint}".` : "",
+      bounds ? `This is a hard constraint: ${bounds.describe}` : "",
     ]
       .filter(Boolean)
       .join(" ") || undefined;
@@ -202,14 +239,25 @@ export async function placePhotos(
       for (let p = queue.shift(); p; p = queue.shift()) {
         try {
           const m = await derive(folder, p.file);
-          const res = await placePhoto(prepared, {
-            name: path.basename(p.file),
-            base64: fs.readFileSync(/*turbopackIgnore: true*/ m.model).toString("base64"),
-            hint: ownerHint(p),
-          });
+          const bounds = ownerBounds(p, manifest.levels, levelInputs);
+          const base64 = fs.readFileSync(/*turbopackIgnore: true*/ m.model).toString("base64");
+          const place = async (extra = "") => {
+            const res = await placePhoto(prepared, { name: path.basename(p.file), base64, hint: `${ownerHint(p, bounds) ?? ""}${extra}`.trim() || undefined });
+            usage.input += res.usage.input;
+            usage.output += res.usage.output;
+            return res;
+          };
+          let res = await place();
+          // The owner knows which floor and room this is: one retry, then no room rather than a wrong one.
+          if (bounds && !bounds.fits(res.data.levelId, res.data.roomId)) {
+            log(`  ${p.file} → ${res.data.levelId}/${res.data.roomId ?? "-"} breaks the owner's notes, retrying`);
+            res = await place(` Your previous answer, ${res.data.levelId}/${res.data.roomId ?? "-"}, breaks that constraint; answer again within it.`);
+            if (!bounds.fits(res.data.levelId, res.data.roomId)) {
+              log(`  ${p.file} → still ${res.data.levelId}/${res.data.roomId ?? "-"}: left without a room`);
+              res = { ...res, data: { ...res.data, levelId: bounds.levelId ?? res.data.levelId, roomId: null, estimate: null, landmarks: [], confidence: "low" } };
+            }
+          }
           placements[p.file] = { placement: res.data, model: res.model, at: new Date().toISOString() };
-          usage.input += res.usage.input;
-          usage.output += res.usage.output;
           log(`  ${p.file} → ${res.data.levelId}/${res.data.roomId ?? "-"} (${res.data.confidence})`);
         } catch (err) {
           failures++;
@@ -244,7 +292,8 @@ export async function assembleTour(
     progress({ step: "poses", label: "Solving camera positions", done: posed++, total: manifest.photos.length });
     const entry = cache[p.file];
     const m = await derive(folder, p.file);
-    const base = { id: idOf(p.file), src: p.file, width: m.width, height: m.height };
+    const owner = p.level || p.roomType ? { ...(p.level ? { levelId: p.level } : {}), ...(p.roomType ? { roomType: p.roomType } : {}) } : undefined;
+    const base = { id: idOf(p.file), src: p.file, width: m.width, height: m.height, ...(owner ? { owner } : {}) };
     if (!entry) {
       tourPhotos.push({ ...base, caption: "", levelId: null, roomId: null, location: "unplaced", confidence: "low", pose: null, fit: null });
       continue;
@@ -313,7 +362,7 @@ export async function assembleTour(
 export async function buildTour(folder: string, opts: BuildTourOptions): Promise<BuildTourResult> {
   const progress = opts.onProgress ?? (() => {});
   const plans = await buildPlans(folder, opts);
-  const prep = await prepareBuild(folder, plans);
+  const prep = await prepareBuild(folder, plans, { ignoreOwnerNotes: opts.ignoreOwnerNotes });
 
   const cache: Placements =
     opts.placementsCache && fs.existsSync(opts.placementsCache) ? JSON.parse(fs.readFileSync(opts.placementsCache, "utf8")) : {};

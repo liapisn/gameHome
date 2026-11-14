@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { defaultLevelName } from "@/lib/admin/data";
+import { ROOM_TYPES, type RoomType } from "@/lib/floorplan";
 import {
   MAX_PHOTOS_PER_PROPERTY,
   MEDIA_BUCKET,
@@ -77,10 +78,10 @@ export async function recordPhotos(propertyId: string, items: z.input<typeof Rec
   return data.map((row) => ({ id: row.id, fileId: row.storage_path.split("/").pop()!.replace(".webp", "") }));
 }
 
-export async function updatePhoto(propertyId: string, mediaId: string, patch: { levelId?: string | null; hint?: string }) {
+export async function updatePhoto(propertyId: string, mediaId: string, patch: { levelId?: string | null; hint?: string; roomType?: RoomType | null }) {
   Uuid.parse(mediaId);
   const update = z
-    .object({ levelId: Uuid.nullable().optional(), hint: z.string().trim().max(120).optional() })
+    .object({ levelId: Uuid.nullable().optional(), hint: z.string().trim().max(120).optional(), roomType: z.enum(ROOM_TYPES).nullable().optional() })
     .parse(patch);
   const { supabase } = await accessibleProperty(propertyId);
 
@@ -89,6 +90,7 @@ export async function updatePhoto(propertyId: string, mediaId: string, patch: { 
     .update({
       ...(update.levelId !== undefined ? { level_id: update.levelId } : {}),
       ...(update.hint !== undefined ? { hint: update.hint || null } : {}),
+      ...(update.roomType !== undefined ? { room_type: update.roomType } : {}),
     })
     .eq("id", mediaId)
     .eq("property_id", propertyId);

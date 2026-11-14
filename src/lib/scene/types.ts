@@ -82,6 +82,8 @@ export interface PhotoGate {
   id: string;
   gate: "pass" | "fail";
   reason: string;
+  /** Floor contacts of nearby items (within `NEAR_CONTACT` of the camera) inside / outside the room. */
+  contacts?: { inside: number; outside: number };
 }
 
 export interface RoomScene {

@@ -5,6 +5,8 @@
  *     --from-cache     reuse cached photo placements (no model calls for photos already placed)
  *     --only 01,04     place only these photos (others keep their cached placement)
  *     --concurrency 4  parallel model calls
+ *     --owner-floor    treat the manifest's `level` labels as the owner's floor assignment (hint +
+ *                      hard bound on placement); without it the build is blind to them
  *
  * The listing folder needs manifest.json with `levels[]` (id, name, floorplan) and `photos[]` (file).
  * Ground-truth labels in the manifest (level/room) are never sent to the model; they are only used
@@ -23,6 +25,7 @@ const { values, positionals } = parseArgs({
     id: { type: "string" },
     title: { type: "string" },
     "from-cache": { type: "boolean", default: false },
+    "owner-floor": { type: "boolean", default: false },
     only: { type: "string" },
     concurrency: { type: "string", default: "4" },
   },
@@ -52,6 +55,7 @@ const { tour, plans, poseLog, usage } = await buildTour(listingDir, {
   plansDir: PLANS_DIR,
   placementsCache: path.join(TOURS_DIR, `${tourId}.placements.json`),
   reusePlacements: values["from-cache"],
+  ignoreOwnerNotes: !values["owner-floor"],
   only: values.only?.split(",").map((s) => s.trim().padStart(2, "0")),
   concurrency: Number(values.concurrency),
 });

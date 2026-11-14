@@ -23,6 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 import { preparePhoto } from "@/lib/image-resize";
 import { MAX_PHOTOS_PER_PROPERTY, MEDIA_BUCKET, photoPath, thumbPathFor } from "@/lib/admin/media-paths";
 import type { PropertyMedia } from "@/lib/admin/data";
+import { ROOM_TYPES, type RoomType } from "@/lib/floorplan";
 import { deletePhotos, recordPhotos, reorderPhotos, updatePhoto } from "@/app/app/properties/[id]/media-actions";
 import { DropZone } from "./drop-zone";
 
@@ -235,6 +236,10 @@ export function PhotoManager({
                   act(() => updatePhoto(propertyId, photo.id, { levelId }));
                 }}
                 onHint={(hint) => act(() => updatePhoto(propertyId, photo.id, { hint }))}
+                onRoomType={(roomType) => {
+                  setPhotos((list) => list.map((p) => (p.id === photo.id ? { ...p, roomType } : p)));
+                  act(() => updatePhoto(propertyId, photo.id, { roomType }));
+                }}
                 onDelete={() => {
                   const before = photos;
                   setPhotos((list) => list.filter((p) => p.id !== photo.id));
@@ -258,6 +263,7 @@ function PhotoCard({
   levels,
   onLevel,
   onHint,
+  onRoomType,
   onDelete,
 }: {
   photo: Photo;
@@ -265,6 +271,7 @@ function PhotoCard({
   levels: Level[];
   onLevel: (levelId: string | null) => void;
   onHint: (hint: string) => void;
+  onRoomType: (roomType: RoomType | null) => void;
   onDelete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
@@ -320,10 +327,23 @@ function PhotoCard({
             </option>
           ))}
         </select>
+        <select
+          aria-label="Room type"
+          value={photo.roomType ?? ""}
+          onChange={(e) => onRoomType((e.target.value || null) as RoomType | null)}
+          className="w-full rounded-md border border-black/10 bg-white px-2 py-1 text-xs"
+        >
+          <option value="">Room: let the engine decide</option>
+          {ROOM_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {ROOM_TYPE_LABEL[t]}
+            </option>
+          ))}
+        </select>
         <input
-          aria-label="Room hint"
+          aria-label="Note"
           defaultValue={photo.hint}
-          placeholder="Room (optional), e.g. kitchen"
+          placeholder="Note (optional), e.g. view from the balcony"
           maxLength={120}
           onBlur={(e) => e.target.value.trim() !== photo.hint && onHint(e.target.value.trim())}
           onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
@@ -333,6 +353,19 @@ function PhotoCard({
     </li>
   );
 }
+
+const ROOM_TYPE_LABEL: Record<RoomType, string> = {
+  living: "Living room",
+  kitchen: "Kitchen",
+  dining: "Dining room",
+  bedroom: "Bedroom",
+  bathroom: "Bathroom",
+  hallway: "Hallway / entry",
+  office: "Office",
+  storage: "Storage",
+  stairs: "Stairs",
+  balcony: "Balcony / terrace",
+};
 
 const STATUS_LABEL: Record<Upload["status"], string> = {
   queued: "Waiting…",

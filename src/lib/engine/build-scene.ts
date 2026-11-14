@@ -9,11 +9,11 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
-import type { FloorPlan, Room } from "@/lib/floorplan";
+import type { FloorPlan, Room, RoomType } from "@/lib/floorplan";
 import { applyCheck, checkPhoto, scoreScene, type CheckAnswer } from "@/lib/scene/check";
 import { detectPhoto, roomKindConflict } from "@/lib/scene/detect";
 import { gatePhoto, type GateAnswer } from "@/lib/scene/gate";
-import { fillFromRules, liftDetection, mergeCandidates, screenItems, type Candidate } from "@/lib/scene/lift";
+import { fillFromRules, liftDetection, mergeCandidates, NEAR_CONTACT, screenItems, type Candidate } from "@/lib/scene/lift";
 import { boxesOverlay, topDown } from "@/lib/scene/overlay";
 import { photoCamera, type PhotoCamera } from "@/lib/scene/project";
 import type { PhotoDetection, PhotoGate, RoomScene, SceneItem } from "@/lib/scene/types";
@@ -32,8 +32,12 @@ export interface BuildSceneOptions {
   fresh?: boolean;
   /** Ask the model to check each photo's placement (opt-in: see scripts/eval-gate.mts for how it scores). */
   modelGate?: boolean;
-  /** Photo ids whose owner-assigned level differs from this one (fail at the gate). */
+  /** Photo ids whose owner-assigned level differs from this one (fail at the gate), on top of `photo.owner`. */
   ownerMismatch?: Set<string>;
+  /** Owner room type per photo id, on top of `photo.owner` (fail at the gate when it conflicts with the room). */
+  ownerRoomType?: Map<string, RoomType>;
+  /** Contact-rule thresholds, for tuning (scripts/eval-gate.mts). */
+  gate?: { maxOutside?: number; strictPose?: boolean };
   log?: (m: string) => void;
 }
 
@@ -44,8 +48,20 @@ interface PhotoCtx {
   jpeg: Buffer;
 }
 
-/** Floor points outside the room above this share fail the photo (below it, those objects are just in a neighbouring room seen through an opening). */
-const MAX_OUTSIDE = 0.7;
+/**
+ * Floor contacts of nearby items (within NEAR_CONTACT of the camera) outside the room above this
+ * share fail the photo. Far items don't count: those are often in a neighbouring room seen through
+ * an opening. Chosen on the fixtures with scripts/eval-gate.mts: anything lower rejects right
+ * photos of small rooms (listing-8218's 1.6 m bathroom and galley kitchen) and catches no more
+ * wrong ones; the owner's floor and the room kind seen at detection do most of the rejecting.
+ */
+export const MAX_OUTSIDE = 0.7;
+/**
+ * Off by default: a photo whose pose isn't an edge fit must have MIN_CONTACTS nearby contacts, all
+ * inside. On the fixtures it rejects right vanishing-point photos and nothing the rest misses.
+ */
+export const STRICT_POSE = false;
+const MIN_CONTACTS = 3;
 const MIN_GAIN = 0.02;
 
 async function cached<T>(file: string, fresh: boolean, make: () => Promise<T>): Promise<T> {
@@ -118,12 +134,23 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
   // ------------------------------------------------------------------ 0. gate
   const gates: PhotoGate[] = [];
   const passed: PhotoCtx[] = [];
+  const otherFloor = (p: TourPhoto) => !!opts.ownerMismatch?.has(p.id) || (p.owner?.levelId != null && p.owner.levelId !== levelId);
   await Promise.all(
     ctxs.map(async (c) => {
+      // What the owner said decides before any model call.
+      const ownerType = opts.ownerRoomType?.get(c.photo.id) ?? c.photo.owner?.roomType;
+      const ownerFail = otherFloor(c.photo)
+        ? "owner filed the photo under another floor"
+        : ownerType && roomKindConflict(room.type, ownerType)
+          ? `owner says it shows a ${ownerType}, not a ${room.type}`
+          : null;
+      if (ownerFail) {
+        gates.push({ id: c.photo.id, gate: "fail", reason: ownerFail });
+        log(`  gate ${c.photo.id}: FAIL — ${ownerFail}`);
+        return;
+      }
       if (!opts.modelGate) {
-        const mismatch = opts.ownerMismatch?.has(c.photo.id);
-        gates.push({ id: c.photo.id, gate: mismatch ? "fail" : "pass", reason: mismatch ? "owner filed the photo under another floor" : "geometric checks only" });
-        if (mismatch) return;
+        gates.push({ id: c.photo.id, gate: "pass", reason: "geometric checks only" });
         passed.push(c);
         return;
       }
@@ -131,7 +158,7 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
         calls++;
         const r = await gatePhoto({
           photoFile: c.file, photoJpeg: c.jpeg, cam: c.cam, plan, room, ceiling, fit: c.photo.fit,
-          levelName: level.name, ownerLevelMismatch: opts.ownerMismatch?.has(c.photo.id),
+          levelName: level.name,
         });
         fs.writeFileSync(path.join(workDir, `gate-${c.photo.id}.jpg`), r.overlay);
         model = r.model ?? model;
@@ -179,8 +206,10 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
     for (const d of ds) {
       const r = liftDetection(d, cams.get(d.photoId)!, room, ceiling);
       const s = stats.get(d.photoId) ?? { inside: 0, outside: 0 };
-      s.inside += r.floorInside;
-      s.outside += r.floorOutside;
+      if (r.near) {
+        s.inside += r.floorInside;
+        s.outside += r.floorOutside;
+      }
       stats.set(d.photoId, s);
       if (r.candidate) cands.push(r.candidate);
     }
@@ -188,12 +217,24 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
   };
 
   const first = lift(dets);
-  for (const [photoId, s] of first.stats) {
+  const maxOutside = opts.gate?.maxOutside ?? MAX_OUTSIDE;
+  const strictPose = opts.gate?.strictPose ?? STRICT_POSE;
+  for (const c of passed) {
+    const photoId = c.photo.id;
+    const s = first.stats.get(photoId) ?? { inside: 0, outside: 0 };
     const total = s.inside + s.outside;
-    if (total >= 3 && s.outside / total > MAX_OUTSIDE) {
-      const g = gates.find((x) => x.id === photoId)!;
+    const g = gates.find((x) => x.id === photoId)!;
+    g.contacts = s;
+    const method = c.photo.fit?.method ?? "no fit";
+    const reason =
+      total >= 3 && s.outside / total > maxOutside
+        ? `${s.outside}/${total} floor contacts within ${NEAR_CONTACT} m land outside the room`
+        : strictPose && method !== "edges" && (total < MIN_CONTACTS || s.outside > 0)
+          ? `pose from ${method} needs ${MIN_CONTACTS}+ nearby floor contacts, all inside (has ${s.inside} in, ${s.outside} out)`
+          : null;
+    if (reason) {
       g.gate = "fail";
-      g.reason = `${s.outside}/${total} floor contacts land outside the room`;
+      g.reason = reason;
       log(`  gate ${photoId}: FAIL after detect — ${g.reason}`);
       cams.delete(photoId);
       dets = dets.filter((d) => d.photoId !== photoId);

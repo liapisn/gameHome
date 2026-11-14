@@ -1,4 +1,4 @@
-import type { FloorPlan, Point } from "@/lib/floorplan";
+import type { FloorPlan, Point, RoomType } from "@/lib/floorplan";
 import type { Furnishing } from "./furnish";
 
 /**
@@ -49,6 +49,8 @@ export interface TourPhoto {
   confidence: "high" | "medium" | "low";
   pose: PhotoPose | null;
   fit: PoseFit | null;
+  /** What the owner said about the photo: the floor they filed it under and the kind of room. */
+  owner?: { levelId?: string; roomType?: RoomType };
 }
 
 export interface RoomLook {

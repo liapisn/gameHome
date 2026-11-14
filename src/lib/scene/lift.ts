@@ -164,8 +164,13 @@ export interface LiftResult {
   /** Floor points that lifted inside / outside the room (gate signal). */
   floorInside: number;
   floorOutside: number;
+  /** The item's floor contacts lie within `NEAR_CONTACT` of the camera (far ones may be seen through a doorway). */
+  near?: boolean;
   reason?: string;
 }
+
+/** Contacts further than this from the camera don't count against a photo's placement. */
+export const NEAR_CONTACT = 4;
 
 const uvOf = ([y, x]: [number, number]): [number, number] => [x / 1000, y / 1000];
 
@@ -322,6 +327,7 @@ export function liftDetection(det: PhotoDetection, cam: PhotoCamera, room: Room,
     floor.push([p[0], p[1]]);
     floorIdx.push(i);
   });
+  const near = floor.length > 0 && Math.hypot(floor.reduce((s, p) => s + p[0], 0) / floor.length - cx, floor.reduce((s, p) => s + p[1], 0) / floor.length - cy) <= NEAR_CONTACT;
 
   let rect: Rect;
   let fit: Candidate["fit"];
@@ -329,7 +335,7 @@ export function liftDetection(det: PhotoDetection, cam: PhotoCamera, room: Room,
   let pts = floor.filter((p) => nearRoom(p, room, 0.5));
   // Seen through an opening: its contacts are in another room. Leave it to that room's photos.
   if (floor.length >= 2 && pts.length === 0) {
-    return { candidate: null, floorInside: inside, floorOutside: outside, reason: "outside the room" };
+    return { candidate: null, floorInside: inside, floorOutside: outside, near, reason: "outside the room" };
   }
 
   if (pts.length >= 2) {
@@ -365,14 +371,14 @@ export function liftDetection(det: PhotoDetection, cam: PhotoCamera, room: Room,
     // No usable footprint: put the box's bottom centre on the floor and use typical sizes.
     // A box cut off by the bottom of the frame has no floor contact in view.
     if (!pts[0] && by1 > 0.985) {
-      return { candidate: null, floorInside: inside, floorOutside: outside, reason: "cut off by the frame" };
+      return { candidate: null, floorInside: inside, floorOutside: outside, near, reason: "cut off by the frame" };
     }
     const bottom = pts[0] ? [pts[0][0], pts[0][1], 0] : cam.onPlane((bx0 + bx1) / 2, by1, 0);
     if (!bottom || Math.hypot(bottom[0] - cx, bottom[1] - cy) > 15) {
-      return { candidate: null, floorInside: inside, floorOutside: outside, reason: "no floor contact" };
+      return { candidate: null, floorInside: inside, floorOutside: outside, near, reason: "no floor contact" };
     }
     if (!nearRoom([bottom[0], bottom[1]], room, 0.5)) {
-      return { candidate: null, floorInside: inside, floorOutside: outside, reason: "outside the room" };
+      return { candidate: null, floorInside: inside, floorOutside: outside, near, reason: "outside the room" };
     }
     const f = Math.max(0.3, cam.depth([bottom[0], bottom[1], 0]));
     const visibleW = clamp((bx1 - bx0) * 2 * Math.tan((cam.pose.hfov * Math.PI) / 360) * f, 0.2, 4);
@@ -427,6 +433,7 @@ export function liftDetection(det: PhotoDetection, cam: PhotoCamera, room: Room,
     },
     floorInside: inside,
     floorOutside: outside,
+    near,
   };
 }
 
