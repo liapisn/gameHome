@@ -74,8 +74,17 @@ export interface SceneItem extends Omit<Furnishing, "label"> {
   /** Detections it was built from. */
   detections: string[];
   confidence: number;
+  /** Where the item is in each photo it was seen in (cropping it for a 3D model needs these). */
+  views?: ItemView[];
   /** Size as measured from the photos when the kind's limits changed it (kept for scoring pose work). */
   measured?: { w: number; d: number; h: number };
+}
+
+export interface ItemView {
+  photoId: string;
+  detectionId: string;
+  /** [ymin, xmin, ymax, xmax], 0–1000. */
+  box: Box2D;
 }
 
 export interface PhotoGate {
