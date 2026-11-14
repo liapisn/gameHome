@@ -27,14 +27,14 @@ isOneToOne: false
                   ]
                 },"levels": {
                   Row: {
-                    "ceiling_height": number,"created_at": string,"floorplan_path": string | null,"id": string,"name": string,"property_id": string,"sort": number
+                    "ceiling_height": number,"created_at": string,"floorplan_path": string | null,"id": string,"name": string,"plan": Json | null,"property_id": string,"sort": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "ceiling_height"?: number,"created_at"?: string,"floorplan_path"?: string | null,"id"?: string,"name": string,"property_id": string,"sort"?: number
+                    "ceiling_height"?: number,"created_at"?: string,"floorplan_path"?: string | null,"id"?: string,"name": string,"plan"?: Json | null,"property_id": string,"sort"?: number
                   }
                   Update: {
-                    "ceiling_height"?: number,"created_at"?: string,"floorplan_path"?: string | null,"id"?: string,"name"?: string,"property_id"?: string,"sort"?: number
+                    "ceiling_height"?: number,"created_at"?: string,"floorplan_path"?: string | null,"id"?: string,"name"?: string,"plan"?: Json | null,"property_id"?: string,"sort"?: number
                   }
                   Relationships: [
                     {

@@ -2,6 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
+import type { FloorPlan } from "@/lib/floorplan";
 import { MEDIA_BUCKET, thumbPathFor } from "./media-paths";
 
 export type Property = Database["public"]["Tables"]["properties"]["Row"];
@@ -72,7 +73,7 @@ export async function getPropertyMedia(id: string) {
   const { supabase } = await requireSession();
   const { data: property, error } = await supabase
     .from("properties")
-    .select("id, org_id, title, levels ( id, name, sort, floorplan_path ), media ( id, kind, storage_path, level_id, hint, room_type, sort, width, height )")
+    .select("id, org_id, title, levels ( id, name, sort, floorplan_path, plan ), media ( id, kind, storage_path, level_id, hint, room_type, sort, width, height )")
     .eq("id", id)
     .order("sort", { referencedTable: "levels" })
     .order("sort", { referencedTable: "media" })
@@ -103,6 +104,7 @@ export async function getPropertyMedia(id: string) {
       id: l.id,
       name: l.name,
       floorplanUrl: l.floorplan_path ? (urls.get(l.floorplan_path) ?? null) : null,
+      plan: (l.plan as unknown as FloorPlan | null) ?? null,
     })),
     photos: photos.map((p) => ({
       id: p.id,

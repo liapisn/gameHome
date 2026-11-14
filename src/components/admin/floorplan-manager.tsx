@@ -9,11 +9,15 @@ import type { PropertyMedia } from "@/lib/admin/data";
 import {
   addLevel,
   deleteLevel,
+  readFloorplan,
   removeFloorplan,
   renameLevel,
   setFloorplan,
+  updatePlanRoom,
 } from "@/app/app/properties/[id]/media-actions";
+import type { RoomType } from "@/lib/floorplan";
 import { DropZone } from "./drop-zone";
+import { PlanRooms } from "./plan-rooms";
 
 type Level = PropertyMedia["levels"][number];
 
@@ -38,7 +42,8 @@ export function FloorplanManager({ propertyId, orgId, levels }: { propertyId: st
     <div>
       <p className="max-w-2xl text-sm text-neutral-600">
         Upload one floor plan per floor: a scan, a photo of the paper plan, or an export from the architect. Plans
-        with printed room dimensions give the most accurate 3D model.
+        with printed room dimensions give the most accurate 3D model. Each plan is read into rooms; check them
+        and fix any name or kind of room that came out wrong, since photos are matched to these rooms.
       </p>
 
       {error && (
@@ -59,6 +64,12 @@ export function FloorplanManager({ propertyId, orgId, levels }: { propertyId: st
                 run(() => deleteLevel(propertyId, level.id));
             }}
             onRemovePlan={() => run(() => removeFloorplan(propertyId, level.id))}
+            onRead={async () => {
+              await readFloorplan(propertyId, level.id);
+              router.refresh();
+            }}
+            onRenameRoom={(roomId, name) => run(() => updatePlanRoom(propertyId, level.id, roomId, { name }))}
+            onRetype={(roomId, type) => run(() => updatePlanRoom(propertyId, level.id, roomId, { type }))}
             onUpload={async (file) => {
               const prepared = await prepareFloorplan(file);
               const fileId = crypto.randomUUID();
@@ -74,6 +85,7 @@ export function FloorplanManager({ propertyId, orgId, levels }: { propertyId: st
               });
               router.refresh();
             }}
+            readOnUpload
           />
         ))}
       </div>
@@ -97,6 +109,10 @@ function LevelCard({
   onDelete,
   onRemovePlan,
   onUpload,
+  onRead,
+  onRenameRoom,
+  onRetype,
+  readOnUpload,
 }: {
   level: Level;
   canDelete: boolean;
@@ -104,20 +120,38 @@ function LevelCard({
   onDelete: () => void;
   onRemovePlan: () => void;
   onUpload: (file: File) => Promise<void>;
+  onRead: () => Promise<void>;
+  onRenameRoom: (roomId: string, name: string) => void;
+  onRetype: (roomId: string, type: RoomType) => void;
+  readOnUpload?: boolean;
 }) {
-  const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "uploading" | "reading" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+
+  const read = async () => {
+    setStatus("reading");
+    setMessage(null);
+    try {
+      await onRead();
+      setStatus("idle");
+    } catch (e) {
+      setStatus("error");
+      setMessage(e instanceof Error ? e.message : "Could not read the floor plan");
+    }
+  };
 
   const upload = async (file: File) => {
     setStatus("uploading");
     setMessage(null);
     try {
       await onUpload(file);
-      setStatus("idle");
     } catch (e) {
       setStatus("error");
       setMessage(e instanceof Error ? e.message : "Upload failed");
+      return;
     }
+    if (readOnUpload) await read();
+    else setStatus("idle");
   };
 
   return (
@@ -177,6 +211,37 @@ function LevelCard({
         )}
         {message && <p className="mt-2 text-xs text-red-700">{message}</p>}
       </div>
+
+      {level.floorplanUrl && status !== "uploading" && (
+        <div className="mt-4 grid gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">
+              {status === "reading"
+                ? "Reading rooms…"
+                : level.plan
+                  ? `${level.plan.rooms.length} rooms read from the plan`
+                  : "Rooms not read yet"}
+            </h3>
+            <button
+              type="button"
+              onClick={read}
+              disabled={status === "reading"}
+              className="rounded-lg border border-black/15 px-3 py-1 text-xs font-medium hover:bg-black/5 disabled:opacity-60"
+            >
+              {level.plan ? "Read again" : "Read rooms"}
+            </button>
+          </div>
+          {status === "reading" ? (
+            <p className="text-xs text-neutral-500">This takes a minute or two. Reading again replaces any names you fixed.</p>
+          ) : level.plan ? (
+            <PlanRooms plan={level.plan} onRename={onRenameRoom} onRetype={onRetype} />
+          ) : (
+            <p className="text-xs text-neutral-500">
+              Read the plan to see its rooms. Photos can then be matched to them, and every tour build uses the same rooms.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

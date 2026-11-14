@@ -69,6 +69,25 @@ export interface ExportedProperty {
   orgId: string;
   title: string;
   manifest: Manifest;
+  /** Folder holding the floors' stored plans as the engine's plan cache (`plansDir` of buildPlans/buildTour). */
+  plansDir: string;
+  /** Floors whose plan was already stored (read on upload or by an earlier build). */
+  storedPlans: string[];
+}
+
+/** Plan id the engine gives a floor: `${propertyId}-${levelId}` (see engine/build-tour.ts). */
+const planIdOf = (propertyId: string, levelId: string) => `${propertyId}-${levelId}`;
+
+/**
+ * Store plans a build had to read (floors whose plan wasn't read on upload), so later builds and
+ * photo tagging use the same rooms. Never overwrites a plan stored meanwhile.
+ */
+export async function saveNewPlans(supabase: Admin, property: Pick<ExportedProperty, "id" | "storedPlans">, plans: FloorPlan[]) {
+  for (const plan of plans) {
+    const levelId = plan.id.slice(property.id.length + 1);
+    if (!plan.id.startsWith(`${property.id}-`) || property.storedPlans.includes(levelId)) continue;
+    await supabase.from("levels").update({ plan: plan as unknown as Json }).eq("id", levelId).is("plan", null);
+  }
 }
 
 /**
@@ -84,7 +103,7 @@ export async function exportProperty(
 ): Promise<ExportedProperty> {
   const { data: p, error } = await supabase
     .from("properties")
-    .select("id, org_id, title, levels ( id, name, sort, floorplan_path ), media ( id, kind, storage_path, level_id, hint, room_type, sort )")
+    .select("id, org_id, title, levels ( id, name, sort, floorplan_path, plan ), media ( id, kind, storage_path, level_id, hint, room_type, sort )")
     .eq("id", propertyId)
     .single();
   if (error || !p) throw new Error(`Property not found: ${error?.message ?? propertyId}`);
@@ -113,7 +132,17 @@ export async function exportProperty(
   );
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify(manifest, null, 2));
-  return { id: p.id, orgId: p.org_id, title: p.title, manifest };
+  // Stored plans go where the engine looks for cached ones, so a build reuses them instead of
+  // reading the drawing again (and keeps the room ids photos may be tagged with).
+  const plansDir = path.join(dir, "plans");
+  fs.mkdirSync(plansDir, { recursive: true });
+  const storedPlans: string[] = [];
+  for (const l of levels) {
+    if (!l.floorplan_path || !l.plan) continue;
+    fs.writeFileSync(path.join(plansDir, `${planIdOf(p.id, l.id)}.json`), JSON.stringify(l.plan));
+    storedPlans.push(l.id);
+  }
+  return { id: p.id, orgId: p.org_id, title: p.title, manifest, plansDir, storedPlans };
 }
 
 /** Store a built tour as the property's next version and make it current. */
