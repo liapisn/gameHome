@@ -2,6 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
+import { MEDIA_BUCKET, thumbPathFor } from "./media-paths";
 
 export type Property = Database["public"]["Tables"]["properties"]["Row"];
 export type Level = Database["public"]["Tables"]["levels"]["Row"];
@@ -48,7 +49,10 @@ export async function listProperties() {
   return data;
 }
 
+export const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 export async function getProperty(id: string) {
+  if (!isUuid(id)) return null;
   const { supabase } = await requireSession();
   const { data, error } = await supabase
     .from("properties")
@@ -59,6 +63,58 @@ export async function getProperty(id: string) {
   if (error) throw error;
   return data;
 }
+
+const SIGNED_URL_TTL = 60 * 60; // 1 hour
+
+/** Property + floors + photos with short-lived signed URLs for display. */
+export async function getPropertyMedia(id: string) {
+  if (!isUuid(id)) return null;
+  const { supabase } = await requireSession();
+  const { data: property, error } = await supabase
+    .from("properties")
+    .select("id, org_id, title, levels ( id, name, sort, floorplan_path ), media ( id, kind, storage_path, level_id, hint, sort, width, height )")
+    .eq("id", id)
+    .order("sort", { referencedTable: "levels" })
+    .order("sort", { referencedTable: "media" })
+    .maybeSingle();
+  if (error) throw error;
+  if (!property) return null;
+
+  const photos = property.media.filter((m) => m.kind === "photo");
+  const paths = [
+    ...photos.flatMap((p) => [p.storage_path, thumbPathFor(p.storage_path)]),
+    ...property.levels.flatMap((l) => (l.floorplan_path ? [l.floorplan_path] : [])),
+  ];
+
+  const urls = new Map<string, string>();
+  if (paths.length) {
+    const { data: signed, error: signError } = await supabase.storage
+      .from(MEDIA_BUCKET)
+      .createSignedUrls(paths, SIGNED_URL_TTL);
+    if (signError) throw signError;
+    for (const s of signed ?? []) if (s.path && s.signedUrl) urls.set(s.path, s.signedUrl);
+  }
+
+  return {
+    id: property.id,
+    orgId: property.org_id,
+    title: property.title,
+    levels: property.levels.map((l) => ({
+      id: l.id,
+      name: l.name,
+      floorplanUrl: l.floorplan_path ? (urls.get(l.floorplan_path) ?? null) : null,
+    })),
+    photos: photos.map((p) => ({
+      id: p.id,
+      levelId: p.level_id,
+      hint: p.hint ?? "",
+      thumbUrl: urls.get(thumbPathFor(p.storage_path)) ?? urls.get(p.storage_path) ?? null,
+      fullUrl: urls.get(p.storage_path) ?? null,
+    })),
+  };
+}
+
+export type PropertyMedia = NonNullable<Awaited<ReturnType<typeof getPropertyMedia>>>;
 
 export function defaultLevelName(index: number) {
   if (index === 0) return "Ground floor";

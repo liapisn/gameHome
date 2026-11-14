@@ -112,7 +112,9 @@ Auth is enforced in `proxy.ts` (Next 16's replacement for middleware) and again 
 | **3. Generate** | `jobs` + worker + Realtime progress; tours table; preview tab | Press Generate → worker runs the engine → preview shows the tour. Uses a stub engine until the engine's `buildTour` lands. |
 | **4. Publish** | Public `/tour/[id]` reads published tours from Supabase | Share link opens without login; unpublishing returns 404 |
 
-**Status (2026-11-14):** Phases 0 and 1 are done. The full schema (all tables, RLS, buckets, the job-claim function, Realtime on `jobs`) is applied to Supabase in Frankfurt. Login, the property list, create (with floors), edit and delete are tested end to end, including a check that a second user can't see the first user's property.
+**Status (2026-11-14):** Phases 0, 1 and 2 are done. Phase 2: floor plan per floor and photo uploads go straight from the browser to Storage after being resized there (photos 2560 px + 480 px thumbnail, plans 4096 px, WebP). Photos keep the order they were picked in, can be reordered by drag or keyboard, and take a floor and room hint. Floors can be added, renamed and deleted; deleting a property removes its files. Tested with the listing-15970 images.
+
+Earlier: Phases 0 and 1. The full schema (all tables, RLS, buckets, the job-claim function, Realtime on `jobs`) is applied to Supabase in Frankfurt. Login, the property list, create (with floors), edit and delete are tested end to end, including a check that a second user can't see the first user's property.
 
 Phases 1–2 don't depend on the engine. Phase 3 starts with a stub `buildTour` that returns the demo tour, so the whole flow works end to end before the real engine is wired in.
 
