@@ -180,29 +180,43 @@ chosen code), and to `ObjectBrief` an optional `fit: "exact"` with `wall: { leng
 
 ### Which Gemini model
 
+Decided with the owner: **the whole pipeline moves to Gemini 4.** Carbon everywhere, except the
+object workers (the third layer), which run on Hydrogen because there are many of them and each
+makes about a dozen calls.
+
 The committed tours and scenes were built with `gemini-3.1-pro-preview` (what `gemini-pro-latest`
-resolved to). Writing an object as code is the hardest thing this pipeline asks of a model, so
-use the strongest one for it and a fast one for the simple checks.
+resolved to). No step should use a Gemini 3 model after this change.
 
-Reported as current in mid-November 2026 (from third-party listings; **confirm the ids against
-the Gemini API's model list with the key before relying on them**):
+Reported as current in mid-November 2026 (from third-party listings; **confirm both ids against
+the Gemini API's model list with the key before anything else**):
 
-| Step | Model | Why |
-|---|---|---|
-| Design sheet, code, revisions | `gemini-4-carbon` | Listed as Google's strongest model (released 2026-11-10) |
-| Object critic | `gemini-4-carbon` | Has to see small differences between renders and photos |
-| Same-object check, turn check | `gemini-4-hydrogen` | Listed as the fast model (released 2026-11-12); these are easy calls |
+| Part | Model |
+|---|---|
+| Floor plan reading, photo placement, room estimates (`build-tour.ts`, `floorplan-parser/`) | `gemini-4-carbon` |
+| Furniture detection, gate, check loop, colour pass (`src/lib/scene/`) | `gemini-4-carbon` |
+| House worker: final check | `gemini-4-carbon` |
+| Room worker: same-object check, turn check, placement | `gemini-4-carbon` |
+| **Object worker: design sheet, code, revisions, object critic** | **`gemini-4-hydrogen`** |
+
+Carbon is listed as Google's strongest model (released 2026-11-10), Hydrogen as the fast one
+(released 2026-11-12).
 
 To make that possible:
 
-- `generateStructured` (`src/lib/ai/structured.ts`) takes an optional `model` per call; today one
-  `GEMINI_MODEL` applies to every call. Add `GEMINI_MODEL_CODE` and `GEMINI_MODEL_FAST` with the
-  defaults above, falling back to `GEMINI_MODEL`.
-- Its `thinkingConfig: { thinkingLevel }` was written for Gemini 3. Check what Gemini 4 accepts.
-- **Bake-off at milestone 3:** build the same sofa with each candidate (`gemini-4-carbon`,
-  `gemini-4-hydrogen`, `gemini-3.1-pro-preview`) and compare the renders side by side. It costs a
-  few minutes of boxd time and settles the choice with evidence. No public benchmark found
-  measures Blender furniture code directly.
+- In `src/lib/ai/structured.ts`, change the default from `gemini-pro-latest` to `gemini-4-carbon`
+  (`GEMINI_MODEL` still overrides it), and let `generateStructured` take an optional `model` per
+  call. The object worker passes `GEMINI_MODEL_OBJECT`, default `gemini-4-hydrogen`.
+- Set `GEMINI_MODEL=gemini-4-carbon` on the Vercel deployment too: tour builds run there.
+- Its `thinkingConfig: { thinkingLevel }` was written for Gemini 3. Check what Gemini 4 accepts
+  with one call before running anything else; a wrong field fails every model call.
+- **Re-check the photo gate.** Its thresholds were chosen from 3.1 Pro's answers. After the
+  switch, run `scripts/eval-gate.mts` on listing-15970 and listing-8218 and confirm it still
+  rejects the wrong photos and keeps the right ones; retune `MAX_OUTSIDE` if not.
+- **Bake-off at milestone 3:** build the same sofa once with `gemini-4-hydrogen` and once with
+  `gemini-4-carbon` and compare the renders side by side. Writing an object as code is the
+  hardest thing this pipeline asks of a model. If Hydrogen's sofa is clearly worse, set
+  `GEMINI_MODEL_OBJECT=gemini-4-carbon`; it is one setting. No public benchmark found measures
+  Blender furniture code directly.
 
 ### Safety
 
