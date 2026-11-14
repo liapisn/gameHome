@@ -35,7 +35,9 @@ export type FurnishingKind =
   | "art"
   | "bistroSet"
   | "railing"
-  | "shelves";
+  | "shelves"
+  /** Anything else seen in a photo: drawn as a labelled box. */
+  | "generic";
 
 export interface Furnishing {
   id: string;
@@ -61,6 +63,10 @@ export interface Furnishing {
   ceiling?: number;
   /** Stands on a balcony slab (drawn slightly below the interior floor). */
   onBalcony?: boolean;
+  /** Main colour ("#rrggbb"), e.g. measured from a photo; overrides the seeded palette. */
+  color?: string;
+  /** Short name of what this is ("corner sofa"), for generic items and debugging. */
+  label?: string;
 }
 
 type Side = "N" | "S" | "W" | "E";

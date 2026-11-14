@@ -2,6 +2,7 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import { demoPlan, type FloorPlan } from "@/lib/floorplan";
+import { isInternalFixturePlan } from "@/lib/internal-fixtures";
 
 const PLANS_DIR = path.join(process.cwd(), "src/data/plans");
 
@@ -23,7 +24,7 @@ function parsedPlanIds(): string[] {
 
 export function listPlanIds({ includePrivate = isDev } = {}): string[] {
   const ids = ["demo", ...parsedPlanIds()];
-  return includePrivate ? ids : ids.filter((id) => id === "demo" || PUBLIC_PLAN_IDS.has(id));
+  return includePrivate ? ids : ids.filter((id) => id === "demo" || PUBLIC_PLAN_IDS.has(id) || isInternalFixturePlan(id));
 }
 
 export function getPlan(id: string): FloorPlan | null {

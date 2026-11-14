@@ -53,6 +53,8 @@ function Ball({ p, r, m }: { p: V3; r: number | V3; m: THREE.Material }) {
 const FABRICS = ["#8a9a8c", "#c9b8a3", "#5f6f7f", "#b7795c", "#d8d0c4", "#6f5f72"];
 const WOODS = ["#a07a55", "#c49a6c", "#7a5a40", "#d6b48c"];
 const pickOf = <T,>(arr: T[], seed: number, k = 0) => arr[Math.floor(seed / (k + 1)) % arr.length];
+/** Main colour of an item: measured from a photo when known, else seeded from the palette. */
+const tone = (f: Furnishing, palette: string[]) => f.color ?? pickOf(palette, f.seed);
 
 const C_DARK = () => mat("#2b2b2e", 0.6);
 const C_METAL = () => mat("#c9ccd0", 0.3, 0.6);
@@ -71,8 +73,8 @@ function Legs({ w, d, h, r = 0.02, inset = 0.06, m }: { w: number; d: number; h:
 
 function Sofa({ f, armchair = false }: { f: Furnishing; armchair?: boolean }) {
   const { w, d } = f;
-  const fabric = mat(pickOf(FABRICS, f.seed), 0.95);
-  const cushion = mat(new THREE.Color(pickOf(FABRICS, f.seed)).offsetHSL(0, 0, 0.06).getStyle(), 0.95);
+  const fabric = mat(tone(f, FABRICS), 0.95);
+  const cushion = mat(new THREE.Color(tone(f, FABRICS)).offsetHSL(0, 0, 0.06).getStyle(), 0.95);
   const arm = 0.16;
   const seats = armchair ? 1 : w > 2 ? 3 : 2;
   const sw = (w - 2 * arm) / seats;
@@ -97,7 +99,7 @@ function Sofa({ f, armchair = false }: { f: Furnishing; armchair?: boolean }) {
 }
 
 function CoffeeTable({ f }: { f: Furnishing }) {
-  const wood = mat(pickOf(WOODS, f.seed), 0.6);
+  const wood = mat(tone(f, WOODS), 0.6);
   return (
     <>
       <B p={[0, f.h - 0.025, 0]} s={[f.w, 0.05, f.d]} m={wood} />
@@ -115,7 +117,7 @@ function Rug({ f }: { f: Furnishing }) {
 }
 
 function TvUnit({ f }: { f: Furnishing }) {
-  const wood = mat(pickOf(WOODS, f.seed), 0.6);
+  const wood = mat(tone(f, WOODS), 0.6);
   return (
     <>
       <B p={[0, 0.27, 0]} s={[f.w, 0.4, f.d]} m={wood} />
@@ -130,7 +132,7 @@ function TvUnit({ f }: { f: Furnishing }) {
 
 function Kitchen({ f }: { f: Furnishing }) {
   const { w, d } = f;
-  const front = mat(pickOf(["#f1eee8", "#5e6e64", "#2f3b4a", "#d9cbb5"], f.seed), 0.55);
+  const front = mat(tone(f, ["#f1eee8", "#5e6e64", "#2f3b4a", "#d9cbb5"]), 0.55);
   const top = mat("#e6e2dc", 0.25);
   const units = Math.max(1, Math.round(w / 0.6));
   const uw = w / units;
@@ -201,7 +203,7 @@ function Chair({ p, rot, wood, seat }: { p: V3; rot: number; wood: THREE.Materia
 }
 
 function DiningTable({ f }: { f: Furnishing }) {
-  const wood = mat(pickOf(WOODS, f.seed), 0.55);
+  const wood = mat(tone(f, WOODS), 0.55);
   const seat = mat(pickOf(FABRICS, f.seed, 1), 0.9);
   const n = f.chairs ?? 4;
   const perSide = Math.min(3, Math.max(1, Math.floor(n / 2)));
@@ -241,13 +243,13 @@ function Pendant({ f }: { f: Furnishing }) {
 }
 
 function Sideboard({ f }: { f: Furnishing }) {
-  const wood = mat(pickOf(WOODS, f.seed), 0.55);
+  const wood = mat(tone(f, WOODS), 0.55);
   return (
     <>
       <B p={[0, f.h / 2 + 0.08, 0]} s={[f.w, f.h - 0.16, f.d]} m={wood} />
       <Legs w={f.w} d={f.d} h={0.16} r={0.02} m={C_DARK()} />
       {[-1, 0, 1].map((i) => (
-        <B key={i} p={[(i * f.w) / 3, f.h / 2 + 0.08, f.d / 2 + 0.003]} s={[f.w / 3 - 0.02, f.h - 0.2, 0.005]} m={mat(new THREE.Color(pickOf(WOODS, f.seed)).offsetHSL(0, 0, -0.05).getStyle(), 0.5)} shadow={false} />
+        <B key={i} p={[(i * f.w) / 3, f.h / 2 + 0.08, f.d / 2 + 0.003]} s={[f.w / 3 - 0.02, f.h - 0.2, 0.005]} m={mat(new THREE.Color(tone(f, WOODS)).offsetHSL(0, 0, -0.05).getStyle(), 0.5)} shadow={false} />
       ))}
       <C p={[-f.w * 0.3, f.h + 0.15, 0]} r={0.08} rTop={0.05} h={0.3} m={mat("#c8643b", 0.3)} />
       <B p={[f.w * 0.2, f.h + 0.03, 0]} s={[0.3, 0.06, 0.22]} m={mat("#2f4858", 0.7)} />
@@ -257,7 +259,7 @@ function Sideboard({ f }: { f: Furnishing }) {
 
 function Bed({ f }: { f: Furnishing }) {
   const { w, d } = f;
-  const wood = mat(pickOf(WOODS, f.seed), 0.6);
+  const wood = mat(tone(f, WOODS), 0.6);
   const linen = mat("#f5f2ec", 0.95);
   const throwM = mat(pickOf(FABRICS, f.seed, 1), 0.95);
   const pillows = w > 1.2 ? [-w / 4, w / 4] : [0];
@@ -277,7 +279,7 @@ function Bed({ f }: { f: Furnishing }) {
 }
 
 function Nightstand({ f }: { f: Furnishing }) {
-  const wood = mat(pickOf(WOODS, f.seed), 0.6);
+  const wood = mat(tone(f, WOODS), 0.6);
   return (
     <>
       <B p={[0, 0.3, 0]} s={[f.w, 0.4, f.d]} m={wood} />
@@ -290,7 +292,7 @@ function Nightstand({ f }: { f: Furnishing }) {
 }
 
 function Wardrobe({ f }: { f: Furnishing }) {
-  const body = mat(pickOf(["#efebe4", "#d9cbb5", "#a07a55"], f.seed), 0.6);
+  const body = mat(tone(f, ["#efebe4", "#d9cbb5", "#a07a55"]), 0.6);
   const doors = Math.max(2, Math.round(f.w / 0.5));
   const dw = f.w / doors;
   return (
@@ -307,8 +309,8 @@ function Wardrobe({ f }: { f: Furnishing }) {
 }
 
 function Desk({ f }: { f: Furnishing }) {
-  const wood = mat(pickOf(WOODS, f.seed), 0.55);
-  const chairSeat = mat(pickOf(FABRICS, f.seed), 0.9);
+  const wood = mat(tone(f, WOODS), 0.55);
+  const chairSeat = mat(tone(f, FABRICS), 0.9);
   return (
     <>
       <B p={[0, f.h - 0.02, 0]} s={[f.w, 0.04, f.d]} m={wood} />
@@ -324,7 +326,7 @@ function Desk({ f }: { f: Furnishing }) {
 
 const BOOK_COLORS = ["#c8643b", "#2f4858", "#e3b04b", "#86a69d", "#8c5e58", "#e9e4da", "#3c4f63"];
 function Bookshelf({ f, books = true }: { f: Furnishing; books?: boolean }) {
-  const wood = mat(pickOf(WOODS, f.seed), 0.6);
+  const wood = mat(tone(f, WOODS), 0.6);
   const shelves = Math.max(3, Math.round(f.h / 0.38));
   const items = useMemo(() => {
     if (!books) return [];
@@ -398,7 +400,7 @@ function Toilet({ f }: { f: Furnishing }) {
 }
 
 function Vanity({ f }: { f: Furnishing }) {
-  const wood = mat(pickOf(WOODS, f.seed), 0.55);
+  const wood = mat(tone(f, WOODS), 0.55);
   return (
     <>
       <B p={[0, 0.55, 0]} s={[f.w, 0.5, f.d]} m={wood} />
@@ -412,7 +414,7 @@ function Vanity({ f }: { f: Furnishing }) {
 }
 
 function Console({ f }: { f: Furnishing }) {
-  const wood = mat(pickOf(WOODS, f.seed), 0.55);
+  const wood = mat(tone(f, WOODS), 0.55);
   return (
     <>
       <B p={[0, f.h - 0.02, 0]} s={[f.w, 0.04, f.d]} m={wood} />
@@ -425,11 +427,11 @@ function Console({ f }: { f: Furnishing }) {
 }
 
 function Bench({ f }: { f: Furnishing }) {
-  const wood = mat(pickOf(WOODS, f.seed), 0.55);
+  const wood = mat(tone(f, WOODS), 0.55);
   return (
     <>
       <B p={[0, f.h - 0.03, 0]} s={[f.w, 0.06, f.d]} m={wood} />
-      <B p={[0, f.h + 0.03, 0]} s={[f.w - 0.05, 0.06, f.d - 0.05]} m={mat(pickOf(FABRICS, f.seed), 0.95)} />
+      <B p={[0, f.h + 0.03, 0]} s={[f.w - 0.05, 0.06, f.d - 0.05]} m={mat(tone(f, FABRICS), 0.95)} />
       <Legs w={f.w} d={f.d} h={f.h - 0.06} r={0.02} m={wood} />
       {/* Coat hooks above */}
       <B p={[0, 1.7, -f.d / 2 + 0.01]} s={[f.w * 0.8, 0.08, 0.02]} m={wood} />
@@ -443,7 +445,7 @@ function Bench({ f }: { f: Furnishing }) {
 
 const POTS = ["#c8643b", "#efe9e1", "#2f4858", "#b5835a"];
 function Plant({ f }: { f: Furnishing }) {
-  const pot = mat(pickOf(POTS, f.seed), 0.7);
+  const pot = mat(tone(f, POTS), 0.7);
   const leaf = mat(pickOf(["#5f7f4f", "#6b8f5e", "#4f6f45"], f.seed, 1), 0.9);
   const r = f.w * 0.4;
   const potH = Math.min(0.4, f.h * 0.3);
@@ -511,6 +513,18 @@ function Railing({ f }: { f: Furnishing }) {
   );
 }
 
+/** Anything without its own model: a softened box in its colour (wall-hung when it has an elevation). */
+function Generic({ f }: { f: Furnishing }) {
+  const m = mat(f.color ?? "#d9d4cc", 0.7);
+  const y = f.elevation ?? f.h / 2;
+  return (
+    <>
+      <B p={[0, y, 0]} s={[f.w, f.h, f.d]} m={m} />
+      <B p={[0, y, f.d / 2 + 0.002]} s={[f.w - 0.04, f.h - 0.04, 0.004]} m={mat(new THREE.Color(f.color ?? "#d9d4cc").offsetHSL(0, 0, -0.06).getStyle(), 0.6)} shadow={false} />
+    </>
+  );
+}
+
 function Item({ f }: { f: Furnishing }) {
   switch (f.kind) {
     case "sofa":
@@ -567,6 +581,8 @@ function Item({ f }: { f: Furnishing }) {
       return <BistroSet />;
     case "railing":
       return <Railing f={f} />;
+    case "generic":
+      return <Generic f={f} />;
   }
 }
 

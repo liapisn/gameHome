@@ -1,0 +1,61 @@
+﻿id,lat,lng,bedrooms,bathrooms,build_year,floor,energy_class,amenities,status,created_at
+20863,38.2429134,21.7422137,3,2,1965,2 levels,"g,e","garden,storage,top_floor",AVAILABLE,1793978264
+20828,38.2588011,21.7460205,2,1,1982,3rd floor,g,"elevator,storage",AVAILABLE,1793792682
+20795,37.979157,23.7678047,2,1,1968,3rd floor,f,"central_heating,a/c,elevator",AVAILABLE,1793711266
+20659,38.2300342,21.7353548,2,1,1981,1st floor,c,"fireplace,a/c,fiber_optics,storage",AVAILABLE,1792665691
+20500,37.9517497,23.6513026,3,1,1996,2nd floor,f,"fiber_optics,storage",AVAILABLE,1791799476
+20471,37.9867996,23.6477084,2,2,1960,2 levels,exempt,"a/c,storage,top_floor,autonomy",AVAILABLE,1791455934
+20419,38.2599222,21.7419089,3,1,1990,6th floor,d,"fireplace,a/c,fiber_optics,elevator,storage,autonomy",AVAILABLE,1791267483
+20414,37.9386412,23.7167949,3,2,2025,2nd floor,a,"fireplace,ev_charger,a/c,fiber_optics,elevator,storage,eco_friendly,autonomy",AVAILABLE,1791214961
+20406,37.9957621,23.7314656,3,2,1974,Ground floor,,"a/c,fiber_optics,elevator,utp_cabling",AVAILABLE,1791214651
+20401,38.0163148,23.8213683,3,3,2010,Ground floor,b,"fireplace,garden,elevator,top_floor,autonomy",AVAILABLE,1791200179
+20371,38.2536341,21.7392203,2,2,1980,2nd floor,d,"central_heating,elevator,autonomy",AVAILABLE,1790936324
+20345,38.0637201,23.7875464,3,1,2006,2nd floor,e,"fireplace,fiber_optics,top_floor,autonomy",AVAILABLE,1790847434
+20331,37.9932611,23.7262835,1,1,1968,Semi-basement,d,"central_heating,a/c,fiber_optics,elevator",AVAILABLE,1790779984
+20268,38.3009361,23.7876111,3,1,2006,1st floor,d,"fireplace,a/c",AVAILABLE,1790583082
+20243,37.921224,23.7004643,1,1,1970,Ground floor,d,"central_heating,a/c,garden,fiber_optics,elevator,autonomy",AVAILABLE,1790335015
+20228,38.0367208,23.7720347,3,2,2006,6th floor,c,"fireplace,a/c,elevator,storage,top_floor,autonomy,furnished",AVAILABLE,1790260682
+20226,38.0427547,23.8254292,5,4,1995,Ground floor,d,"central_heating,fireplace",AVAILABLE,1790259460
+20152,37.047268,25.495224,3,2,1991,1st floor,,"fireplace,storage,top_floor",AVAILABLE,1789987640
+20109,37.9312449,23.6946631,2,1,1980,5th floor,e,"fireplace,a/c,fiber_optics,elevator,autonomy",AVAILABLE,1789662278
+20099,37.6750374,21.4347529,36,36,1980,6th floor,c,"a/c,fiber_optics,elevator,autonomy,furnished",AVAILABLE,1789639850
+20088,37.965082,23.7476534,2,1,1970,Semi-basement,b+,"a/c,fiber_optics,elevator",AVAILABLE,1789567019
+20087,37.9651328,23.7477553,2,1,1970,Semi-basement,b+,"a/c,fiber_optics,elevator",AVAILABLE,1789566978
+20085,38.0033877,23.7236451,2,1,1979,5th floor,g,"a/c,garden,elevator,storage,top_floor",AVAILABLE,1789566638
+19922,38.2355749,21.7278549,3,2,1996,2nd floor,c,"fireplace,a/c,fiber_optics,storage,autonomy",AVAILABLE,1789042441
+19907,38.0132888,23.732263,2,1,1970,2nd floor,d,"central_heating,a/c,elevator,autonomy",AVAILABLE,1788966104
+19906,37.9945818,23.7262091,2,1,1968,2nd floor,c,"central_heating,elevator",AVAILABLE,1788966045
+19881,37.9614725,23.7294587,2,1,1976,3rd floor,d,"a/c,elevator,autonomy",AVAILABLE,1788942166
+19787,38.0262664,23.6875565,2,1,1977,Ground floor,g,"central_heating,a/c",AVAILABLE,1788510773
+19768,38.041919,23.7370168,2,1,,2nd floor,,"a/c,furnished",AVAILABLE,1788441156
+19719,37.9450343,23.7077222,2,1,1962,3rd floor,d,"gas,fireplace,a/c,top_floor,autonomy,furnished",AVAILABLE,1788258482
+19682,38.0013031,23.731132,4,2,1963,3rd floor,f,"central_heating,a/c,elevator",AVAILABLE,1787835171
+19665,38.2754583,21.7545938,2,1,2024,2 levels,a,"a/c,fiber_optics,elevator,storage,eco_friendly",AVAILABLE,1787739535
+19657,38.0124446,23.7310602,3,2,1965,4th floor,pendingissuance,"a/c,elevator,storage,autonomy,furnished",AVAILABLE,1787729939
+18998,37.9589909,23.6355407,2,1,1964,Ground floor,g,"garden,storage",AVAILABLE,1785748665
+18951,37.9138764,23.7511565,3,1,1978,3rd floor,e,"central_heating,fiber_optics,elevator",AVAILABLE,1785421179
+18923,38.0276501,23.8015154,2,1,1974,3rd floor,f,"central_heating,fiber_optics,elevator,storage",AVAILABLE,1785340659
+18896,37.9745685,23.6535908,3,2,1965,Ground floor,f,"a/c,garden,fiber_optics,storage,furnished",AVAILABLE,1785246159
+18799,38.0001833,23.8061173,2,1,1974,Ground floor,,"fiber_optics,elevator",AVAILABLE,1784906833
+18759,38.3675203,24.1839845,0,0,1994,[],f,central_heating,AVAILABLE,1784711047
+18651,36.6875205,23.0433383,0,0,1955,Ground floor,c,,AVAILABLE,1784293137
+18640,37.9721969,23.657306,2,1,1960,1st floor,g,storage,AVAILABLE,1784195569
+18631,38.0235951,24.0078379,4,3,1964,2 levels,,"fireplace,garden,storage,top_floor,autonomy",AVAILABLE,1784119679
+18599,37.9595334,23.201597,2,2,2001,3 levels,d,"central_heating,fireplace,a/c,garden,storage,top_floor,autonomy",AVAILABLE,1783942691
+18536,38.0086722,23.7338503,1,1,1967,Ground floor,b+,"elevator,autonomy",AVAILABLE,1783522142
+18372,38.0495571,23.5383533,3,6,2000,2 levels,"c,e","fireplace,fiber_optics,storage,top_floor,autonomy",AVAILABLE,1782909533
+18334,37.9461045,23.6250602,2,1,2007,4th floor,c,"fiber_optics,elevator,storage,autonomy",AVAILABLE,1782835951
+18277,38.389979,24.1591762,0,0,2004,Ground floor,e,central_heating,AVAILABLE,1782724436
+18045,37.0307941,22.1135716,3,1,1975,1st floor,d,"central_heating,a/c,storage",AVAILABLE,1781701989
+17989,37.9075313,23.7242206,3,2,2010,3rd floor,b,"fireplace,elevator,storage,top_floor,autonomy",AVAILABLE,1781541410
+17977,38.0647,22.647215,2,2,1955,2 levels,d,"central_heating,storage,autonomy",AVAILABLE,1781526941
+17965,37.9680709,23.6427584,2,1,1976,3rd floor,e,"a/c,fiber_optics,elevator,storage",AVAILABLE,1781278825
+17924,37.9573635,23.6485763,4,3,1975,2 levels,g,"garden,top_floor,autonomy",AVAILABLE,1781170393
+17891,38.0074007,23.728024,1,1,2007,2nd floor,c,"a/c,fiber_optics,elevator,storage,autonomy",AVAILABLE,1781022682
+17873,38.0898231,23.7360125,9,3,1987,5 levels,e,"fiber_optics,elevator,top_floor,autonomy",AVAILABLE,1780991627
+17870,37.9597233,23.6493911,2,1,1983,1st floor,d,"a/c,fiber_optics,storage,top_floor,autonomy",AVAILABLE,1780929313
+17866,38.8894083,22.4243262,2,1,2000,Ground floor,e,a/c,AVAILABLE,1780924813
+17863,38.2275467,21.7618177,3,2,2006,3rd floor,d,"central_heating,fireplace,top_floor",AVAILABLE,1780916742
+17846,37.9555055,23.6578861,1,1,1970,1st floor,g,"a/c,fiber_optics,elevator",AVAILABLE,1780663515
+17820,38.0504387,23.5346305,3,2,1992,Ground floor,e,"a/c,garden,top_floor,autonomy",AVAILABLE,1780644973
+17813,35.2850835,24.3350539,15,4,2008,Ground floor,c,,AVAILABLE,1780560969

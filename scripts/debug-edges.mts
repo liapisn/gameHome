@@ -8,12 +8,12 @@ import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import type { FloorPlan } from "../src/lib/floorplan";
+import { photoCamera } from "../src/lib/scene/project";
 import type { Tour } from "../src/lib/tour/types";
 
 const [tourId, outDir, ...ids] = process.argv.slice(2);
 const tour: Tour = JSON.parse(fs.readFileSync(`src/data/tours/${tourId}.json`, "utf8"));
 fs.mkdirSync(outDir, { recursive: true });
-const DEG = Math.PI / 180;
 const W = 1200;
 
 for (const photo of tour.photos.filter((p) => p.pose && p.roomId && (!ids.length || ids.includes(p.id)))) {
@@ -23,15 +23,10 @@ for (const photo of tour.photos.filter((p) => p.pose && p.roomId && (!ids.length
   const pose = photo.pose!;
   const ceiling = photo.fit?.ceiling ?? plan.ceilingHeight;
   const H = Math.round((W * photo.height) / photo.width);
-  const horizon = pose.horizon ?? 0.5;
-  const tH = Math.tan((pose.hfov * DEG) / 2);
+  const cam = photoCamera(pose, photo.height / photo.width);
   const proj = (p: [number, number, number]) => {
-    const dx = p[0] - pose.x;
-    const dy = p[1] - pose.y;
-    const f = dx * Math.cos(pose.yaw * DEG) + dy * Math.sin(pose.yaw * DEG);
-    if (f < 0.15) return null;
-    const l = -dx * Math.sin(pose.yaw * DEG) + dy * Math.cos(pose.yaw * DEG);
-    return [(0.5 + (0.5 * l) / (f * tH)) * W, (horizon + (0.5 * (pose.height - p[2])) / (f * tH * (H / W))) * H];
+    const uv = cam.project(p);
+    return uv && [uv[0] * W, uv[1] * H];
   };
   let svg = "";
   const seg = (a: [number, number, number], b: [number, number, number], color: string) => {

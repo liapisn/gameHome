@@ -1,0 +1,193 @@
+{
+  "parsed": {
+    "levelName": "Level 1",
+    "scaleMethod": "printed_dimensions",
+    "rooms": [
+      {
+        "name": "BATHROOM",
+        "type": "bathroom",
+        "labeledWidth": 1.57,
+        "labeledDepth": 1.57,
+        "polygon": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 1.57,
+            "y": 0
+          },
+          {
+            "x": 1.57,
+            "y": 1.57
+          },
+          {
+            "x": 0,
+            "y": 1.57
+          }
+        ]
+      },
+      {
+        "name": "BALCONY",
+        "type": "balcony",
+        "labeledWidth": 2.71,
+        "labeledDepth": 2.3,
+        "polygon": [
+          {
+            "x": 3.01,
+            "y": -2.3
+          },
+          {
+            "x": 5.72,
+            "y": -2.3
+          },
+          {
+            "x": 5.72,
+            "y": 0
+          },
+          {
+            "x": 3.01,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "name": "LIVING/DINING ROOM",
+        "type": "living",
+        "labeledWidth": 4.15,
+        "labeledDepth": 3.31,
+        "polygon": [
+          {
+            "x": 1.57,
+            "y": 0
+          },
+          {
+            "x": 5.72,
+            "y": 0
+          },
+          {
+            "x": 5.72,
+            "y": 3.31
+          },
+          {
+            "x": 1.57,
+            "y": 3.31
+          }
+        ]
+      },
+      {
+        "name": "KITCHEN / ENTRY",
+        "type": "kitchen",
+        "labeledWidth": 1.84,
+        "labeledDepth": 3.04,
+        "polygon": [
+          {
+            "x": 3.88,
+            "y": 3.31
+          },
+          {
+            "x": 5.72,
+            "y": 3.31
+          },
+          {
+            "x": 5.72,
+            "y": 6.35
+          },
+          {
+            "x": 3.88,
+            "y": 6.35
+          }
+        ]
+      },
+      {
+        "name": "BEDROOM",
+        "type": "bedroom",
+        "labeledWidth": 3.12,
+        "labeledDepth": 4.69,
+        "polygon": [
+          {
+            "x": 0,
+            "y": 1.57
+          },
+          {
+            "x": 1.57,
+            "y": 1.57
+          },
+          {
+            "x": 1.57,
+            "y": 3.31
+          },
+          {
+            "x": 3.88,
+            "y": 3.31
+          },
+          {
+            "x": 3.88,
+            "y": 6.35
+          },
+          {
+            "x": 0,
+            "y": 6.35
+          }
+        ]
+      }
+    ],
+    "openings": [
+      {
+        "kind": "door",
+        "x": 1.57,
+        "y": 1.2,
+        "width": 0.8,
+        "note": "Living room to bathroom"
+      },
+      {
+        "kind": "door",
+        "x": 1.57,
+        "y": 2.5,
+        "width": 0.8,
+        "note": "Living room to bedroom"
+      },
+      {
+        "kind": "opening",
+        "x": 5.2,
+        "y": 3.31,
+        "width": 1,
+        "note": "Living room to kitchen/entry"
+      },
+      {
+        "kind": "door",
+        "x": 5.3,
+        "y": 6.35,
+        "width": 0.9,
+        "note": "Main entrance door"
+      },
+      {
+        "kind": "door",
+        "x": 4.36,
+        "y": 0,
+        "width": 2,
+        "note": "Living room to balcony sliding door"
+      },
+      {
+        "kind": "window",
+        "x": 1.94,
+        "y": 6.35,
+        "width": 1.5,
+        "note": "Bedroom south window"
+      },
+      {
+        "kind": "window",
+        "x": 0.8,
+        "y": 0,
+        "width": 0.6,
+        "note": "Bathroom north window"
+      }
+    ],
+    "warnings": [
+      "Bedroom width is labeled as 3.12m, but derived as 3.88m to maintain a continuous, rectangular building footprint matching the top width (5.72m) minus the kitchen width (1.84m). Using derived coordinates.",
+      "Bedroom depth is labeled as 4.69m, but derived total span in its L-shape is 4.78m. Using derived coordinates to perfectly neighbor adjacent rooms."
+    ]
+  },
+  "model": "gemini-3.1-pro-preview",
+  "parsedAt": "2026-11-14T16:07:40.491Z"
+}

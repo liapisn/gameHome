@@ -1,0 +1,135 @@
+{
+  "tourId": "listing-8218",
+  "levelId": "main",
+  "roomId": "r0",
+  "roomName": "Bathroom",
+  "look": {
+    "floor": "#352520",
+    "walls": "#c4a484"
+  },
+  "items": [
+    {
+      "id": "generic-1",
+      "kind": "generic",
+      "label": "mirror cabinet",
+      "x": 0.25,
+      "y": 3.492,
+      "rot": 1.571,
+      "w": 0.094,
+      "d": 0.5,
+      "h": 0.236,
+      "seed": 754479355,
+      "color": "#e0e0e0",
+      "material": "glass",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "09",
+        "10"
+      ],
+      "detections": [
+        "09:0",
+        "10:3"
+      ],
+      "confidence": 0.64,
+      "elevation": 1.38
+    },
+    {
+      "id": "vanity-1",
+      "kind": "vanity",
+      "label": "vanity unit",
+      "x": 0.24,
+      "y": 3.44,
+      "rot": 1.571,
+      "w": 0.433,
+      "d": 0.48,
+      "h": 0.242,
+      "seed": 2221956151,
+      "color": "#d01010",
+      "material": "plastic",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "09"
+      ],
+      "detections": [
+        "09:2"
+      ],
+      "confidence": 0.3,
+      "elevation": 1.12
+    },
+    {
+      "id": "generic-2",
+      "kind": "generic",
+      "label": "tall cabinet",
+      "x": 0.334,
+      "y": 2.45,
+      "rot": 0,
+      "w": 0.669,
+      "d": 0.3,
+      "h": 2.266,
+      "seed": 3075629634,
+      "color": "#a01010",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "09"
+      ],
+      "detections": [
+        "09:1"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "id": "r0-toilet-0",
+      "kind": "toilet",
+      "x": 1.16,
+      "y": 2.675,
+      "rot": -1.571,
+      "w": 0.42,
+      "d": 0.66,
+      "h": 0.8,
+      "seed": 3265848378,
+      "label": "toilet",
+      "source": "rules",
+      "seenIn": [],
+      "detections": [],
+      "confidence": 0.3
+    }
+  ],
+  "photos": [
+    {
+      "id": "07",
+      "gate": "fail",
+      "reason": "3/3 floor contacts land outside the room"
+    },
+    {
+      "id": "09",
+      "gate": "pass",
+      "reason": "geometric checks only"
+    },
+    {
+      "id": "10",
+      "gate": "pass",
+      "reason": "geometric checks only"
+    }
+  ],
+  "score": 0.173,
+  "rounds": [
+    {
+      "round": 0,
+      "score": 0.173,
+      "kept": true,
+      "changes": 0
+    },
+    {
+      "round": 1,
+      "score": 0.087,
+      "kept": false,
+      "changes": 8
+    }
+  ],
+  "model": "gemini-3.1-pro-preview",
+  "builtAt": "2026-11-14T16:22:24.503Z"
+}

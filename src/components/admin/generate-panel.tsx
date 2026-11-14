@@ -17,6 +17,7 @@ const STEPS: Record<NonNullable<JobProgress["step"]>, string> = {
   plans: "Reading floor plans",
   photos: "Placing photos",
   poses: "Solving camera positions",
+  furnish: "Furnishing rooms from photos",
   done: "Finishing",
 };
 

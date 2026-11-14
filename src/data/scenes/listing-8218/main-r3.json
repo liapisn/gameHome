@@ -1,0 +1,111 @@
+{
+  "tourId": "listing-8218",
+  "levelId": "main",
+  "roomId": "r3",
+  "roomName": "Kitchen / Entry",
+  "look": {
+    "floor": "#5C3A21",
+    "walls": "#B03038"
+  },
+  "items": [
+    {
+      "id": "generic-1",
+      "kind": "generic",
+      "label": "wall cabinets",
+      "x": 4.13,
+      "y": 7.914,
+      "rot": 1.571,
+      "w": 1.471,
+      "d": 0.5,
+      "h": 0.676,
+      "seed": 2881868649,
+      "color": "#151515",
+      "material": "glass",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "04"
+      ],
+      "detections": [
+        "04:2"
+      ],
+      "confidence": 0.47,
+      "elevation": 1.999
+    },
+    {
+      "id": "fridge-1",
+      "kind": "fridge",
+      "label": "fridge",
+      "x": 4.075,
+      "y": 6.333,
+      "rot": 1.571,
+      "w": 0.65,
+      "d": 0.39,
+      "h": 2.315,
+      "seed": 3599743835,
+      "color": "#a0a4a8",
+      "material": "metal",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "03"
+      ],
+      "detections": [
+        "03:0"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "id": "sofa-1",
+      "kind": "sofa",
+      "label": "sofa",
+      "x": 4.481,
+      "y": 6.06,
+      "rot": 0,
+      "w": 1.201,
+      "d": 0.9,
+      "h": 0.362,
+      "seed": 3332815207,
+      "color": "#e8e5df",
+      "material": "fabric",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "03"
+      ],
+      "detections": [
+        "03:1"
+      ],
+      "confidence": 0.3
+    }
+  ],
+  "photos": [
+    {
+      "id": "03",
+      "gate": "pass",
+      "reason": "geometric checks only"
+    },
+    {
+      "id": "04",
+      "gate": "pass",
+      "reason": "geometric checks only"
+    }
+  ],
+  "score": 0.111,
+  "rounds": [
+    {
+      "round": 0,
+      "score": 0.111,
+      "kept": true,
+      "changes": 0
+    },
+    {
+      "round": 1,
+      "score": 0.043,
+      "kept": false,
+      "changes": 7
+    }
+  ],
+  "model": "gemini-3.1-pro-preview",
+  "builtAt": "2026-11-14T16:21:49.339Z"
+}
