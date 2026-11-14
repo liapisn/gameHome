@@ -3,12 +3,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { CameraControls } from "@react-three/drei";
 import { type Room, interiorArea, planBounds, polygonArea, polygonCentroid } from "@/lib/floorplan";
 import { EYE_HEIGHT, framingPitch, toWorld, vfovOf } from "@/lib/tour/space";
 import { type ResolvedTour, type TourPhoto, roomKey } from "@/lib/tour/types";
+import { BALCONY_DROP } from "@/lib/dollhouse-geometry";
+import { furnishPlan, roomViewpoint } from "@/lib/tour/furnish";
 import { Dollhouse, type DollhouseLook } from "./Dollhouse";
+import { Furnishings } from "./Furnishings";
+import { Surroundings } from "./Surroundings";
 import { ProjectedPhoto } from "./ProjectedPhoto";
 import { type WalkTarget, WalkRig } from "./WalkRig";
 
@@ -22,7 +27,7 @@ interface RoomRef {
 
 const ACCENT = "#c8643b";
 
-export function TourViewer({ tour }: { tour: ResolvedTour }) {
+export function TourViewer({ tour, embedded = false }: { tour: ResolvedTour; embedded?: boolean }) {
   const controls = useRef<CameraControls | null>(null);
   const labelRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -33,6 +38,8 @@ export function TourViewer({ tour }: { tour: ResolvedTour }) {
   const [walkTarget, setWalkTarget] = useState<WalkTarget | null>(null);
   const [walkLevelId, setWalkLevelId] = useState<string>(tour.levels[0].id);
   const [lightbox, setLightbox] = useState<TourPhoto | null>(null);
+  // Virtual staging: on by default when there are no photos to show the real rooms.
+  const [staged, setStaged] = useState(tour.photos.length === 0);
 
   const levelById = useMemo(() => new Map(tour.levels.map((l) => [l.id, l])), [tour.levels]);
   const posed = useMemo(() => tour.photos.filter((p) => p.pose && p.levelId && p.roomId), [tour.photos]);
@@ -78,6 +85,16 @@ export function TourViewer({ tour }: { tour: ResolvedTour }) {
     return out;
   }, [tour.levels, tour.looks]);
 
+  // Rooms shown through their photos stay empty, so furniture never hides the projected photo.
+  const furnishings = useMemo(() => {
+    const out: Record<string, ReturnType<typeof furnishPlan>> = {};
+    for (const l of tour.levels) {
+      const photographed = new Set(posed.filter((p) => p.levelId === l.id).map((p) => p.roomId!));
+      out[l.id] = furnishPlan(l.plan, photographed);
+    }
+    return out;
+  }, [tour.levels, posed]);
+
   const roomPhotos = useCallback(
     (ref: RoomRef) => posed.filter((p) => p.levelId === ref.levelId && p.roomId === ref.roomId),
     [posed],
@@ -113,20 +130,31 @@ export function TourViewer({ tour }: { tour: ResolvedTour }) {
       if (best) return goToPhoto(best);
       const level = levelById.get(ref.levelId)!;
       const room = level.plan.rooms.find((r) => r.id === ref.roomId)!;
-      const xs = room.polygon.map((p) => p[0]);
-      const ys = room.polygon.map((p) => p[1]);
-      const wide = Math.max(...xs) - Math.min(...xs) >= Math.max(...ys) - Math.min(...ys);
       setMode("walk");
       setWalkLevelId(level.id);
       setActivePhotoId(null);
       setActiveRoom(ref);
+      // Furnished: stand in a clear corner and look across the room, slightly down at the furniture.
+      const view = staged ? roomViewpoint(room, furnishings[level.id]) : null;
+      if (view) {
+        setWalkTarget({
+          position: toWorld(level, view.point, EYE_HEIGHT).toArray() as [number, number, number],
+          yaw: view.yaw,
+          pitch: -12,
+          key: ++moveKey.current,
+        });
+        return;
+      }
+      const xs = room.polygon.map((p) => p[0]);
+      const ys = room.polygon.map((p) => p[1]);
+      const wide = Math.max(...xs) - Math.min(...xs) >= Math.max(...ys) - Math.min(...ys);
       setWalkTarget({
         position: toWorld(level, polygonCentroid(room.polygon), EYE_HEIGHT).toArray() as [number, number, number],
         yaw: wide ? 0 : 90,
         key: ++moveKey.current,
       });
     },
-    [roomPhotos, goToPhoto, levelById],
+    [roomPhotos, goToPhoto, levelById, staged, furnishings],
   );
 
   const flyToRoom = useCallback(
@@ -209,10 +237,17 @@ export function TourViewer({ tour }: { tour: ResolvedTour }) {
   const totalArea = tour.levels.reduce((s, l) => s + interiorArea(l.plan), 0);
   const bedrooms = tour.levels.reduce((s, l) => s + l.plan.rooms.filter((r) => r.type === "bedroom").length, 0);
   const isParsed = tour.levels.some((l) => l.plan.source?.kind === "parsed");
-  const thumb = (p: TourPhoto) => (tour.mediaUrl ? `${tour.mediaUrl}/thumb/${p.src}` : null);
+  const photoUrl = (p: TourPhoto, kind: "view" | "thumb") =>
+    tour.photoUrls?.[p.src]?.[kind] ?? (tour.mediaUrl ? `${tour.mediaUrl}/${kind}/${p.src}` : null);
+  const thumb = (p: TourPhoto) => photoUrl(p, "thumb");
+  const activeUrl = activePhoto ? photoUrl(activePhoto, "view") : null;
 
   return (
-    <div className="relative flex h-dvh w-full flex-col bg-[#f3efe8] md:flex-row">
+    <div
+      className={`relative flex w-full flex-col bg-[#f3efe8] md:flex-row ${
+        embedded ? "h-[calc(100dvh-13rem)] min-h-[560px] overflow-hidden rounded-2xl border border-black/10" : "h-dvh"
+      }`}
+    >
       <aside className="order-2 flex max-h-[42dvh] flex-col gap-4 overflow-y-auto border-t border-black/10 bg-[#fbf9f5] p-5 md:order-1 md:max-h-none md:w-80 md:border-t-0 md:border-r">
         <Link href="/" className="text-sm font-semibold tracking-tight text-neutral-900">
           gameHome
@@ -247,6 +282,21 @@ export function TourViewer({ tour }: { tour: ResolvedTour }) {
             </button>
           ))}
         </div>
+
+        <label className="flex cursor-pointer items-center justify-between rounded-lg border border-black/10 px-3 py-2 text-sm text-neutral-800">
+          <span>
+            Furnish rooms
+            <span className="block text-xs text-neutral-500">
+              {tour.photos.length ? "Rooms without photos" : "Virtual staging"}
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={staged}
+            onChange={(e) => setStaged(e.target.checked)}
+            className="h-4 w-4 accent-[#c8643b]"
+          />
+        </label>
 
         {tour.levels.length > 1 && mode === "dollhouse" && (
           <div className="flex flex-wrap gap-1 text-xs font-medium">
@@ -368,6 +418,9 @@ export function TourViewer({ tour }: { tour: ResolvedTour }) {
             <object3D attach="target" position={[center.x, bounds.min.y, center.z]} />
           </directionalLight>
 
+          {mode === "walk" && <Surroundings bounds={bounds} />}
+          {staged && <RoomEnvironmentMap />}
+
           {mode === "dollhouse" && (
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[center.x, bounds.min.y - 0.06, center.z]} receiveShadow>
               <planeGeometry args={[80, 80]} />
@@ -383,7 +436,9 @@ export function TourViewer({ tour }: { tour: ResolvedTour }) {
                 onFloorClick={(room, e) => onFloorClick(level, room, e)}
                 look={looks[level.id]}
                 ceilings={mode === "walk"}
+                staged={staged}
               />
+              {staged && <Furnishings items={furnishings[level.id]} balconyDrop={BALCONY_DROP} />}
             </group>
           ))}
 
@@ -394,13 +449,13 @@ export function TourViewer({ tour }: { tour: ResolvedTour }) {
             compact={mode === "walk"}
           />
 
-          {mode === "walk" && activePhoto && tour.mediaUrl && (
+          {mode === "walk" && activePhoto && activeUrl && (
             <ProjectedPhoto
               key={activePhoto.id}
               level={levelById.get(activePhoto.levelId!)!}
               plan={levelById.get(activePhoto.levelId!)!.plan}
               photo={activePhoto}
-              url={`${tour.mediaUrl}/view/${activePhoto.src}`}
+              url={activeUrl}
             />
           )}
 
@@ -473,9 +528,9 @@ export function TourViewer({ tour }: { tour: ResolvedTour }) {
             onClick={() => setLightbox(null)}
             className="absolute inset-0 z-10 flex cursor-zoom-out flex-col items-center justify-center gap-3 bg-black/85 p-6"
           >
-            {tour.mediaUrl && (
+            {photoUrl(lightbox, "view") && (
               // eslint-disable-next-line @next/next/no-img-element -- dev-only fixture media, not optimisable
-              <img src={`${tour.mediaUrl}/view/${lightbox.src}`} alt={lightbox.caption} className="max-h-[85%] max-w-full rounded-lg object-contain" />
+              <img src={photoUrl(lightbox, "view")!} alt={lightbox.caption} className="max-h-[85%] max-w-full rounded-lg object-contain" />
             )}
             <span className="text-sm text-white/85">{lightbox.caption || lightbox.location}</span>
           </button>
@@ -571,6 +626,25 @@ function Hotspots({
       })}
     </group>
   );
+}
+
+/** Soft reflections for staged furniture (metal, ceramics), from a local procedural room. No network. */
+function RoomEnvironmentMap() {
+  // Read three.js objects through get(): they are mutated, not rendered.
+  const get = useThree((s) => s.get);
+  useEffect(() => {
+    const { gl, scene } = get();
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = env;
+    scene.environmentIntensity = 0.35;
+    return () => {
+      scene.environment = null;
+      env.dispose();
+      pmrem.dispose();
+    };
+  }, [get]);
+  return null;
 }
 
 /** Points the default controls at the plan once they're registered in the R3F store. */
