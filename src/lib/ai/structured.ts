@@ -82,16 +82,22 @@ async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
     generationConfig: {
       responseMimeType: "application/json",
       responseJsonSchema: geminiSchema(req.schema),
-      // Gemini 4 accepts low, medium and high (not minimal).
-      thinkingConfig: { thinkingLevel: req.effort ?? "high" },
+      // Gemini 4 accepts low, medium and high (not minimal). Thought summaries are streamed (and
+      // skipped below) because without them nothing, not even headers, arrives until thinking ends:
+      // past fetch's 5-minute header timeout on long calls.
+      thinkingConfig: { thinkingLevel: req.effort ?? "high", includeThoughts: true },
     },
   };
 
   let lastError: unknown;
   for (let attempt = 0; attempt < 4; attempt++) {
-    const backoff = () => new Promise((r) => setTimeout(r, 2000 * 2 ** attempt));
-    // Streamed (SSE): Gemini 4 at high thinking can take over 5 minutes before its first byte,
-    // longer than fetch's header timeout; a stream sends headers at once.
+    const backoff = () => {
+      // One line per retry, so a slow step says what is happening instead of going quiet.
+      console.warn(`gemini ${model}: attempt ${attempt + 1} failed (${String((lastError as Error)?.message ?? lastError).slice(0, 160)}); retrying`);
+      return new Promise((r) => setTimeout(r, 2000 * 2 ** attempt));
+    };
+    // Streamed (SSE) with thought summaries: data flows while the model thinks, so long calls stay
+    // inside fetch's header and body timeouts.
     let res: Response;
     try {
       res = await fetch(`${GEMINI_URL}/${model}:streamGenerateContent?alt=sse`, {
