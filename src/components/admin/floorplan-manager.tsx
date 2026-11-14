@@ -224,7 +224,13 @@ function LevelCard({
             </h3>
             <button
               type="button"
-              onClick={read}
+              onClick={() => {
+                if (
+                  !level.plan ||
+                  confirm("Read the plan again? Room names you fixed are replaced, and photos tagged with a room on this floor lose that tag.")
+                )
+                  void read();
+              }}
               disabled={status === "reading"}
               className="rounded-lg border border-black/15 px-3 py-1 text-xs font-medium hover:bg-black/5 disabled:opacity-60"
             >
@@ -232,7 +238,7 @@ function LevelCard({
             </button>
           </div>
           {status === "reading" ? (
-            <p className="text-xs text-neutral-500">This takes a minute or two. Reading again replaces any names you fixed.</p>
+            <p className="text-xs text-neutral-500">This takes a minute or two.</p>
           ) : level.plan ? (
             <PlanRooms plan={level.plan} onRename={onRenameRoom} onRetype={onRetype} />
           ) : (

@@ -49,8 +49,8 @@ export interface TourPhoto {
   confidence: "high" | "medium" | "low";
   pose: PhotoPose | null;
   fit: PoseFit | null;
-  /** What the owner said about the photo: the floor they filed it under and the kind of room. */
-  owner?: { levelId?: string; roomType?: RoomType };
+  /** What the owner said about the photo: the floor they filed it under, the kind of room, the room on the plan. */
+  owner?: { levelId?: string; roomType?: RoomType; roomId?: string };
 }
 
 export interface RoomLook {

@@ -83,6 +83,39 @@ export function polygonCentroid(poly: Point[]): Point {
   return [x, y];
 }
 
+/** Room kinds that share one space without a wall when they touch (a living room running into the kitchen). */
+const SHARED_SPACE: RoomType[][] = [["living", "dining", "kitchen"], ["hallway", "stairs"]];
+
+function segmentGap(p: Point, a: Point, b: Point) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy || 1)));
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+}
+
+/** Do two room outlines touch (within `tol` metres)? */
+function roomsTouch(a: Point[], b: Point[], tol = 0.3) {
+  const near = (pts: Point[], poly: Point[]) =>
+    pts.some((p) => poly.some((q, i) => segmentGap(p, q, poly[(i + 1) % poly.length]) <= tol));
+  return near(a, b) || near(b, a);
+}
+
+/**
+ * Rooms a photo the owner tagged with `roomId` may be placed in: that room, and touching rooms it
+ * shares one open space with (the boundary between a living area and its kitchen is a judgement
+ * call, so a photo there may land on either side). Empty when the room isn't on the plan.
+ */
+export function ownerRoomIds(plan: FloorPlan, roomId: string): Set<string> {
+  const room = plan.rooms.find((r) => r.id === roomId);
+  if (!room) return new Set();
+  const group = SHARED_SPACE.find((g) => g.includes(room.type));
+  const ids = new Set([room.id]);
+  if (group) {
+    for (const r of plan.rooms) if (r.id !== room.id && group.includes(r.type) && roomsTouch(room.polygon, r.polygon)) ids.add(r.id);
+  }
+  return ids;
+}
+
 export function planBounds(plan: FloorPlan) {
   const pts = plan.rooms.flatMap((r) => r.polygon);
   const xs = pts.map((p) => p[0]);

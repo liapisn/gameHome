@@ -10,7 +10,7 @@
  */
 import fs from "node:fs";
 import * as THREE from "three";
-import type { FloorPlan } from "../src/lib/floorplan";
+import { type FloorPlan, ownerRoomIds } from "../src/lib/floorplan";
 import {
   fitSize, KIND_LIMITS, KIND_SIZE, kindFitsRoom, liftDetection, mergeCandidates, normaliseLabel, screenItems, type Candidate,
 } from "../src/lib/scene/lift";
@@ -228,6 +228,10 @@ console.log("\nmerging and screening");
 
   check(!kindFitsRoom("sofa", "bathroom") && !kindFitsRoom("bed", "bathroom") && !kindFitsRoom("bathtub", "kitchen"), "no sofa or bed in a bathroom, no bathtub in a kitchen");
   check(kindFitsRoom("sofa", "kitchen") && kindFitsRoom("diningTable", "living") && kindFitsRoom("bed", "office") && kindFitsRoom("plant", "bathroom"), "open-plan partners and anywhere-kinds fit");
+
+  const ids = (id: string) => [...ownerRoomIds(plan, id)].sort().join(",");
+  check(ids("r11") === "r10,r11" && ids("r2") === "r2" && ids("r7") === "r12,r7" && ids("nope") === "",
+    `owner's room: living room spans into the dining room, bathroom alone, hall with stairs (${ids("r11")} · ${ids("r2")} · ${ids("r7")})`);
 
   const item = (kind: string, confidence: number, builtIn = false) => ({ ...pair[0], id: `${kind}-x`, kind: kind as PhotoDetection["kind"], confidence, builtIn });
   const s = screenItems([item("sofa", 0.9), item("toilet", 0.9), item("armchair", 0.3), item("vanity", 0.3, true), item("armchair", 0.45)], "bathroom");
