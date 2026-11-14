@@ -13,6 +13,7 @@ import { BALCONY_DROP } from "@/lib/dollhouse-geometry";
 import { type Furnishing, furnishPlan, roomViewpoint } from "@/lib/tour/furnish";
 import { Dollhouse, type DollhouseLook } from "./Dollhouse";
 import { Furnishings } from "./Furnishings";
+import { RoomModel } from "./RoomModel";
 import { Surroundings } from "./Surroundings";
 import { ProjectedPhoto } from "./ProjectedPhoto";
 import { type WalkTarget, WalkRig } from "./WalkRig";
@@ -94,14 +95,17 @@ export function TourViewer({ tour, embedded = false }: { tour: ResolvedTour; emb
     const out: Record<string, Furnishing[]> = {};
     for (const l of tour.levels) {
       const photographed = new Set(posed.filter((p) => p.levelId === l.id).map((p) => p.roomId!));
-      for (const r of l.plan.rooms) if (tour.scenes?.[roomKey(l.id, r.id)]) photographed.add(r.id);
+      for (const r of l.plan.rooms) if (tour.scenes?.[roomKey(l.id, r.id)] || tour.roomModels?.[roomKey(l.id, r.id)]) photographed.add(r.id);
       out[l.id] = [
         ...furnishPlan(l.plan, photographed),
-        ...l.plan.rooms.flatMap((r) => (tour.scenes?.[roomKey(l.id, r.id)] ?? []).map((f) => ({ ...f, id: `${r.id}:${f.id}` }))),
+        // Rooms with generated models draw those instead of their boxes.
+        ...l.plan.rooms
+          .filter((r) => !tour.roomModels?.[roomKey(l.id, r.id)])
+          .flatMap((r) => (tour.scenes?.[roomKey(l.id, r.id)] ?? []).map((f) => ({ ...f, id: `${r.id}:${f.id}` }))),
       ];
     }
     return out;
-  }, [tour.levels, tour.scenes, posed]);
+  }, [tour.levels, tour.scenes, tour.roomModels, posed]);
 
   const roomPhotos = useCallback(
     (ref: RoomRef) => posed.filter((p) => p.levelId === ref.levelId && p.roomId === ref.roomId),
@@ -460,6 +464,13 @@ export function TourViewer({ tour, embedded = false }: { tour: ResolvedTour; emb
                   balconyDrop={BALCONY_DROP}
                 />
               )}
+              {staged &&
+                level.plan.rooms.map((r) => {
+                  const url = tour.roomModels?.[roomKey(level.id, r.id)];
+                  // The projected photo already shows its room's real furniture.
+                  const hidden = showPhoto && activePhoto?.levelId === level.id && activePhoto.roomId === r.id;
+                  return url && !hidden ? <RoomModel key={r.id} url={url} /> : null;
+                })}
             </group>
           ))}
 

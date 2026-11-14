@@ -92,6 +92,8 @@ export interface ResolvedTour extends Omit<Tour, "levels"> {
   photoUrls?: Record<string, { view: string; thumb: string }>;
   /** Furniture reconstructed from photos, keyed by roomKey (see lib/scene); replaces rule-based staging there. */
   scenes?: Record<string, Furnishing[]>;
+  /** Generated 3D models of a room's furniture (URL of its .glb), keyed by roomKey; replaces that room's boxes. */
+  roomModels?: Record<string, string>;
 }
 
 export const roomKey = (levelId: string, roomId: string) => `${levelId}/${roomId}`;
