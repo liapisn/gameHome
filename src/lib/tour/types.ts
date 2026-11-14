@@ -85,6 +85,8 @@ export interface ResolvedTour extends Omit<Tour, "levels"> {
   levels: (TourLevel & { plan: FloorPlan })[];
   /** URL prefix photos are served from, or null when media can't be served (e.g. production). */
   mediaUrl: string | null;
+  /** Per-photo URLs keyed by `src` (e.g. signed Storage URLs); takes precedence over `mediaUrl`. */
+  photoUrls?: Record<string, { view: string; thumb: string }>;
 }
 
 export const roomKey = (levelId: string, roomId: string) => `${levelId}/${roomId}`;

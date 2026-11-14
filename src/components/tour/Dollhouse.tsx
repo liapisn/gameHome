@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
-import { type FloorPlan, type Room, type Wall } from "@/lib/floorplan";
+import { type FloorPlan, type Room, type RoomType, type Wall } from "@/lib/floorplan";
 import {
   BALCONY_DROP,
   CEILING_COLOR,
@@ -11,6 +11,21 @@ import {
   wallBoxes,
   wallFrame,
 } from "@/lib/dollhouse-geometry";
+import { type FloorFinish, floorTexture } from "./textures";
+
+/** Staged floors: a finish per room type, tinted with a realistic base color. */
+const STAGED_FLOORS: Record<RoomType, { finish: FloorFinish; color: string }> = {
+  living: { finish: "wood", color: "#d6ad80" },
+  dining: { finish: "wood", color: "#d6ad80" },
+  bedroom: { finish: "wood", color: "#dcb98f" },
+  office: { finish: "wood", color: "#d6ad80" },
+  hallway: { finish: "wood", color: "#d6ad80" },
+  stairs: { finish: "wood", color: "#c99e72" },
+  kitchen: { finish: "tile", color: "#e4ded4" },
+  bathroom: { finish: "tile", color: "#dfe4e6" },
+  balcony: { finish: "terracotta", color: "#cf9270" },
+  storage: { finish: "concrete", color: "#cfcac2" },
+};
 
 export interface DollhouseLook {
   /** Floor color per room id, e.g. sampled from the room's photos. */
@@ -58,14 +73,17 @@ function RoomFloor({
   color,
   active,
   onClick,
+  finish,
 }: {
   room: Room;
   color: string;
   active: boolean;
   onClick?: (room: Room, e: ThreeEvent<MouseEvent>) => void;
+  finish?: FloorFinish;
 }) {
   const geometry = useRoomShape(room);
   const isBalcony = room.type === "balcony";
+  const map = useMemo(() => (finish ? floorTexture(finish) : null), [finish]);
 
   return (
     <mesh
@@ -84,6 +102,7 @@ function RoomFloor({
     >
       <meshStandardMaterial
         color={active ? "#c8643b" : color}
+        map={map}
         side={THREE.DoubleSide}
         roughness={0.95}
       />
@@ -106,6 +125,7 @@ export function Dollhouse({
   onFloorClick,
   look,
   ceilings = false,
+  staged = false,
 }: {
   plan: FloorPlan;
   activeRoom: string | null;
@@ -113,6 +133,8 @@ export function Dollhouse({
   look?: DollhouseLook;
   /** Close the rooms off for walk mode. */
   ceilings?: boolean;
+  /** Textured, realistic floors to go with staged furniture. */
+  staged?: boolean;
 }) {
   // Inside the house glass panes only tint the projected photos, so walk mode leaves them out.
   const glass = !ceilings;
@@ -122,7 +144,8 @@ export function Dollhouse({
         <RoomFloor
           key={room.id}
           room={room}
-          color={look?.floors?.[room.id] ?? ROOM_COLORS[room.type]}
+          color={look?.floors?.[room.id] ?? (staged ? STAGED_FLOORS[room.type].color : ROOM_COLORS[room.type])}
+          finish={staged ? STAGED_FLOORS[room.type].finish : undefined}
           active={room.id === activeRoom}
           onClick={onFloorClick}
         />
