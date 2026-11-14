@@ -44,15 +44,11 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 
 # ------------------------------------------------------------------ render settings
-for engine in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT", "CYCLES"):
-    try:
-        scene.render.engine = engine
-        break
-    except TypeError:
-        continue
-if scene.render.engine == "CYCLES":
-    scene.cycles.samples = job.get("samples", 32)
-    scene.cycles.use_denoising = True
+# Cycles on CPU: the boxd machines have no GPU, and there Eevee is slower than Cycles.
+scene.render.engine = "CYCLES"
+scene.cycles.device = "CPU"
+scene.cycles.samples = job.get("samples", 32)
+scene.cycles.use_denoising = True
 scene.view_settings.view_transform = "Standard"
 world = bpy.data.worlds.new("world")
 world.use_nodes = True

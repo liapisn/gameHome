@@ -20,6 +20,7 @@ import { runHouseWorker } from "../src/lib/models3d/house-worker";
 import { runObjectWorker } from "../src/lib/models3d/object-worker";
 import { downloadAppTour, uploadModels } from "../src/lib/models3d/app-tour";
 import { runRoomWorker } from "../src/lib/models3d/room-worker";
+import { closePool } from "../src/lib/boxd/runner";
 import { blenderJob, slug } from "../src/lib/models3d/util";
 import type { RoomScene } from "../src/lib/scene/types";
 import type { Tour } from "../src/lib/tour/types";
@@ -62,6 +63,7 @@ if (values.property) {
   const index = await uploadModels(app.folder, rooms);
   log(`uploaded ${index.rooms.length} room model(s) beside the tour (${app.folder}models.json)`);
   log(`spent about $${(spendTotal() - spent0).toFixed(2)} in ${((Date.now() - t0) / 60000).toFixed(1)} min`);
+  await closePool();
   process.exit(0);
 }
 
@@ -88,3 +90,4 @@ if (values.item) {
   log(`house: ${r.summary}`);
 }
 log(`spent about $${(spendTotal() - spent0).toFixed(2)} in ${((Date.now() - t0) / 60000).toFixed(1)} min`);
+await closePool();

@@ -16,7 +16,8 @@ import sharp from "sharp";
 import { buildDollhouseScene } from "../src/lib/dollhouse-geometry";
 import { type FloorPlan, polygonCentroid } from "../src/lib/floorplan";
 import { sceneToGlb } from "../src/lib/glb";
-import { blenderVersion, runBlender } from "../src/lib/blender/run-blender";
+import { blenderInfo, runBlender } from "../src/lib/blender/run-blender";
+import { closePool } from "../src/lib/boxd/runner";
 import { itemBox, pointInPolygon } from "../src/lib/scene/lift";
 import { applyLook, lookPass, type LookAnswer } from "../src/lib/scene/look";
 import { photoCamera, projectSegment, type V3 } from "../src/lib/scene/project";
@@ -45,7 +46,7 @@ const sceneFile = path.resolve("src/data/scenes", tour.id, `${levelId}-${roomId}
 const dir = path.resolve("exports", tour.id, `${levelId}-${roomId}`, "blender");
 fs.mkdirSync(dir, { recursive: true });
 
-console.log(`Blender ${blenderVersion()}`);
+console.log(`Blender ${await blenderInfo()}`);
 
 // The house shell, as the viewer builds it (with this level's measured ceiling).
 const shell = path.join(dir, "shell.glb");
@@ -140,11 +141,13 @@ if (values.selftest) {
     if (c.render) await outlineOver(c.render, c.id, path.join(dir, `selftest-${c.id}.jpg`));
   }
   console.log(worst < 0.5 ? `ok: Blender's camera matches project() (worst ${worst.toFixed(3)} px)` : `FAIL: worst ${worst.toFixed(2)} px`);
+  await closePool();
   process.exit(worst < 0.5 ? 0 : 1);
 }
 
 if (!fs.existsSync(sceneFile)) {
   console.error(`No scene at ${path.relative(process.cwd(), sceneFile)}: run npm run build:scene first`);
+  await closePool();
   process.exit(1);
 }
 let scene: RoomScene = JSON.parse(fs.readFileSync(sceneFile, "utf8"));
@@ -181,3 +184,4 @@ for (const c of res.cameras) {
     .toFile(path.join(dir, `compare-${c.id}.jpg`));
 }
 console.log(`  → ${path.relative(process.cwd(), path.join(dir, "room.glb"))} (${(fs.statSync(path.join(dir, "room.glb")).size / 1024).toFixed(0)} KB) · compare-*.jpg in ${path.relative(process.cwd(), dir)}`);
+await closePool();
