@@ -34,6 +34,8 @@ export interface PoseEstimate {
 export interface SolveOptions {
   /** Photo height / width. Needed for floor-contact (v) residuals. */
   aspect: number;
+  /** Image row of the horizon (0.5 for an unshifted level photo). */
+  horizon?: number;
   /** Room outline; the camera is pushed back inside it. */
   polygon?: Point[];
   /** Prior std-devs: position (m), yaw (deg), hfov (deg), height (m). */
@@ -50,18 +52,18 @@ const DEG = Math.PI / 180;
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
 /** Where a plan point (and its floor contact) appears in the photo, or null if behind the camera. */
-export function project(pose: PoseEstimate, p: Point, aspect: number): { u: number; v: number } | null {
+export function project(pose: PoseEstimate, p: Point, aspect: number, horizon = 0.5): { u: number; v: number } | null {
   const dx = p[0] - pose.x;
   const dy = p[1] - pose.y;
   const rel = wrap(Math.atan2(dy, dx) - pose.yaw * DEG);
   if (Math.abs(rel) >= Math.PI / 2) return null;
   const halfH = Math.tan((pose.hfov * DEG) / 2);
   const forward = Math.hypot(dx, dy) * Math.cos(rel);
-  return { u: (Math.tan(rel) / halfH + 1) / 2, v: (pose.height / forward / (halfH * aspect) + 1) / 2 };
+  return { u: (Math.tan(rel) / halfH + 1) / 2, v: horizon + pose.height / forward / (halfH * aspect) / 2 };
 }
 
 /** Angular residuals (radians): one per landmark for u, plus one per landmark with a floor contact. */
-function residuals(params: number[], lms: Landmark[], aspect: number): number[] {
+function residuals(params: number[], lms: Landmark[], aspect: number, horizon: number): number[] {
   const [x, y, yaw, hfov, height] = params;
   const halfH = Math.tan(hfov / 2);
   const halfV = halfH * aspect;
@@ -79,7 +81,7 @@ function residuals(params: number[], lms: Landmark[], aspect: number): number[] 
     out.push(wrap(rel - Math.atan((2 * lm.u - 1) * halfH)));
     if (lm.v != null) {
       const forward = Math.hypot(dx, dy) * Math.cos(rel);
-      out.push(Math.atan(height / forward) - Math.atan((2 * lm.v - 1) * halfV));
+      out.push(Math.atan(height / forward) - Math.atan(2 * (lm.v - horizon) * halfV));
     }
   }
   return out;
@@ -146,11 +148,12 @@ export function solvePose(landmarks: Landmark[], initial: PoseEstimate, opts: So
   const prior = opts.prior ?? { pos: 1.5, yaw: 25, hfov: 15, height: 0.3 };
   const [hMin, hMax] = (opts.hfovRange ?? [40, 120]).map((d) => d * DEG);
   const sigmaObs = 2 * DEG; // landmark pick noise
+  const horizon = opts.horizon ?? 0.5;
 
   const x0 = [initial.x, initial.y, initial.yaw * DEG, initial.hfov * DEG, initial.height];
   const cost = (v: number[]) => {
     let c = 0;
-    for (const r of residuals(v, landmarks, opts.aspect)) c += (r / sigmaObs) ** 2;
+    for (const r of residuals(v, landmarks, opts.aspect, horizon)) c += (r / sigmaObs) ** 2;
     c += ((v[0] - x0[0]) / prior.pos) ** 2 + ((v[1] - x0[1]) / prior.pos) ** 2;
     c += (wrap(v[2] - x0[2]) / (prior.yaw * DEG)) ** 2;
     c += ((v[3] - x0[3]) / (prior.hfov * DEG)) ** 2;
@@ -179,7 +182,7 @@ export function solvePose(landmarks: Landmark[], initial: PoseEstimate, opts: So
     }
   }
 
-  const res = residuals(best, landmarks, opts.aspect).map((r) => r / DEG);
+  const res = residuals(best, landmarks, opts.aspect, horizon).map((r) => r / DEG);
   return {
     x: best[0],
     y: best[1],

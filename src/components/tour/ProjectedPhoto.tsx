@@ -126,13 +126,23 @@ export function ProjectedPhoto({
     u.value += (target - u.value) * Math.min(1, dt * 6);
   });
 
-  if (!material) return null;
+  if (!material || !projector) return null;
   return (
-    <group position={[level.offset[0], level.elevation, level.offset[1]]}>
-      {meshes.map((m) => (
-        <mesh key={m.name} geometry={m.geometry} material={material} renderOrder={10} raycast={() => null} />
-      ))}
-    </group>
+    <>
+      <group position={[level.offset[0], level.elevation, level.offset[1]]}>
+        {meshes.map((m) => (
+          <mesh key={m.name} geometry={m.geometry} material={material} renderOrder={10} raycast={() => null} />
+        ))}
+      </group>
+      {/*
+        Backdrop: wherever the model has no surface (doorways to outside, windows, gaps from an
+        imperfect plan), the photo lands on this sphere instead of leaving holes. Seen from the
+        pose it is indistinguishable from the photo itself.
+      */}
+      <mesh position={projector.position} material={material} renderOrder={9} raycast={() => null}>
+        <sphereGeometry args={[40, 48, 24]} />
+      </mesh>
+    </>
   );
 }
 

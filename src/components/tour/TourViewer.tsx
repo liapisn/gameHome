@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { CameraControls } from "@react-three/drei";
 import { type Room, interiorArea, planBounds, polygonArea, polygonCentroid } from "@/lib/floorplan";
-import { EYE_HEIGHT, toWorld, vfovOf } from "@/lib/tour/space";
+import { EYE_HEIGHT, framingPitch, toWorld, vfovOf } from "@/lib/tour/space";
 import { type ResolvedTour, type TourPhoto, roomKey } from "@/lib/tour/types";
 import { Dollhouse, type DollhouseLook } from "./Dollhouse";
 import { ProjectedPhoto } from "./ProjectedPhoto";
@@ -98,7 +98,7 @@ export function TourViewer({ tour }: { tour: ResolvedTour }) {
       setWalkTarget({
         position: eye.toArray() as [number, number, number],
         yaw: photo.pose.yaw,
-        pitch: photo.pose.pitch,
+        pitch: photo.pose.pitch + framingPitch(photo.pose, photo.height / photo.width),
         fov: vfovOf(photo.pose.hfov, photo.height / photo.width),
         key: ++moveKey.current,
       });

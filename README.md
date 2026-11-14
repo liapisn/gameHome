@@ -34,12 +34,18 @@ npm run build:tour -- fixtures/listing-15970 --id listing-15970 --title "Marousi
 
 1. **Plans.** Each level in the listing's `manifest.json` that has a floor plan is parsed (below), unless `src/data/plans/<id>-<level>.json` already exists. Levels are stacked and aligned on their stair wells.
 2. **Photo placement.** For each photo, the model sees every level's drawing, its rooms, and a table of named landmarks (room corners and door/window jambs, e.g. "top-right corner of Kitchen"). It returns the level and room, the landmarks it can see with their image positions, a rough camera guess and the floor/wall colors. Places on no plan, like a garden or a second unit, are kept as unplaced photos.
-3. **Pose solving.** `src/lib/tour/solve-pose.ts` solves camera position, heading, field of view and lens height from those landmarks. It uses horizontal bearings, plus range from where each edge meets the floor, since listing photos are shot level. Fits that need fewer than 3 landmarks, leave the room or don't converge fall back to the model's own guess, flagged as approximate.
-4. **Viewer.** Dollhouse view per level, plus walk mode: drag to look, click the floor to move, WASD to walk. Photo hotspots fly you to each solved camera, where the real photo is projected onto the 3D room. From that spot the room looks like the photo, and the projection fades as you walk away.
+3. **Pose solving** (`src/lib/tour/estimate-pose.ts`), using the image itself rather than the model's numbers:
+   - **Vanishing points** (`vanishing.ts`): horizontal edges along the plan's two wall directions converge on the horizon. Fitting both gives the heading (modulo 90°, with the model's guess picking the branch), the exact field of view and the horizon row. Shifted or cropped photos often have the horizon off-centre.
+   - **Edge alignment** (`edge-align.ts`): with orientation fixed, a grid search over position, lens height and ceiling height projects the room's outline (ceiling junctions, floor junctions, corners) into the photo and scores how well image edges run along it. Ceiling junctions carry the most weight because furniture rarely hides them. A fit is accepted when it clearly beats every pose more than 1 m away.
+   - Fallbacks: the model's landmark picks solved with the vanishing-point orientation, then vanishing-point orientation at the model's position, then the model's guess. Fallback poses are flagged as approximate in the viewer.
+   - Measured ceiling heights (median per level) replace the plan's default.
+   - `npx tsx scripts/debug-edges.mts <tour-id> <out-dir>` draws each stored pose's room outline over its photo. Use it to check poses by eye.
+4. **Viewer.** Dollhouse view per level, plus walk mode: drag to look, click the floor to move, WASD to walk. Photo hotspots fly you to each solved camera, where the real photo is projected onto the 3D room through an off-axis frustum that matches the photo's horizon. A backdrop sphere catches the photo wherever the model has no surface, such as doorways or plan gaps. From the photo's spot the room looks exactly like the photo, and the projection fades as you walk away.
 
 - Placements are cached in `src/data/tours/<id>.placements.json`. Use `--from-cache` to place only new photos, or `--only 01,07` to redo specific ones.
 - The manifest's per-photo labels are never sent to the model. They're only used to score the run, which prints level and room-type accuracy at the end.
-- `npx tsx scripts/selftest-pose.mts` checks the pose solver offline against synthetic cameras.
+- `npx tsx scripts/selftest-pose.mts` checks the landmark solver offline against synthetic cameras.
+- Re-solving poses needs no model calls: `npm run build:tour -- … --from-cache` (set `POSE_LOG=1` for per-photo detail).
 - Fixture photos are third-party. Resized copies live in `fixtures/<listing>/.derived/` (gitignored), and `/api/tour-media` serves them in dev only.
 
 ## Floor plan parser

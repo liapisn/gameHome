@@ -11,7 +11,8 @@
       "offset": [
         0,
         0
-      ]
+      ],
+      "ceilingHeight": 2.5
     },
     {
       "id": "upper",
@@ -21,7 +22,8 @@
       "offset": [
         -6.501666666666668,
         -2.9466666666666654
-      ]
+      ],
+      "ceilingHeight": 2.7
     }
   ],
   "photos": [
@@ -47,19 +49,23 @@
       "levelId": "upper",
       "roomId": "r11",
       "location": "living room, looking towards the dining area",
-      "confidence": "low",
+      "confidence": "high",
       "pose": {
-        "x": 6,
-        "y": 14.5,
-        "yaw": 260,
+        "x": 6.64,
+        "y": 15.36,
+        "yaw": 219.6,
         "pitch": 0,
-        "hfov": 95,
-        "height": 1.3
+        "hfov": 100,
+        "height": 1.25,
+        "horizon": 0.5
       },
       "fit": {
-        "method": "model-estimate",
-        "landmarks": 5,
-        "rmsDeg": null
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 199,
+        "margin": 1.29,
+        "ceiling": 2.71
       }
     },
     {
@@ -73,17 +79,21 @@
       "location": "living room",
       "confidence": "high",
       "pose": {
-        "x": 8.68,
-        "y": 11.97,
-        "yaw": 146.2,
+        "x": 7.89,
+        "y": 12.04,
+        "yaw": 131,
         "pitch": 0,
-        "hfov": 85.5,
-        "height": 1.3
+        "hfov": 105,
+        "height": 1.24,
+        "horizon": 0.515
       },
       "fit": {
-        "method": "resection",
-        "landmarks": 5,
-        "rmsDeg": 2.23
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 179,
+        "margin": 1.36,
+        "ceiling": 2.83
       }
     },
     {
@@ -95,19 +105,20 @@
       "levelId": "upper",
       "roomId": "r11",
       "location": "living room, looking towards the dining area and bathroom",
-      "confidence": "high",
+      "confidence": "low",
       "pose": {
-        "x": 5.34,
-        "y": 12.43,
-        "yaw": 282.9,
+        "x": 4.5,
+        "y": 12.5,
+        "yaw": 307.2,
         "pitch": 0,
-        "hfov": 88.9,
-        "height": 1.35
+        "hfov": 99.2,
+        "height": 1.3,
+        "horizon": 0.534
       },
       "fit": {
-        "method": "resection",
+        "method": "vanishing",
         "landmarks": 5,
-        "rmsDeg": 0.8
+        "rmsDeg": null
       }
     },
     {
@@ -134,17 +145,21 @@
       "location": "kitchen, near the dining room door",
       "confidence": "high",
       "pose": {
-        "x": 2.01,
-        "y": 7.11,
-        "yaw": 277.1,
+        "x": 0.85,
+        "y": 5.59,
+        "yaw": 301.3,
         "pitch": 0,
-        "hfov": 95,
-        "height": 1.4
+        "hfov": 101.3,
+        "height": 1.35,
+        "horizon": 0.512
       },
       "fit": {
-        "method": "resection",
-        "landmarks": 3,
-        "rmsDeg": 0.29
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 152,
+        "margin": 1.2,
+        "ceiling": 2.7
       }
     },
     {
@@ -158,17 +173,21 @@
       "location": "kitchen, near the dining area",
       "confidence": "high",
       "pose": {
-        "x": 2.64,
-        "y": 5.37,
-        "yaw": 238,
+        "x": 2.06,
+        "y": 6.86,
+        "yaw": 225,
         "pitch": 0,
-        "hfov": 95.4,
-        "height": 1.35
+        "hfov": 101,
+        "height": 1.13,
+        "horizon": 0.515
       },
       "fit": {
-        "method": "resection",
-        "landmarks": 4,
-        "rmsDeg": 0.36
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 141,
+        "margin": 1.17,
+        "ceiling": 2.68
       }
     },
     {
@@ -180,19 +199,23 @@
       "levelId": "upper",
       "roomId": "r1",
       "location": "kitchen, near the center",
-      "confidence": "low",
+      "confidence": "high",
       "pose": {
-        "x": 2.5,
-        "y": 5.5,
-        "yaw": 150,
+        "x": 2.3,
+        "y": 2.16,
+        "yaw": 128.3,
         "pitch": 0,
-        "hfov": 110,
-        "height": 1.3
+        "hfov": 100,
+        "height": 1.25,
+        "horizon": 0.512
       },
       "fit": {
-        "method": "model-estimate",
-        "landmarks": 5,
-        "rmsDeg": null
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 150,
+        "margin": 1.53,
+        "ceiling": 2.55
       }
     },
     {
@@ -204,19 +227,23 @@
       "levelId": "upper",
       "roomId": "r7",
       "location": "hallway, looking towards the dining room",
-      "confidence": "low",
+      "confidence": "high",
       "pose": {
-        "x": 13.6,
-        "y": 8.3,
-        "yaw": 180,
+        "x": 13.26,
+        "y": 7.6,
+        "yaw": 164,
         "pitch": 0,
-        "hfov": 90,
-        "height": 1.3
+        "hfov": 104.6,
+        "height": 1.27,
+        "horizon": 0.53
       },
       "fit": {
-        "method": "model-estimate",
-        "landmarks": 6,
-        "rmsDeg": null
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 215,
+        "margin": null,
+        "ceiling": 2.73
       }
     },
     {
@@ -228,19 +255,23 @@
       "levelId": "upper",
       "roomId": "r9",
       "location": "Primary Bedroom",
-      "confidence": "low",
+      "confidence": "high",
       "pose": {
-        "x": 17.5,
-        "y": 7.5,
-        "yaw": 165,
+        "x": 18.54,
+        "y": 4.64,
+        "yaw": 122.8,
         "pitch": 0,
-        "hfov": 105,
-        "height": 1.3
+        "hfov": 99.3,
+        "height": 1.42,
+        "horizon": 0.41
       },
       "fit": {
-        "method": "model-estimate",
-        "landmarks": 3,
-        "rmsDeg": null
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 119,
+        "margin": 1.15,
+        "ceiling": 2.5
       }
     },
     {
@@ -252,19 +283,20 @@
       "levelId": "upper",
       "roomId": "r9",
       "location": "primary bedroom, near the entry",
-      "confidence": "high",
+      "confidence": "low",
       "pose": {
-        "x": 18.8,
-        "y": 7.16,
-        "yaw": 246.2,
+        "x": 16.5,
+        "y": 7.5,
+        "yaw": 318.3,
         "pitch": 0,
-        "hfov": 67.3,
-        "height": 1.3
+        "hfov": 101,
+        "height": 1.3,
+        "horizon": 0.5
       },
       "fit": {
-        "method": "resection",
+        "method": "vanishing",
         "landmarks": 4,
-        "rmsDeg": 1.04
+        "rmsDeg": null
       }
     },
     {
@@ -276,19 +308,23 @@
       "levelId": "ground",
       "roomId": "r0",
       "location": "bedroom, near the door",
-      "confidence": "low",
+      "confidence": "high",
       "pose": {
-        "x": 3,
-        "y": 3.5,
-        "yaw": 250,
+        "x": 2.6,
+        "y": 3.3,
+        "yaw": 215.7,
         "pitch": 0,
-        "hfov": 95,
-        "height": 1.3
+        "hfov": 98.7,
+        "height": 1.45,
+        "horizon": 0.513
       },
       "fit": {
-        "method": "model-estimate",
-        "landmarks": 3,
-        "rmsDeg": null
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 121,
+        "margin": 1.47,
+        "ceiling": 2.7
       }
     },
     {
@@ -300,19 +336,23 @@
       "levelId": "ground",
       "roomId": "r1",
       "location": "office/bedroom, facing the entry door",
-      "confidence": "low",
+      "confidence": "high",
       "pose": {
-        "x": 6,
-        "y": 1.5,
-        "yaw": 120,
+        "x": 5.57,
+        "y": 0.53,
+        "yaw": 126.3,
         "pitch": 0,
-        "hfov": 95,
-        "height": 1.3
+        "hfov": 99.8,
+        "height": 1.47,
+        "horizon": 0.5
       },
       "fit": {
-        "method": "model-estimate",
-        "landmarks": 3,
-        "rmsDeg": null
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 96,
+        "margin": 1.68,
+        "ceiling": 2.45
       }
     },
     {
@@ -324,19 +364,23 @@
       "levelId": "upper",
       "roomId": "r3",
       "location": "bedroom, by the door",
-      "confidence": "low",
+      "confidence": "medium",
       "pose": {
-        "x": 8.2,
-        "y": 7,
-        "yaw": 250,
+        "x": 8.09,
+        "y": 6.63,
+        "yaw": 241.2,
         "pitch": 0,
-        "hfov": 95,
-        "height": 1.3
+        "hfov": 102,
+        "height": 1.31,
+        "horizon": 0.515
       },
       "fit": {
-        "method": "model-estimate",
-        "landmarks": 4,
-        "rmsDeg": null
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 149,
+        "margin": 1.4,
+        "ceiling": 2.7
       }
     },
     {
@@ -350,17 +394,21 @@
       "location": "bedroom (labeled office), behind the bed",
       "confidence": "high",
       "pose": {
-        "x": 4.21,
-        "y": 3.33,
-        "yaw": 16.3,
+        "x": 4.27,
+        "y": 1.42,
+        "yaw": 45.6,
         "pitch": 0,
-        "hfov": 80.2,
-        "height": 1.3
+        "hfov": 106.9,
+        "height": 1.25,
+        "horizon": 0.528
       },
       "fit": {
-        "method": "resection",
-        "landmarks": 4,
-        "rmsDeg": 0.38
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 218,
+        "margin": null,
+        "ceiling": 3.06
       }
     },
     {
@@ -389,13 +437,14 @@
       "pose": {
         "x": 4.5,
         "y": 4.2,
-        "yaw": 292,
+        "yaw": 289.4,
         "pitch": 0,
-        "hfov": 90,
-        "height": 1.3
+        "hfov": 105.3,
+        "height": 1.3,
+        "horizon": 0.506
       },
       "fit": {
-        "method": "model-estimate",
+        "method": "vanishing",
         "landmarks": 3,
         "rmsDeg": null
       }
@@ -424,17 +473,21 @@
       "location": "bathroom",
       "confidence": "high",
       "pose": {
-        "x": 5.14,
-        "y": 6.75,
-        "yaw": 274.2,
+        "x": 3.59,
+        "y": 6.93,
+        "yaw": 301.5,
         "pitch": 0,
-        "hfov": 92.2,
-        "height": 1.25
+        "hfov": 101.9,
+        "height": 1.5,
+        "horizon": 0.515
       },
       "fit": {
-        "method": "resection",
-        "landmarks": 4,
-        "rmsDeg": 0.83
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 205,
+        "margin": null,
+        "ceiling": 2.65
       }
     },
     {
@@ -459,19 +512,20 @@
       "levelId": "upper",
       "roomId": null,
       "location": "balcony, outside the living room",
-      "confidence": "high",
+      "confidence": "low",
       "pose": {
-        "x": 7.28,
+        "x": 7,
         "y": 19.5,
-        "yaw": 263.2,
+        "yaw": 231.8,
         "pitch": 0,
         "hfov": 97.5,
-        "height": 1.06
+        "height": 1.1,
+        "horizon": 0.499
       },
       "fit": {
-        "method": "resection",
+        "method": "vanishing",
         "landmarks": 4,
-        "rmsDeg": 0.6
+        "rmsDeg": null
       }
     },
     {
@@ -522,19 +576,20 @@
       "levelId": "upper",
       "roomId": "r11",
       "location": "living room, looking towards the dining room",
-      "confidence": "high",
+      "confidence": "low",
       "pose": {
-        "x": 6.44,
-        "y": 15.69,
-        "yaw": 290.2,
+        "x": 8.3,
+        "y": 14.5,
+        "yaw": 226.8,
         "pitch": 0,
-        "hfov": 100.9,
-        "height": 1.41
+        "hfov": 97.5,
+        "height": 1.3,
+        "horizon": 0.503
       },
       "fit": {
-        "method": "resection",
+        "method": "vanishing",
         "landmarks": 5,
-        "rmsDeg": 1.57
+        "rmsDeg": null
       }
     },
     {
@@ -561,17 +616,21 @@
       "location": "office",
       "confidence": "high",
       "pose": {
-        "x": 3.87,
-        "y": 4.18,
-        "yaw": 275,
+        "x": 4.51,
+        "y": 3.34,
+        "yaw": 292.1,
         "pitch": 0,
-        "hfov": 89.6,
-        "height": 1.02
+        "hfov": 110,
+        "height": 1.25,
+        "horizon": 0.497
       },
       "fit": {
-        "method": "resection",
-        "landmarks": 5,
-        "rmsDeg": 2.17
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 370,
+        "margin": null,
+        "ceiling": 2.5
       }
     },
     {
@@ -622,19 +681,23 @@
       "levelId": "ground",
       "roomId": "r3",
       "location": "entry hallway, looking at the bedroom and office",
-      "confidence": "low",
+      "confidence": "high",
       "pose": {
-        "x": 3.9,
-        "y": 5.5,
-        "yaw": 270,
+        "x": 6.5,
+        "y": 7.37,
+        "yaw": 227.1,
         "pitch": 0,
-        "hfov": 85,
-        "height": 1.4
+        "hfov": 84.3,
+        "height": 1.6,
+        "horizon": 0.512
       },
       "fit": {
-        "method": "model-estimate",
-        "landmarks": 7,
-        "rmsDeg": null
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 321,
+        "margin": 1.33,
+        "ceiling": 2.51
       }
     },
     {
@@ -700,17 +763,21 @@
       "location": "bathroom",
       "confidence": "high",
       "pose": {
-        "x": 1.33,
-        "y": 6.05,
-        "yaw": 276.8,
+        "x": 2.13,
+        "y": 5.77,
+        "yaw": 252.5,
         "pitch": 0,
-        "hfov": 79.2,
-        "height": 1
+        "hfov": 98.7,
+        "height": 1.45,
+        "horizon": 0.509
       },
       "fit": {
-        "method": "resection",
-        "landmarks": 3,
-        "rmsDeg": 1.56
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 169,
+        "margin": null,
+        "ceiling": 2.5
       }
     },
     {
@@ -724,17 +791,21 @@
       "location": "office",
       "confidence": "high",
       "pose": {
-        "x": 4.58,
-        "y": 4.3,
-        "yaw": 291.1,
+        "x": 5.37,
+        "y": 3.87,
+        "yaw": 302,
         "pitch": 0,
-        "hfov": 80.1,
-        "height": 0.97
+        "hfov": 105,
+        "height": 1.3,
+        "horizon": 0.5
       },
       "fit": {
-        "method": "resection",
-        "landmarks": 5,
-        "rmsDeg": 1.94
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 323,
+        "margin": 1.3,
+        "ceiling": 2.5
       }
     },
     {
@@ -746,19 +817,23 @@
       "levelId": "ground",
       "roomId": "r0",
       "location": "bedroom, looking towards the entry",
-      "confidence": "low",
+      "confidence": "high",
       "pose": {
-        "x": 3.4,
-        "y": 1,
-        "yaw": 95,
+        "x": 0.3,
+        "y": 1.7,
+        "yaw": 38.8,
         "pitch": 0,
-        "hfov": 105,
-        "height": 1.3
+        "hfov": 101.9,
+        "height": 1.32,
+        "horizon": 0.512
       },
       "fit": {
-        "method": "model-estimate",
-        "landmarks": 3,
-        "rmsDeg": null
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 127,
+        "margin": 1.11,
+        "ceiling": 2.5
       }
     },
     {
@@ -770,19 +845,23 @@
       "levelId": "ground",
       "roomId": "r2",
       "location": "bathroom, by the door",
-      "confidence": "low",
+      "confidence": "high",
       "pose": {
-        "x": 2.3,
-        "y": 4.8,
-        "yaw": 235,
+        "x": 2.03,
+        "y": 5.77,
+        "yaw": 235.4,
         "pitch": 0,
-        "hfov": 100,
-        "height": 1.3
+        "hfov": 105.4,
+        "height": 1.3,
+        "horizon": 0.5
       },
       "fit": {
-        "method": "model-estimate",
-        "landmarks": 3,
-        "rmsDeg": null
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 54,
+        "margin": 1.34,
+        "ceiling": 2.7
       }
     },
     {
@@ -796,17 +875,21 @@
       "location": "entry, facing the stairs",
       "confidence": "high",
       "pose": {
-        "x": 7.3,
-        "y": 6.79,
-        "yaw": 173.4,
+        "x": 6.9,
+        "y": 4.77,
+        "yaw": 236.3,
         "pitch": 0,
-        "hfov": 105.7,
-        "height": 1.08
+        "hfov": 102,
+        "height": 1.3,
+        "horizon": 0.515
       },
       "fit": {
-        "method": "resection",
-        "landmarks": 4,
-        "rmsDeg": 2.31
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 178,
+        "margin": 1.47,
+        "ceiling": 2.5
       }
     },
     {
@@ -956,6 +1039,6 @@
       "walls": "#dacdbd"
     }
   },
-  "builtAt": "2026-11-14T13:28:17.388Z",
+  "builtAt": "2026-11-14T14:15:07.035Z",
   "model": "gemini-3.1-pro-preview"
 }

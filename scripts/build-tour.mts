@@ -19,7 +19,7 @@ import { type FloorPlan, type Point, type RoomType, polygonCentroid } from "../s
 import { parseFloorPlanImage } from "../src/lib/floorplan-parser/parse";
 import { buildFloorPlan } from "../src/lib/floorplan-parser/build";
 import { type Placement, placePhoto, prepareLevels } from "../src/lib/tour/place-photo";
-import { solvePose } from "../src/lib/tour/solve-pose";
+import { estimatePose } from "../src/lib/tour/estimate-pose";
 import { type Tour, type TourLevel, type TourPhoto, roomKey } from "../src/lib/tour/types";
 
 const { values, positionals } = parseArgs({
@@ -186,6 +186,7 @@ if (todo.length) console.log(`Tokens: ${tokensIn} in / ${tokensOut} out`);
 
 const levels = stackLevels(levelInputs);
 const tourPhotos: TourPhoto[] = [];
+const poseLog: string[] = [];
 const looks: Tour["looks"] = {};
 const models = new Set<string>();
 
@@ -207,42 +208,25 @@ for (const p of photos) {
   let fit: TourPhoto["fit"] = null;
   let confidence = pl.confidence;
   if (level && pl.estimate) {
-    const features = prepared.features.get(level.id)!;
-    const landmarks = pl.landmarks
-      .filter((lm) => features.has(lm.featureId) && lm.u >= 0 && lm.u <= 1)
-      .map((lm) => ({ point: features.get(lm.featureId)!.point, u: lm.u, v: lm.v != null && lm.v > 0.5 && lm.v <= 1 ? lm.v : null }));
-    const initial = {
-      x: pl.estimate.x,
-      y: pl.estimate.y,
-      yaw: pl.estimate.yawDeg,
-      hfov: pl.estimate.hfovDeg,
-      height: pl.estimate.cameraHeight,
-    };
-    const spread = landmarks.length ? Math.max(...landmarks.map((l) => l.u)) - Math.min(...landmarks.map((l) => l.u)) : 0;
-    let solved = false;
-    if (landmarks.length >= 3 && spread >= 0.2) {
-      const s = solvePose(landmarks, initial, {
-        polygon: room?.polygon,
-        aspect: m.height / m.width,
-        prior: { pos: 1.5, yaw: 25, hfov: 12, height: 0.15 },
-        hfovRange: [55, 115],
-      });
-      // Reject fits that only "work" by leaving the room's plausible envelope.
-      const moved = Math.hypot(s.x - initial.x, s.y - initial.y);
-      if (s.rmsDeg <= 4 && moved <= 2.5 && s.height >= 0.9 && s.height <= 1.8) {
-        pose = { x: s.x, y: s.y, yaw: s.yaw, pitch: 0, hfov: s.hfov, height: s.height };
-        fit = { method: "resection", landmarks: landmarks.length, rmsDeg: +s.rmsDeg.toFixed(2) };
-        if (s.rmsDeg > 2.5) confidence = "low";
-        solved = true;
-      }
+    const { data, info } = await sharp(path.join(listingDir, p.file))
+      .rotate()
+      .resize(1200)
+      .grayscale()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const outcome = estimatePose(
+      { data: new Uint8Array(data), width: info.width, height: info.height },
+      pl,
+      level.plan,
+      prepared.features.get(level.id)!,
+    );
+    if (outcome) {
+      pose = outcome.pose;
+      fit = outcome.fit;
+      if (!outcome.precise) confidence = "low";
+      const detail = fit.rmsDeg != null ? `rms ${fit.rmsDeg}° · ${fit.landmarks} lm` : fit.score != null ? `score ${fit.score} · margin ${fit.margin ?? "n/a"} · ceiling ${fit.ceiling} m` : "";
+      poseLog.push(`  ${p.file.padEnd(14)} ${fit.method.padEnd(14)} ${detail}`);
     }
-    if (!solved) {
-      pose = { ...initial, pitch: 0 };
-      fit = { method: "model-estimate", landmarks: landmarks.length, rmsDeg: null };
-      confidence = "low";
-    }
-    const r = (n: number, d = 2) => +n.toFixed(d);
-    pose = pose && { x: r(pose.x), y: r(pose.y), yaw: r(pose.yaw, 1), pitch: 0, hfov: r(pose.hfov, 1), height: r(pose.height) };
   }
   if (level && room) {
     const k = roomKey(level.id, room.id);
@@ -258,6 +242,15 @@ for (const p of photos) {
     pose,
     fit,
   });
+}
+
+// Measured ceiling height per level: the median of edge-aligned fits, when there are enough.
+for (const level of levels) {
+  const ceilings = tourPhotos
+    .filter((p) => p.levelId === level.id && p.fit?.method === "edges" && p.fit.ceiling)
+    .map((p) => p.fit!.ceiling!)
+    .sort((a, b) => a - b);
+  if (ceilings.length >= 3) level.ceilingHeight = +ceilings[Math.floor(ceilings.length / 2)].toFixed(2);
 }
 
 const tour: Tour = {
@@ -313,7 +306,13 @@ for (const p of manifest.photos) {
 
 const placed = tourPhotos.filter((p) => p.pose);
 console.log(`\n→ ${tourPath}`);
-console.log(`Levels: ${levels.map((l) => `${l.id} @ ${l.elevation.toFixed(1)} m, offset (${l.offset.map((n) => n.toFixed(2)).join(", ")})`).join(" · ")}`);
+console.log(
+  `Levels: ${levels.map((l) => `${l.id} @ ${l.elevation.toFixed(1)} m, offset (${l.offset.map((n) => n.toFixed(2)).join(", ")}), ceiling ${l.ceilingHeight ?? "plan default"}`).join(" · ")}`,
+);
 console.log(`Posed ${placed.length}/${tourPhotos.length} photos (${placed.filter((p) => p.confidence !== "low").length} high/medium)`);
+const methods = new Map<string, number>();
+for (const p of placed) methods.set(p.fit!.method, (methods.get(p.fit!.method) ?? 0) + 1);
+console.log(`Pose methods: ${[...methods].map(([k, n]) => `${k} ${n}`).join(" · ")}`);
+if (process.env.POSE_LOG) console.log(poseLog.join("\n"));
 console.log(`vs manifest: level ${levelOk}/${manifest.photos.length} · room type ${typeOk}/${typeTotal}`);
 if (misses.length) console.log(`Mismatches:\n  ${misses.join("\n  ")}`);

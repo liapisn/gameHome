@@ -18,10 +18,10 @@ export interface DollhouseLook {
   walls?: string;
 }
 
-function WallMesh({ wall, plan, color }: { wall: Wall; plan: FloorPlan; color: string }) {
+function WallMesh({ wall, plan, color, glass }: { wall: Wall; plan: FloorPlan; color: string; glass: boolean }) {
   const { length, angle, origin } = wallFrame(wall);
   const boxes = wallBoxes(wall, plan.openings, plan.ceilingHeight, length);
-  const windows = plan.openings.filter((o) => o.wallId === wall.id && o.kind === "window");
+  const windows = glass ? plan.openings.filter((o) => o.wallId === wall.id && o.kind === "window") : [];
 
   return (
     <group position={origin} rotation={[0, angle, 0]}>
@@ -114,6 +114,8 @@ export function Dollhouse({
   /** Close the rooms off for walk mode. */
   ceilings?: boolean;
 }) {
+  // Inside the house glass panes only tint the projected photos, so walk mode leaves them out.
+  const glass = !ceilings;
   return (
     <group>
       {plan.rooms.map((room) => (
@@ -130,7 +132,7 @@ export function Dollhouse({
           .filter((r) => r.type !== "balcony")
           .map((room) => <RoomCeiling key={room.id} room={room} height={plan.ceilingHeight} />)}
       {plan.walls.map((wall) => (
-        <WallMesh key={wall.id} wall={wall} plan={plan} color={look?.walls ?? WALL_COLOR} />
+        <WallMesh key={wall.id} wall={wall} plan={plan} color={look?.walls ?? WALL_COLOR} glass={glass} />
       ))}
     </group>
   );

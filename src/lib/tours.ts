@@ -29,7 +29,10 @@ export function getTour(id: string): Tour | null {
 export function resolveTour(id: string): ResolvedTour | null {
   const tour = getTour(id);
   if (tour) {
-    const levels = tour.levels.map((l) => ({ ...l, plan: getPlan(l.planId) }));
+    const levels = tour.levels.map((l) => {
+      const plan = getPlan(l.planId);
+      return { ...l, plan: plan && l.ceilingHeight ? { ...plan, ceilingHeight: l.ceilingHeight } : plan };
+    });
     if (levels.some((l) => !l.plan)) return null;
     return {
       ...tour,

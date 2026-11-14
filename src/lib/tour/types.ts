@@ -14,14 +14,24 @@ export interface PhotoPose {
   hfov: number;
   /** Lens height above the floor. */
   height: number;
+  /**
+   * Image row of the horizon (0 = top, 1 = bottom). 0.5 for a centered level photo; listing photos
+   * are often shifted after vertical correction, which the projector reproduces as an off-axis frustum.
+   */
+  horizon?: number;
 }
 
 export interface PoseFit {
-  /** How the pose was obtained. */
-  method: "resection" | "model-estimate";
+  /** How the pose was obtained (see estimate-pose.ts). */
+  method: "edges" | "resection" | "vanishing" | "model-estimate";
   landmarks: number;
   /** RMS angular error of the landmarks under the final pose, degrees. */
   rmsDeg: number | null;
+  /** Edge alignment: outline score, and its ratio to the best pose more than 1 m away (null: room too small). */
+  score?: number;
+  margin?: number | null;
+  /** Ceiling height fitted along with the pose, meters. */
+  ceiling?: number;
 }
 
 export interface TourPhoto {
@@ -53,6 +63,8 @@ export interface TourLevel {
   elevation: number;
   /** Translation applied to this plan so levels line up (plan space, meters). */
   offset: Point;
+  /** Ceiling height measured from this level's photos (median of pose fits); overrides the plan's default. */
+  ceilingHeight?: number;
 }
 
 export interface Tour {
