@@ -10,6 +10,8 @@ export function PropertyTabs({ id }: { id: string }) {
     { href: base, label: "Details" },
     { href: `${base}/floorplans`, label: "Floor plans" },
     { href: `${base}/photos`, label: "Photos" },
+    { href: `${base}/generate`, label: "Generate" },
+    { href: `${base}/tour`, label: "Tour" },
   ];
 
   return (

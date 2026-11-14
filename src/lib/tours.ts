@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { FloorPlan } from "@/lib/floorplan";
 import { getPlan } from "@/lib/plans";
+import { resolveLevels } from "@/lib/tour/resolve";
 import type { ResolvedTour, Tour } from "@/lib/tour/types";
 
 const TOURS_DIR = path.join(process.cwd(), "src/data/tours");
@@ -29,14 +30,11 @@ export function getTour(id: string): Tour | null {
 export function resolveTour(id: string): ResolvedTour | null {
   const tour = getTour(id);
   if (tour) {
-    const levels = tour.levels.map((l) => {
-      const plan = getPlan(l.planId);
-      return { ...l, plan: plan && l.ceilingHeight ? { ...plan, ceilingHeight: l.ceilingHeight } : plan };
-    });
-    if (levels.some((l) => !l.plan)) return null;
+    const levels = resolveLevels(tour, tour.levels.flatMap((l) => getPlan(l.planId) ?? []));
+    if (!levels) return null;
     return {
       ...tour,
-      levels: levels as ResolvedTour["levels"],
+      levels,
       mediaUrl: isDev ? `/api/tour-media/${tour.id}` : null,
     };
   }

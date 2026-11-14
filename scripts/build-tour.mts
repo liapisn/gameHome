@@ -13,14 +13,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import sharp from "sharp";
 import { activeProvider } from "../src/lib/ai/structured";
-import { type FloorPlan, type Point, type RoomType, polygonCentroid } from "../src/lib/floorplan";
-import { parseFloorPlanImage } from "../src/lib/floorplan-parser/parse";
-import { buildFloorPlan } from "../src/lib/floorplan-parser/build";
-import { type Placement, placePhoto, prepareLevels } from "../src/lib/tour/place-photo";
-import { estimatePose } from "../src/lib/tour/estimate-pose";
-import { type Tour, type TourLevel, type TourPhoto, roomKey } from "../src/lib/tour/types";
+import type { RoomType } from "../src/lib/floorplan";
+import { type Manifest, buildTour } from "../src/lib/engine/build-tour";
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -40,231 +35,35 @@ if (!listingDir || !values.id || !values.title) {
 }
 const tourId = values.id;
 
-interface Manifest {
-  levels: { id: string; name: string; floorplan: string | null; note?: string }[];
-  photos: { file: string; level?: string; room?: string }[];
-}
-const manifest: Manifest = JSON.parse(fs.readFileSync(path.join(listingDir, "manifest.json"), "utf8"));
-
 const PLANS_DIR = path.resolve("src/data/plans");
 const TOURS_DIR = path.resolve("src/data/tours");
-const DERIVED = path.join(listingDir, ".derived");
 fs.mkdirSync(TOURS_DIR, { recursive: true });
 
-// --------------------------------------------------------------------------- media
-
-/** Resized copies: `model` is what the vision model sees, `view` is the tour texture, `thumb` the sidebar. */
-const SIZES = { model: 1600, view: 2048, thumb: 480 } as const;
-
-async function derive(file: string) {
-  const src = path.join(listingDir, file);
-  const out: Record<keyof typeof SIZES, string> = { model: "", view: "", thumb: "" };
-  for (const [kind, size] of Object.entries(SIZES) as [keyof typeof SIZES, number][]) {
-    const dest = path.join(DERIVED, kind, file);
-    if (!fs.existsSync(dest)) {
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      await sharp(src).rotate().resize(size, size, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 85 }).toFile(dest);
-    }
-    out[kind] = dest;
-  }
-  const meta = await sharp(src).rotate().metadata();
-  return { ...out, width: meta.autoOrient?.width ?? meta.width!, height: meta.autoOrient?.height ?? meta.height! };
-}
-
-// --------------------------------------------------------------------------- plans
-
-async function ensurePlan(level: Manifest["levels"][number]): Promise<FloorPlan> {
-  const planId = `${tourId}-${level.id}`;
-  const planPath = path.join(PLANS_DIR, `${planId}.json`);
-  if (fs.existsSync(planPath)) return JSON.parse(fs.readFileSync(planPath, "utf8"));
-
-  console.log(`Parsing ${level.floorplan} (${level.name})…`);
-  const image = path.join(listingDir, level.floorplan!);
-  const result = await parseFloorPlanImage({
-    imageBase64: fs.readFileSync(image).toString("base64"),
-    mediaType: "image/jpeg",
-    hint: `${level.name} of "${values.title}".`,
-  });
-  const parsedAt = new Date().toISOString();
-  fs.mkdirSync(PLANS_DIR, { recursive: true });
-  fs.writeFileSync(
-    path.join(PLANS_DIR, `${planId}.raw.json`),
-    JSON.stringify({ parsed: result.parsed, model: result.model, parsedAt }, null, 2) + "\n",
-  );
-  const { plan } = buildFloorPlan(result.parsed, {
-    id: planId,
-    title: `${values.title} · ${level.name}`,
-    source: { kind: "parsed", image: path.relative(process.cwd(), image), model: result.model, parsedAt },
-  });
-  fs.writeFileSync(planPath, JSON.stringify(plan, null, 2) + "\n");
-  return plan;
-}
-
-/**
- * Stack levels in manifest order. Each plan has its own drawing origin, so align consecutive
- * levels on their stair wells when both have one; otherwise leave them unshifted.
- */
-function stackLevels(levels: { id: string; name: string; plan: FloorPlan }[]): TourLevel[] {
-  const stairs = (plan: FloorPlan): Point | null => {
-    const room = plan.rooms.find((r) => r.type === "stairs");
-    return room ? polygonCentroid(room.polygon) : null;
-  };
-  const out: TourLevel[] = [];
-  let elevation = 0;
-  let offset: Point = [0, 0];
-  levels.forEach((level, i) => {
-    if (i > 0) {
-      const prev = levels[i - 1];
-      elevation += prev.plan.ceilingHeight + 0.3; // slab
-      const a = stairs(prev.plan);
-      const b = stairs(level.plan);
-      if (a && b) offset = [offset[0] + a[0] - b[0], offset[1] + a[1] - b[1]];
-    }
-    out.push({ id: level.id, name: level.name, planId: level.plan.id, elevation, offset });
-  });
-  return out;
-}
-
-// --------------------------------------------------------------------------- run
-
-const mappedLevels = manifest.levels.filter((l) => l.floorplan);
-const plans = await Promise.all(mappedLevels.map(ensurePlan));
-const levelInputs = await Promise.all(
-  mappedLevels.map(async (l, i) => ({
-    id: l.id,
-    name: l.name,
-    plan: plans[i],
-    drawing: (await sharp(path.join(listingDir, l.floorplan!)).resize(2048, 2048, { fit: "inside" }).jpeg({ quality: 90 }).toBuffer()).toString("base64"),
-  })),
+// Fixture manifests also carry ground-truth labels (level/room per photo), used only for scoring below.
+const manifest: Manifest & { photos: { file: string; level?: string; room?: string }[] } = JSON.parse(
+  fs.readFileSync(path.join(listingDir, "manifest.json"), "utf8"),
 );
-// Listing-level context only (never the per-photo labels).
-const otherAreas = manifest.levels.filter((l) => !l.floorplan).map((l) => (l.note ? `${l.name}: ${l.note}` : l.name));
-const prepared = prepareLevels(levelInputs, otherAreas);
 
-const cachePath = path.join(TOURS_DIR, `${tourId}.placements.json`);
-type CacheEntry = { placement: Placement; model: string; at: string };
-const cache: Record<string, CacheEntry> = fs.existsSync(cachePath) ? JSON.parse(fs.readFileSync(cachePath, "utf8")) : {};
-const only = values.only?.split(",").map((s) => s.trim().padStart(2, "0"));
-
-const photos = manifest.photos;
-const media = new Map<string, Awaited<ReturnType<typeof derive>>>();
-for (const p of photos) media.set(p.file, await derive(p.file));
-
-const todo = photos.filter((p) => {
-  const id = path.parse(p.file).name;
-  if (only) return only.includes(id);
-  return !(values["from-cache"] && cache[p.file]);
-});
-
-console.log(`Placing ${todo.length} of ${photos.length} photos with ${activeProvider()}…`);
-let done = 0;
-let tokensIn = 0;
-let tokensOut = 0;
-const queue = [...todo];
-await Promise.all(
-  Array.from({ length: Number(values.concurrency) }, async () => {
-    for (let p = queue.shift(); p; p = queue.shift()) {
-      try {
-        const res = await placePhoto(prepared, {
-          name: path.basename(p.file),
-          base64: fs.readFileSync(media.get(p.file)!.model).toString("base64"),
-        });
-        cache[p.file] = { placement: res.data, model: res.model, at: new Date().toISOString() };
-        tokensIn += res.usage.input;
-        tokensOut += res.usage.output;
-        fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2) + "\n"); // checkpoint
-        console.log(`  [${++done}/${todo.length}] ${p.file} → ${res.data.levelId}/${res.data.roomId ?? "-"} (${res.data.confidence})`);
-      } catch (err) {
-        console.error(`  [${++done}/${todo.length}] ${p.file} FAILED: ${(err as Error).message}`);
-      }
-    }
-  }),
-);
-if (todo.length) console.log(`Tokens: ${tokensIn} in / ${tokensOut} out`);
-
-// --------------------------------------------------------------------------- assemble
-
-const levels = stackLevels(levelInputs);
-const tourPhotos: TourPhoto[] = [];
-const poseLog: string[] = [];
-const looks: Tour["looks"] = {};
-const models = new Set<string>();
-
-for (const p of photos) {
-  const entry = cache[p.file];
-  const m = media.get(p.file)!;
-  const id = path.parse(p.file).name;
-  const base = { id, src: p.file, width: m.width, height: m.height };
-  if (!entry) {
-    tourPhotos.push({ ...base, caption: "", levelId: null, roomId: null, location: "unplaced", confidence: "low", pose: null, fit: null });
-    continue;
-  }
-  models.add(entry.model);
-  const pl = entry.placement;
-  const level = levelInputs.find((l) => l.id === pl.levelId);
-  const room = level?.plan.rooms.find((r) => r.id === pl.roomId);
-
-  let pose: TourPhoto["pose"] = null;
-  let fit: TourPhoto["fit"] = null;
-  let confidence = pl.confidence;
-  if (level && pl.estimate) {
-    const { data, info } = await sharp(path.join(listingDir, p.file))
-      .rotate()
-      .resize(1200)
-      .grayscale()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    const outcome = estimatePose(
-      { data: new Uint8Array(data), width: info.width, height: info.height },
-      pl,
-      level.plan,
-      prepared.features.get(level.id)!,
-    );
-    if (outcome) {
-      pose = outcome.pose;
-      fit = outcome.fit;
-      if (!outcome.precise) confidence = "low";
-      const detail = fit.rmsDeg != null ? `rms ${fit.rmsDeg}° · ${fit.landmarks} lm` : fit.score != null ? `score ${fit.score} · margin ${fit.margin ?? "n/a"} · ceiling ${fit.ceiling} m` : "";
-      poseLog.push(`  ${p.file.padEnd(14)} ${fit.method.padEnd(14)} ${detail}`);
-    }
-  }
-  if (level && room) {
-    const k = roomKey(level.id, room.id);
-    if (!looks[k] || pl.confidence === "high") looks[k] = pl.look;
-  }
-  tourPhotos.push({
-    ...base,
-    caption: pl.caption,
-    levelId: level ? level.id : null,
-    roomId: room ? room.id : null,
-    location: pl.location,
-    confidence,
-    pose,
-    fit,
-  });
-}
-
-// Measured ceiling height per level: the median of edge-aligned fits, when there are enough.
-for (const level of levels) {
-  const ceilings = tourPhotos
-    .filter((p) => p.levelId === level.id && p.fit?.method === "edges" && p.fit.ceiling)
-    .map((p) => p.fit!.ceiling!)
-    .sort((a, b) => a - b);
-  if (ceilings.length >= 3) level.ceilingHeight = +ceilings[Math.floor(ceilings.length / 2)].toFixed(2);
-}
-
-const tour: Tour = {
+console.log(`Building ${tourId} with ${activeProvider()}…`);
+const { tour, plans, poseLog, usage } = await buildTour(listingDir, {
   id: tourId,
   title: values.title,
-  mediaRoot: path.relative(process.cwd(), listingDir),
-  levels,
-  photos: tourPhotos,
-  looks,
-  builtAt: new Date().toISOString(),
-  model: [...models].join(", "),
-};
+  log: (m) => console.log(m),
+  plansDir: PLANS_DIR,
+  placementsCache: path.join(TOURS_DIR, `${tourId}.placements.json`),
+  reusePlacements: values["from-cache"],
+  only: values.only?.split(",").map((s) => s.trim().padStart(2, "0")),
+  concurrency: Number(values.concurrency),
+});
+if (usage.input) console.log(`Tokens: ${usage.input} in / ${usage.output} out`);
+
+// The dev viewer resolves media relative to the repo.
+tour.mediaRoot = path.relative(process.cwd(), listingDir);
+const { levels, photos: tourPhotos } = tour;
 const tourPath = path.join(TOURS_DIR, `${tourId}.json`);
 fs.writeFileSync(tourPath, JSON.stringify(tour, null, 2) + "\n");
+const mappedLevels = manifest.levels.filter((l) => l.floorplan);
+const levelInputs = mappedLevels.map((l, i) => ({ id: l.id, plan: plans[i] }));
 
 // --------------------------------------------------------------------------- score against manifest labels
 
