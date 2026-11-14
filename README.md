@@ -27,11 +27,13 @@ Vision calls go through `src/lib/ai/structured.ts`: Gemini when `GEMINI_API_KEY`
 
 ## Admin: generating tours from uploads
 
-Owners upload floor plans and photos in `/app`, then press **Generate** on the property's Generate tab. That queues a job, and the worker builds the tour:
+Owners upload floor plans and photos in `/app`, then press **Generate** on the property's Generate tab. That queues a job and starts a durable workflow on Vercel (`src/workflows/build-tour.ts`): plans → photo placement in parallel batches → poses → stored tour → rooms furnished from their photos in parallel (`scenes.json`). Nothing has to run locally. Needs `SUPABASE_SERVICE_ROLE_KEY` and the model key on the deployment; `TOUR_FURNISH=0` skips furnishing.
+
+To build on your own machine instead, set `TOUR_BUILDER=worker` on the deployment (jobs are then only queued) and run the worker:
 
 ```bash
 vercel env pull          # Supabase keys (incl. service role) + model key into .env.local
-npm run worker           # claims queued jobs; --once to process one and exit
+npm run worker -- --furnish   # claims queued jobs; --once to process one and exit
 ```
 
 Progress shows live on the Generate tab. The result opens in the Tour tab, which is a private preview behind login. Tours are versioned in the `tours` bucket. To load a local listing folder into a workspace as if it had been uploaded: `npx tsx --env-file=.env.local scripts/import-listing.mts <dir> --org "<workspace>" --title "<title>"`.

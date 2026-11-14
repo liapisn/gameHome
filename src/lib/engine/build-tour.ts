@@ -71,18 +71,29 @@ export interface BuildTourResult {
   usage: { input: number; output: number };
 }
 
-type CacheEntry = { placement: Placement; model: string; at: string };
+export type CacheEntry = { placement: Placement; model: string; at: string };
+/** Placements by photo file: what the placement phase produces and the assembly phase consumes. */
+export type Placements = Record<string, CacheEntry>;
 
 /** Resized copies: `model` is what the vision model sees, `view` the dev texture, `thumb` the sidebar. */
 const SIZES = { model: 1600, view: 2048, thumb: 480 } as const;
 
-export async function buildTour(folder: string, opts: BuildTourOptions): Promise<BuildTourResult> {
+type PhaseOptions = Pick<BuildTourOptions, "id" | "title" | "log" | "onProgress" | "plansDir" | "concurrency">;
+
+/*
+ * The build in phases, so a durable workflow can run each as its own short step (see
+ * src/workflows/build-tour.ts); buildTour() below chains them for the CLI and the local worker.
+ */
+
+export function readManifest(folder: string): Manifest {
+  return JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
+}
+
+/** Phase 1: parse each mapped level's floor plan (cached in `plansDir` when given). */
+export async function buildPlans(folder: string, opts: PhaseOptions): Promise<FloorPlan[]> {
   const log = opts.log ?? (() => {});
   const progress = opts.onProgress ?? (() => {});
-  const manifest: Manifest = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
-  const derivedDir = path.join(folder, ".derived");
-
-  // ------------------------------------------------------------------ plans
+  const manifest = readManifest(folder);
   const mapped = manifest.levels.filter((l) => l.floorplan);
   if (!mapped.length) throw new Error("At least one floor needs a floor plan.");
   let plansDone = 0;
@@ -91,7 +102,8 @@ export async function buildTour(folder: string, opts: BuildTourOptions): Promise
   const ensurePlan = async (level: ManifestLevel): Promise<FloorPlan> => {
     const planId = `${opts.id}-${level.id}`;
     const cached = opts.plansDir && path.join(opts.plansDir, `${planId}.json`);
-    if (cached && fs.existsSync(cached)) return JSON.parse(fs.readFileSync(cached, "utf8"));
+    // Runtime paths (a cache or temp folder): nothing to trace at build time.
+    if (cached && fs.existsSync(/*turbopackIgnore: true*/ cached)) return JSON.parse(fs.readFileSync(/*turbopackIgnore: true*/ cached, "utf8"));
 
     log(`Parsing ${level.floorplan} (${level.name})…`);
     const image = path.join(folder, level.floorplan!);
@@ -118,13 +130,19 @@ export async function buildTour(folder: string, opts: BuildTourOptions): Promise
     return plan;
   };
 
-  const plans = await Promise.all(
+  return Promise.all(
     mapped.map(async (l) => {
       const plan = await ensurePlan(l);
       progress({ step: "plans", label: "Reading floor plans", done: ++plansDone, total: mapped.length });
       return plan;
     }),
   );
+}
+
+/** Plans + their drawings, as the placement model sees them. Cheap: no model calls. */
+export async function prepareBuild(folder: string, plans: FloorPlan[]) {
+  const manifest = readManifest(folder);
+  const mapped = manifest.levels.filter((l) => l.floorplan);
   const levelInputs = await Promise.all(
     mapped.map(async (l, i) => ({
       id: l.id,
@@ -137,34 +155,34 @@ export async function buildTour(folder: string, opts: BuildTourOptions): Promise
   );
   // Listing-level context only: areas that exist but have no plan.
   const otherAreas = manifest.levels.filter((l) => !l.floorplan).map((l) => (l.note ? `${l.name}: ${l.note}` : l.name));
-  const prepared = prepareLevels(levelInputs, otherAreas);
+  return { manifest, levelInputs, prepared: prepareLevels(levelInputs, otherAreas) };
+}
+type Prepared = Awaited<ReturnType<typeof prepareBuild>>;
 
-  // ------------------------------------------------------------------ media
-  const derive = async (file: string) => {
-    const src = path.join(folder, file);
-    const out: Record<keyof typeof SIZES, string> = { model: "", view: "", thumb: "" };
-    for (const [kind, size] of Object.entries(SIZES) as [keyof typeof SIZES, number][]) {
-      const dest = path.join(derivedDir, kind, file);
-      if (!fs.existsSync(dest)) {
-        fs.mkdirSync(path.dirname(dest), { recursive: true });
-        await sharp(src).rotate().resize(size, size, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 85 }).toFile(dest);
-      }
-      out[kind] = dest;
+/** Resized copies of one photo (made once, in <folder>/.derived) and its upright size. */
+async function derive(folder: string, file: string) {
+  const src = path.join(folder, file);
+  const out: Record<keyof typeof SIZES, string> = { model: "", view: "", thumb: "" };
+  for (const [kind, size] of Object.entries(SIZES) as [keyof typeof SIZES, number][]) {
+    const dest = path.join(folder, ".derived", kind, file);
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      await sharp(src).rotate().resize(size, size, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 85 }).toFile(dest);
     }
-    const meta = await sharp(src).rotate().metadata();
-    return { ...out, width: meta.autoOrient?.width ?? meta.width!, height: meta.autoOrient?.height ?? meta.height! };
-  };
-  const media = new Map<string, Awaited<ReturnType<typeof derive>>>();
-  for (const p of manifest.photos) media.set(p.file, await derive(p.file));
+    out[kind] = dest;
+  }
+  const meta = await sharp(src).rotate().metadata();
+  return { ...out, width: meta.autoOrient?.width ?? meta.width!, height: meta.autoOrient?.height ?? meta.height! };
+}
 
-  // ------------------------------------------------------------------ placement
-  const cache: Record<string, CacheEntry> =
-    opts.placementsCache && fs.existsSync(opts.placementsCache) ? JSON.parse(fs.readFileSync(opts.placementsCache, "utf8")) : {};
-  const idOf = (file: string) => path.parse(file).name;
-  const todo = manifest.photos.filter((p) =>
-    opts.only ? opts.only.includes(idOf(p.file)) : !(opts.reusePlacements && cache[p.file]),
-  );
-
+/** Phase 2: place these photos (by manifest file) with the vision model. Failed photos are left out. */
+export async function placePhotos(
+  folder: string,
+  { manifest, prepared }: Prepared,
+  files: string[],
+  opts: PhaseOptions & { onPlaced?: (file: string) => void },
+): Promise<{ placements: Placements; failures: number; lastError: string; usage: { input: number; output: number } }> {
+  const log = opts.log ?? (() => {});
   const levelName = new Map(manifest.levels.map((l) => [l.id, l.name]));
   const ownerHint = (p: ManifestPhoto) =>
     [
@@ -174,39 +192,47 @@ export async function buildTour(folder: string, opts: BuildTourOptions): Promise
       .filter(Boolean)
       .join(" ") || undefined;
 
-  let placed = 0;
+  const placements: Placements = {};
   let failures = 0;
   let lastError = "";
   const usage = { input: 0, output: 0 };
-  progress({ step: "photos", label: "Placing photos", done: 0, total: todo.length });
-  const queue = [...todo];
+  const queue = manifest.photos.filter((p) => files.includes(p.file));
   await Promise.all(
     Array.from({ length: opts.concurrency ?? 4 }, async () => {
       for (let p = queue.shift(); p; p = queue.shift()) {
         try {
+          const m = await derive(folder, p.file);
           const res = await placePhoto(prepared, {
             name: path.basename(p.file),
-            base64: fs.readFileSync(media.get(p.file)!.model).toString("base64"),
+            base64: fs.readFileSync(/*turbopackIgnore: true*/ m.model).toString("base64"),
             hint: ownerHint(p),
           });
-          cache[p.file] = { placement: res.data, model: res.model, at: new Date().toISOString() };
+          placements[p.file] = { placement: res.data, model: res.model, at: new Date().toISOString() };
           usage.input += res.usage.input;
           usage.output += res.usage.output;
-          if (opts.placementsCache) fs.writeFileSync(opts.placementsCache, JSON.stringify(cache, null, 2) + "\n");
           log(`  ${p.file} → ${res.data.levelId}/${res.data.roomId ?? "-"} (${res.data.confidence})`);
         } catch (err) {
           failures++;
           lastError = (err as Error).message;
           log(`  ${p.file} FAILED: ${lastError}`);
         }
-        progress({ step: "photos", label: "Placing photos", done: ++placed, total: todo.length });
+        opts.onPlaced?.(p.file);
       }
     }),
   );
-  // A few flaky photos are tolerable; all of them failing means credentials or quota.
-  if (todo.length && failures === todo.length) throw new Error(`Every photo failed to place. Last error: ${lastError}`);
+  return { placements, failures, lastError, usage };
+}
 
-  // ------------------------------------------------------------------ poses + assembly
+/** Phase 3: solve camera poses for placed photos and assemble the tour. No model calls. */
+export async function assembleTour(
+  folder: string,
+  { manifest, levelInputs, prepared }: Prepared,
+  plans: FloorPlan[],
+  cache: Placements,
+  opts: PhaseOptions,
+): Promise<Omit<BuildTourResult, "usage">> {
+  const progress = opts.onProgress ?? (() => {});
+  const idOf = (file: string) => path.parse(file).name;
   const levels = stackLevels(levelInputs);
   const tourPhotos: TourPhoto[] = [];
   const poseLog: string[] = [];
@@ -217,7 +243,7 @@ export async function buildTour(folder: string, opts: BuildTourOptions): Promise
   for (const p of manifest.photos) {
     progress({ step: "poses", label: "Solving camera positions", done: posed++, total: manifest.photos.length });
     const entry = cache[p.file];
-    const m = media.get(p.file)!;
+    const m = await derive(folder, p.file);
     const base = { id: idOf(p.file), src: p.file, width: m.width, height: m.height };
     if (!entry) {
       tourPhotos.push({ ...base, caption: "", levelId: null, roomId: null, location: "unplaced", confidence: "low", pose: null, fit: null });
@@ -267,7 +293,6 @@ export async function buildTour(folder: string, opts: BuildTourOptions): Promise
       .sort((a, b) => a - b);
     if (ceilings.length >= 3) level.ceilingHeight = +ceilings[Math.floor(ceilings.length / 2)].toFixed(2);
   }
-  progress({ step: "done", label: "Done", done: 1, total: 1 });
 
   return {
     tour: {
@@ -282,8 +307,35 @@ export async function buildTour(folder: string, opts: BuildTourOptions): Promise
     },
     plans,
     poseLog,
-    usage,
   };
+}
+
+export async function buildTour(folder: string, opts: BuildTourOptions): Promise<BuildTourResult> {
+  const progress = opts.onProgress ?? (() => {});
+  const plans = await buildPlans(folder, opts);
+  const prep = await prepareBuild(folder, plans);
+
+  const cache: Placements =
+    opts.placementsCache && fs.existsSync(opts.placementsCache) ? JSON.parse(fs.readFileSync(opts.placementsCache, "utf8")) : {};
+  const idOf = (file: string) => path.parse(file).name;
+  const todo = prep.manifest.photos
+    .filter((p) => (opts.only ? opts.only.includes(idOf(p.file)) : !(opts.reusePlacements && cache[p.file])))
+    .map((p) => p.file);
+
+  let placed = 0;
+  progress({ step: "photos", label: "Placing photos", done: 0, total: todo.length });
+  const res = await placePhotos(folder, prep, todo, {
+    ...opts,
+    onPlaced: () => progress({ step: "photos", label: "Placing photos", done: ++placed, total: todo.length }),
+  });
+  Object.assign(cache, res.placements);
+  if (opts.placementsCache) fs.writeFileSync(opts.placementsCache, JSON.stringify(cache, null, 2) + "\n");
+  // A few flaky photos are tolerable; all of them failing means credentials or quota.
+  if (todo.length && res.failures === todo.length) throw new Error(`Every photo failed to place. Last error: ${res.lastError}`);
+
+  const result = await assembleTour(folder, prep, plans, cache, opts);
+  progress({ step: "done", label: "Done", done: 1, total: 1 });
+  return { ...result, usage: res.usage };
 }
 
 /**

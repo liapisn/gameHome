@@ -1,11 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { start } from "workflow/api";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { MIN_PHOTOS } from "@/lib/admin/generate";
+import { buildTourWorkflow } from "@/workflows/build-tour";
 
-/** Queue a tour build. RLS allows members to insert `queued` jobs for their own properties only. */
+/**
+ * Queue a tour build and start it on Vercel (src/workflows/build-tour.ts). RLS allows members to
+ * insert `queued` jobs for their own properties only. With TOUR_BUILDER=worker the job is only
+ * queued, for a local `npm run worker`.
+ */
 export async function queueTourBuild(propertyId: string): Promise<{ error?: string }> {
   z.uuid().parse(propertyId);
   const supabase = await createClient();
@@ -28,9 +34,18 @@ export async function queueTourBuild(propertyId: string): Promise<{ error?: stri
     .in("status", ["queued", "running"]);
   if (count) return { error: "A build is already queued or running." };
 
-  const { error } = await supabase.from("jobs").insert({ property_id: propertyId, type: "build_tour" });
-  if (error) return { error: error.message };
+  const { data: job, error } = await supabase.from("jobs").insert({ property_id: propertyId, type: "build_tour" }).select("id").single();
+  if (error || !job) return { error: error?.message ?? "Could not queue the build." };
   await supabase.from("properties").update({ status: "processing" }).eq("id", propertyId).neq("status", "published");
+
+  if (process.env.TOUR_BUILDER !== "worker") {
+    try {
+      await start(buildTourWorkflow, [job.id]);
+    } catch (err) {
+      // The job stays queued: a local worker can still pick it up.
+      console.error(`Could not start the tour build workflow for job ${job.id}:`, err);
+    }
+  }
 
   revalidatePath(`/app/properties/${propertyId}`, "layout");
   return {};
