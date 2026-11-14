@@ -13,7 +13,7 @@ import type { FloorPlan, Room } from "@/lib/floorplan";
 import { applyCheck, checkPhoto, scoreScene, type CheckAnswer } from "@/lib/scene/check";
 import { detectPhoto, roomKindConflict } from "@/lib/scene/detect";
 import { gatePhoto, type GateAnswer } from "@/lib/scene/gate";
-import { fillFromRules, liftDetection, mergeCandidates, type Candidate } from "@/lib/scene/lift";
+import { fillFromRules, liftDetection, mergeCandidates, screenItems, type Candidate } from "@/lib/scene/lift";
 import { boxesOverlay, topDown } from "@/lib/scene/overlay";
 import { photoCamera, type PhotoCamera } from "@/lib/scene/project";
 import type { PhotoDetection, PhotoGate, RoomScene, SceneItem } from "@/lib/scene/types";
@@ -203,12 +203,18 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
 
   const assemble = (ds: PhotoDetection[]) => {
     const { cands } = lift(ds);
-    const items = mergeCandidates(cands, room, ceiling);
-    return { items, ...scoreScene(items, ds, cams) };
+    const { kept: items, dropped } = screenItems(mergeCandidates(cands, room, ceiling), room.type);
+    // Items left out on purpose aren't misses: score the rest against their own detections.
+    const gone = new Set(dropped.flatMap((d) => d.item.detections));
+    return { items, dropped, ...scoreScene(items, ds.filter((d) => !gone.has(d.id)), cams) };
+  };
+  const logDropped = (dropped: { item: SceneItem; reason: string }[]) => {
+    for (const { item, reason } of dropped) log(`  drop ${item.id} "${item.label}": ${reason}`);
   };
 
   let state = { dets, ...assemble(dets) };
   log(`  lift: ${state.items.length} item(s), score ${state.score}`);
+  logDropped(state.dropped);
   await writeOverlays(usable, state.items, workDir, "r0", room);
 
   // ------------------------------------------------------------------ 3. check loop
@@ -250,6 +256,7 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
     log(`  round ${round}: ${changes} change(s), score ${state.score} → ${cand.score} ${kept ? "kept" : "rejected"}`);
     if (kept) {
       state = cand;
+      logDropped(state.dropped);
       await writeOverlays(usable, state.items, workDir, `r${round}`, room);
     }
     if (gain < MIN_GAIN) break;

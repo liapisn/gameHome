@@ -21,6 +21,9 @@ export const ROOM_TYPES = [
 
 export type RoomType = (typeof ROOM_TYPES)[number];
 
+/** Room kinds that share one open space often enough that a photo can't tell them apart. */
+export const OPEN_PLAN: RoomType[][] = [["living", "dining", "kitchen"], ["hallway", "stairs"], ["office", "bedroom"]];
+
 export interface Wall {
   id: string;
   a: Point;

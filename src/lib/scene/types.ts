@@ -74,6 +74,8 @@ export interface SceneItem extends Omit<Furnishing, "label"> {
   /** Detections it was built from. */
   detections: string[];
   confidence: number;
+  /** Size as measured from the photos when the kind's limits changed it (kept for scoring pose work). */
+  measured?: { w: number; d: number; h: number };
 }
 
 export interface PhotoGate {

@@ -5,7 +5,7 @@
  * are intersected with the floor plane, tops with the vertical line above a contact, wall-hung
  * items with the wall plane their box sits on. Rotations stay multiples of 90° in plan axes.
  */
-import { type FloorPlan, type Point, type Room } from "@/lib/floorplan";
+import { OPEN_PLAN, type FloorPlan, type Point, type Room, type RoomType } from "@/lib/floorplan";
 import { furnishPlan, footprint } from "@/lib/tour/furnish";
 import { type PhotoCamera } from "./project";
 import type { PhotoDetection, SceneItem, SceneKind } from "./types";
@@ -47,6 +47,94 @@ export const KIND_SIZE: Record<SceneKind, [number, number, number]> = {
   shelves: [1.2, 0.35, 1.8],
   generic: [0.8, 0.5, 0.8],
 };
+
+type Range = [number, number];
+/**
+ * Plausible [min, max] in metres per kind: w along the front, d front to back, h the top above the
+ * floor (wall-hung and ceiling items: the height of the item itself). A measurement inside
+ * [min / 2, 2 × max] is clamped into range; further out, the contacts were wrong rather than
+ * imprecise and the typical size from `KIND_SIZE` is used instead.
+ */
+export const KIND_LIMITS: Record<SceneKind, { w: Range; d: Range; h: Range }> = {
+  sofa: { w: [1.2, 3.4], d: [0.75, 1.7], h: [0.6, 1.0] },
+  armchair: { w: [0.6, 1.1], d: [0.6, 1.0], h: [0.65, 1.1] },
+  coffeeTable: { w: [0.4, 1.6], d: [0.4, 1.1], h: [0.25, 0.55] },
+  tvUnit: { w: [0.6, 2.6], d: [0.3, 0.55], h: [0.3, 0.8] },
+  rug: { w: [0.6, 4.0], d: [0.4, 3.5], h: [0.005, 0.03] },
+  kitchen: { w: [0.6, 5.0], d: [0.55, 0.7], h: [0.85, 0.95] },
+  fridge: { w: [0.5, 1.0], d: [0.55, 0.8], h: [1.4, 2.1] },
+  diningTable: { w: [0.7, 2.6], d: [0.7, 1.2], h: [0.7, 0.8] },
+  pendant: { w: [0.15, 1.2], d: [0.15, 1.2], h: [0.1, 1.2] },
+  sideboard: { w: [0.8, 2.4], d: [0.35, 0.55], h: [0.6, 1.0] },
+  bed: { w: [0.9, 2.2], d: [1.9, 2.3], h: [0.25, 1.3] },
+  nightstand: { w: [0.3, 0.7], d: [0.3, 0.55], h: [0.35, 0.75] },
+  wardrobe: { w: [0.5, 4.0], d: [0.5, 0.7], h: [1.7, 2.6] },
+  desk: { w: [0.8, 2.0], d: [0.45, 0.9], h: [0.7, 0.8] },
+  bookshelf: { w: [0.4, 3.0], d: [0.2, 0.5], h: [0.8, 2.5] },
+  bathtub: { w: [1.4, 1.9], d: [0.65, 0.9], h: [0.4, 0.65] },
+  shower: { w: [0.7, 1.8], d: [0.7, 1.2], h: [1.8, 2.4] },
+  toilet: { w: [0.33, 0.45], d: [0.5, 0.75], h: [0.38, 0.9] },
+  vanity: { w: [0.4, 2.0], d: [0.35, 0.6], h: [0.7, 0.95] },
+  console: { w: [0.6, 1.8], d: [0.25, 0.5], h: [0.65, 0.95] },
+  bench: { w: [0.6, 2.2], d: [0.3, 0.6], h: [0.4, 0.55] },
+  plant: { w: [0.2, 1.2], d: [0.2, 1.2], h: [0.3, 2.2] },
+  floorLamp: { w: [0.2, 0.6], d: [0.2, 0.6], h: [1.2, 2.0] },
+  art: { w: [0.2, 2.5], d: [0.02, 0.06], h: [0.2, 1.8] },
+  shelves: { w: [0.4, 3.5], d: [0.2, 0.5], h: [0.3, 2.5] },
+  // Anything from a stool to a fireplace or a tall cabinet; wide, but nothing standing is 1.5 m deep.
+  generic: { w: [0.2, 4.0], d: [0.2, 1.0], h: [0.05, 2.6] },
+};
+/** Smallest visible face of a wall-hung item, so mirrors and pictures don't collapse to slivers. */
+const MIN_FACE = 0.2;
+/** Height of wall-hung items whose floor-standing range doesn't apply (a floating vanity is a short cabinet). */
+const WALL_HEIGHT: Partial<Record<SceneKind, Range>> = { vanity: [0.2, 0.7], toilet: [0.3, 0.5] };
+/** Thickness of a wall-hung item: `KIND_SIZE` depth, except `generic`, whose typical size is a floor item. */
+export const wallDepth = (kind: SceneKind) => (kind === "generic" ? 0.35 : (KIND_SIZE[kind] ?? KIND_SIZE.generic)[1]);
+/** Confidence lost when a measurement was replaced by the typical size. */
+const CONF_STEP = 0.15;
+/** Photo items less sure than this are left out (unless built in); rules fill the gap. */
+export const MIN_CONFIDENCE = 0.45;
+
+/** Room types each kind belongs in (open-plan partners count too). Kinds not listed fit anywhere. */
+const KIND_ROOMS: Partial<Record<SceneKind, RoomType[]>> = {
+  sofa: ["living", "office", "bedroom", "balcony"],
+  coffeeTable: ["living", "balcony"],
+  tvUnit: ["living", "bedroom", "office"],
+  kitchen: ["kitchen"],
+  fridge: ["kitchen", "storage"],
+  diningTable: ["dining", "kitchen", "living", "balcony"],
+  bed: ["bedroom", "living"],
+  nightstand: ["bedroom"],
+  wardrobe: ["bedroom", "hallway", "storage", "office"],
+  desk: ["office", "bedroom", "living"],
+  bathtub: ["bathroom"],
+  shower: ["bathroom"],
+  toilet: ["bathroom"],
+  vanity: ["bathroom", "bedroom"],
+};
+
+/** Can a `kind` stand in a room of this type? Yes in its own types and their open-plan partners. */
+export function kindFitsRoom(kind: string, type: RoomType): boolean {
+  const ok = KIND_ROOMS[kind as SceneKind];
+  if (!ok || ok.includes(type)) return true;
+  return OPEN_PLAN.some((g) => g.includes(type) && g.some((t) => ok.includes(t)));
+}
+
+const STOP_WORDS = new Set(["a", "an", "the", "of", "with", "and", "left", "right", "back", "front", "rear", "far", "near", "main", "small", "large", "big"]);
+/** Label as an identity key: lower-case, singular, stop-words and positions dropped ("Left wall cabinets" = "wall cabinet"). */
+export function normaliseLabel(label: string): string {
+  const singular = (w: string) =>
+    w.length <= 3 || w.endsWith("ss") ? w
+      : w.endsWith("ies") ? `${w.slice(0, -3)}y`
+      : w.endsWith("ves") ? `${w.slice(0, -3)}f`
+      : /(ch|sh|x|ss)es$/.test(w) ? w.slice(0, -2)
+      : w.endsWith("s") ? w.slice(0, -1)
+      : w;
+  return label.toLowerCase().split(/[^a-z]+/).filter((w) => w && !STOP_WORDS.has(w)).map(singular).join(" ");
+}
+
+/** What counts as the same kind for merging: named kinds by kind, `generic` by its label. */
+const identity = (det: PhotoDetection) => (det.kind === "generic" ? `generic:${normaliseLabel(det.label)}` : det.kind);
 
 /** Kinds whose back belongs on a wall even if the model didn't say so. */
 const WALL_KINDS = new Set<string>(["kitchen", "fridge", "wardrobe", "sideboard", "bookshelf", "shelves", "tvUnit", "vanity", "toilet", "bathtub", "console", "bed"]);
@@ -204,7 +292,7 @@ export function liftDetection(det: PhotoDetection, cam: PhotoCamera, room: Room,
   const [cx, cy] = [cam.eye[0], cam.eye[1]];
   const [by0, bx0, by1, bx1] = det.box.map((n) => n / 1000);
 
-  if (mount === "wall") return liftWall(det, cam, room, ceiling, dd, bx0, by0, bx1, by1);
+  if (mount === "wall") return liftWall(det, cam, room, ceiling, wallDepth(kind), bx0, by0, bx1, by1);
   if (mount === "ceiling") {
     const top = cam.onPlane((bx0 + bx1) / 2, by0, ceiling);
     if (!top || !nearRoom([top[0], top[1]], room, 0.3)) return { candidate: null, floorInside: 0, floorOutside: 0, reason: "ceiling point outside room" };
@@ -411,7 +499,7 @@ const rectCover = (a: Rect, b: Rect) => {
 const centreGap = (a: Rect, b: Rect) => Math.hypot((a.x0 + a.x1 - b.x0 - b.x1) / 2, (a.y0 + a.y1 - b.y0 - b.y1) / 2);
 
 const sameThing = (a: Candidate, b: Candidate) => {
-  if (a.det.kind !== b.det.kind) return false;
+  if (identity(a.det) !== identity(b.det)) return false;
   const vertical = Math.abs((a.z0 + a.z1) / 2 - (b.z0 + b.z1) / 2) < 0.6;
   // Views disagree by more for big things far away; scale the allowance with size.
   const size = Math.max(Math.hypot(a.rect.x1 - a.rect.x0, a.rect.y1 - a.rect.y0), Math.hypot(b.rect.x1 - b.rect.x0, b.rect.y1 - b.rect.y0));
@@ -419,32 +507,77 @@ const sameThing = (a: Candidate, b: Candidate) => {
   return vertical && (rectIou(a.rect, b.rect) > 0.1 || rectCover(a.rect, b.rect) > 0.5 || centreGap(a.rect, b.rect) < Math.max(0.6, size * (sameWall ? 0.5 : 0.35)));
 };
 
+/** How an item is held up once lifted: decides what its height means and where it is anchored. */
+export type Hang = "floor" | "wall" | "ceiling";
+
+export interface Sized {
+  rect: Rect;
+  z0: number;
+  z1: number;
+  /** Width runs along plan x. */
+  alongX: boolean;
+  /** Some dimension was so far off that the typical size replaced it. */
+  off: boolean;
+  /** The size as measured, before limits. */
+  measured: { w: number; d: number; h: number };
+}
+
 /**
- * Keep sizes plausible for the kind: depth within [0.6, 1.6] × typical (far contacts stretch it),
- * width at least half the typical. Against a wall the back stays put and the front moves.
+ * Keep an item's size inside its kind's limits (`KIND_LIMITS`). Depth is anchored at the wall for
+ * wall-backed items (the front moves), width at its centre, height at the floor (wall-hung: its
+ * centre, ceiling items: the ceiling). Wall-hung items get their thickness from the kind and a
+ * face of at least `MIN_FACE`.
  */
-function sanitize(r: Rect, side: Side | null, kind: SceneKind, mount: string): Rect {
-  if (mount !== "floor" || kind === "rug") return r;
-  const [dw, dd] = KIND_SIZE[kind] ?? KIND_SIZE.generic;
-  const out = { ...r };
-  const alongX = side ? side === "N" || side === "S" : r.x1 - r.x0 >= r.y1 - r.y0;
-  const [wLo, wHi, dLo, dHi] = alongX ? (["x0", "x1", "y0", "y1"] as const) : (["y0", "y1", "x0", "x1"] as const);
-  const depth = out[dHi] - out[dLo];
-  const want = clamp(depth, dd * 0.6, dd * 1.6);
-  if (want !== depth) {
-    if (side === "N" || side === "W") out[dHi] = out[dLo] + want;
-    else if (side === "S" || side === "E") out[dLo] = out[dHi] - want;
-    else {
-      const m = (out[dLo] + out[dHi]) / 2;
-      [out[dLo], out[dHi]] = [m - want / 2, m + want / 2];
+export function fitSize(r: Rect, z0: number, z1: number, side: Side | null, kind: SceneKind, hang: Hang, ceiling: number): Sized {
+  const L = KIND_LIMITS[kind] ?? KIND_LIMITS.generic;
+  const [tw, td, th] = KIND_SIZE[kind] ?? KIND_SIZE.generic;
+  let off = false;
+  /** `small`: whether a tiny measurement is a mistake (else it is just clamped up). */
+  const fit = (m: number, [lo, hi]: Range, typical: number, small = true) => {
+    if (!(m <= hi * 2) || (small && !(m >= lo / 2))) {
+      off = true;
+      return clamp(typical, lo, hi);
     }
+    return clamp(m, lo, hi);
+  };
+  const ex = r.x1 - r.x0;
+  const ey = r.y1 - r.y0;
+  // Free-standing: width along the extent that matches the kind's shape (a bed is deeper than wide).
+  const alongX = side ? side === "N" || side === "S" : Math.abs(ex - ey) < 1e-9 || ex > ey === tw >= td;
+  const [wLo, wHi, dLo, dHi] = alongX ? (["x0", "x1", "y0", "y1"] as const) : (["y0", "y1", "x0", "x1"] as const);
+  const mw = r[wHi] - r[wLo];
+  const md = r[dHi] - r[dLo];
+  const mh = hang === "floor" ? z1 : z1 - z0;
+  const r3 = (v: number) => Math.round(v * 1000) / 1000;
+  const measured = { w: r3(mw), d: r3(md), h: r3(mh) };
+
+  let w: number, d: number, h: number;
+  if (hang === "wall") {
+    // The face is measured on the wall plane: small means bad corners, not a wrong object.
+    const H = WALL_HEIGHT[kind] ?? [MIN_FACE, L.h[1]];
+    w = fit(mw, [Math.max(MIN_FACE, L.w[0]), L.w[1]], tw, false);
+    h = fit(mh, [Math.max(MIN_FACE, H[0]), H[1]], th, false);
+    d = wallDepth(kind);
+  } else {
+    w = fit(mw, L.w, tw);
+    d = fit(md, L.d, td);
+    h = fit(mh, L.h, th);
   }
-  const width = out[wHi] - out[wLo];
-  if (width < dw * 0.5) {
-    const m = (out[wLo] + out[wHi]) / 2;
-    [out[wLo], out[wHi]] = [m - dw * 0.25, m + dw * 0.25];
+
+  const out = { ...r };
+  const mw0 = (r[wLo] + r[wHi]) / 2;
+  [out[wLo], out[wHi]] = [mw0 - w / 2, mw0 + w / 2];
+  if (side === "N" || side === "W") out[dHi] = out[dLo] + d;
+  else if (side === "S" || side === "E") out[dLo] = out[dHi] - d;
+  else {
+    const m = (r[dLo] + r[dHi]) / 2;
+    [out[dLo], out[dHi]] = [m - d / 2, m + d / 2];
   }
-  return out;
+  let nz0: number;
+  if (hang === "floor") nz0 = 0;
+  else if (hang === "ceiling") nz0 = z1 - h;
+  else nz0 = clamp((z0 + z1) / 2 - h / 2, 0, Math.max(0, ceiling - h));
+  return { rect: out, z0: nz0, z1: nz0 + h, alongX, off, measured };
 }
 
 function hash(s: string) {
@@ -463,7 +596,7 @@ export function mergeCandidates(cands: Candidate[], room: Room, ceiling: number)
     let home = clusters.find((cl) => free(cl, c) && cl.some((o) => sameThing(o, c)));
     if (!home && c.fit === "box") {
       home = clusters
-        .filter((cl) => free(cl, c) && cl[0].det.kind === c.det.kind && centreGap(cl[0].rect, c.rect) < 0.8 + Math.hypot(cl[0].rect.x1 - cl[0].rect.x0, cl[0].rect.y1 - cl[0].rect.y0) / 2)
+        .filter((cl) => free(cl, c) && identity(cl[0].det) === identity(c.det) && centreGap(cl[0].rect, c.rect) < 0.8 + Math.hypot(cl[0].rect.x1 - cl[0].rect.x0, cl[0].rect.y1 - cl[0].rect.y0) / 2)
         .sort((a, b) => centreGap(a[0].rect, c.rect) - centreGap(b[0].rect, c.rect))[0];
     }
     if (home) home.push(c);
@@ -472,22 +605,23 @@ export function mergeCandidates(cands: Candidate[], room: Room, ceiling: number)
 
   // Identity across photos when poses disagree: if no photo shows two of a kind, every photo's one
   // is the same object (one fridge, one dining table); built-ins on the same wall are one run.
+  // `generic` things count by label ("wall cabinets"), not as one kind.
   const perPhoto = new Map<string, number>();
   for (const c of cands) {
-    const k = `${c.det.kind}|${c.det.photoId}`;
+    const k = `${identity(c.det)}|${c.det.photoId}`;
     perPhoto.set(k, (perPhoto.get(k) ?? 0) + 1);
   }
-  const single = (kind: string) => ![...perPhoto.entries()].some(([k, n]) => k.startsWith(`${kind}|`) && n > 1);
+  const single = (id: string) => ![...perPhoto.entries()].some(([k, n]) => k.startsWith(`${id}|`) && n > 1);
   for (let merged = true; merged; ) {
     merged = false;
     outer: for (let i = 0; i < clusters.length; i++) {
       for (let j = i + 1; j < clusters.length; j++) {
         const a = clusters[i];
         const b = clusters[j];
-        if (a[0].det.kind !== b[0].det.kind || a.some((x) => b.some((y) => x.det.photoId === y.det.photoId))) continue;
+        if (identity(a[0].det) !== identity(b[0].det) || a.some((x) => b.some((y) => x.det.photoId === y.det.photoId))) continue;
         const gap = centreGap(a[0].rect, b[0].rect);
         const sameWall = a[0].side != null && a[0].side === b[0].side && a[0].det.builtIn && b[0].det.builtIn;
-        if ((single(a[0].det.kind) && gap < 2.5 && a[0].det.mount === b[0].det.mount) || (sameWall && gap < 2.0)) {
+        if ((single(identity(a[0].det)) && gap < 2.5 && a[0].det.mount === b[0].det.mount) || (sameWall && gap < 2.0)) {
           a.push(...b);
           clusters.splice(j, 1);
           merged = true;
@@ -498,8 +632,7 @@ export function mergeCandidates(cands: Candidate[], room: Room, ceiling: number)
   }
 
   const RANK: Record<Candidate["fit"], number> = { footprint: 3, "front-edge": 2, wall: 2, ceiling: 1, box: 0 };
-  const counts = new Map<string, number>();
-  return clusters.map((all) => {
+  const drafts = clusters.map((all): SceneItem => {
     // Geometry from the best kind of fit in the cluster only; weaker fits still count as views.
     const best = Math.max(...all.map((c) => RANK[c.fit]));
     const top = all.filter((c) => RANK[c.fit] === best);
@@ -522,12 +655,14 @@ export function mergeCandidates(cands: Candidate[], room: Room, ceiling: number)
       const snapped = snapToWall(rect, room, 0.6, KIND_SIZE[lead.det.kind as SceneKind]?.[1] ?? 0.5, false, side);
       if (snapped && snapped.side === side) rect = snapped.rect;
     }
-    rect = clampRect(sanitize(rect, side, lead.det.kind as SceneKind, lead.det.mount), room);
-    const z0 = avg((c) => c.z0);
-    const z1 = Math.min(ceiling, avg((c) => c.z1));
+    const kind = lead.det.kind as SceneKind;
+    const hang: Hang = lead.fit === "ceiling" ? "ceiling" : lead.det.mount === "wall" && !FLOOR_ONLY.has(kind) ? "wall" : "floor";
+    const sized = fitSize(rect, avg((c) => c.z0), Math.min(ceiling, avg((c) => c.z1)), side, kind, hang, ceiling);
+    rect = clampRect(sized.rect, room);
+    const { z0, z1 } = sized;
     const ex = rect.x1 - rect.x0;
     const ey = rect.y1 - rect.y0;
-    // Furnishing frame: w along local x, d along local z (front). rot from the wall side, else long axis.
+    // Furnishing frame: w along local x, d along local z (front). rot from the wall side, else the width axis.
     let rot: number;
     let w: number;
     let d: number;
@@ -535,27 +670,24 @@ export function mergeCandidates(cands: Candidate[], room: Room, ceiling: number)
       rot = ROT[side];
       [w, d] = side === "N" || side === "S" ? [ex, ey] : [ey, ex];
     } else {
-      const axis = ex >= ey ? "x" : "y";
-      rot = axis === "x" ? 0 : Math.PI / 2;
-      [w, d] = axis === "x" ? [ex, ey] : [ey, ex];
+      rot = sized.alongX ? 0 : Math.PI / 2;
+      [w, d] = sized.alongX ? [ex, ey] : [ey, ex];
     }
-    const kind = lead.det.kind;
-    const n = (counts.get(kind) ?? 0) + 1;
-    counts.set(kind, n);
-    const id = `${kind}-${n}`;
     const views = new Set(all.map((c) => c.det.photoId)).size;
     const fitQ = Math.max(...cl.map((c) => ({ footprint: 1, "front-edge": 0.85, wall: 0.85, ceiling: 0.7, box: 0.55 })[c.fit]));
-    const confidence = Math.round(Math.min(1, (views >= 3 ? 0.9 : views === 2 ? 0.75 : 0.55) * fitQ) * 100) / 100;
-    const wallHung = lead.det.mount === "wall" && kind !== "kitchen";
+    const base = Math.min(1, (views >= 3 ? 0.9 : views === 2 ? 0.75 : 0.55) * fitQ) - (sized.off ? CONF_STEP : 0);
+    const confidence = Math.round(Math.max(0, base) * 100) / 100;
+    const wallHung = hang === "wall";
+    const h = hang === "floor" ? z1 : z1 - z0;
+    const m = sized.measured;
     const item: SceneItem = {
-      id,
+      id: "",
       kind,
       label: lead.det.label,
       x: (rect.x0 + rect.x1) / 2,
       y: (rect.y0 + rect.y1) / 2,
-      rot, w, d,
-      h: wallHung || lead.fit === "ceiling" ? z1 - z0 : z1,
-      seed: hash(id + lead.det.label),
+      rot, w, d, h,
+      seed: 0,
       color: lead.det.color,
       material: lead.det.material,
       builtIn: lead.det.builtIn,
@@ -565,11 +697,64 @@ export function mergeCandidates(cands: Candidate[], room: Room, ceiling: number)
       confidence,
     };
     if (wallHung) item.elevation = (z0 + z1) / 2;
-    if (lead.fit === "ceiling") item.ceiling = ceiling;
+    if (hang === "ceiling") item.ceiling = ceiling;
     if (kind === "kitchen") item.uppers = false;
     if (kind === "diningTable") item.chairs = Math.max(2, Math.min(8, 2 * Math.round(Math.max(w, d) / 0.6)));
+    if (Math.abs(m.w - w) > 0.01 || Math.abs(m.d - d) > 0.01 || Math.abs(m.h - h) > 0.01) item.measured = m;
     return item;
   });
+
+  const counts = new Map<string, number>();
+  return dropOverlaps(drafts).map((item) => {
+    const n = (counts.get(item.kind) ?? 0) + 1;
+    counts.set(item.kind, n);
+    const id = `${item.kind}-${n}`;
+    return { ...item, id, seed: hash(id + item.label) };
+  });
+}
+
+/**
+ * Two items of one kind covering more than half the smaller footprint at the same height are one
+ * object seen twice: keep the surer one, and give it the other's detections and views.
+ */
+function dropOverlaps(items: SceneItem[]): SceneItem[] {
+  const order = [...items].sort((a, b) => b.confidence - a.confidence || b.seenIn.length - a.seenIn.length);
+  const kept: SceneItem[] = [];
+  for (const it of order) {
+    const b = itemBox(it);
+    const host = kept.find((k) => {
+      if (k.kind !== it.kind) return false;
+      const a = itemBox(k);
+      const zShared = Math.min(a.z1, b.z1) - Math.max(a.z0, b.z0);
+      return rectCover(a, b) > 0.5 && zShared > 0.5 * Math.min(a.z1 - a.z0, b.z1 - b.z0);
+    });
+    if (!host) {
+      kept.push(it);
+      continue;
+    }
+    host.detections = [...host.detections, ...it.detections];
+    host.seenIn = [...new Set([...host.seenIn, ...it.seenIn])];
+  }
+  return items.filter((i) => kept.includes(i));
+}
+
+/**
+ * Photo items that shouldn't be shown: kinds that can't stand in this type of room, and guesses
+ * below `MIN_CONFIDENCE` (built-ins excepted). Rule-based fill covers what is left out.
+ */
+export function screenItems(items: SceneItem[], type: RoomType) {
+  const kept: SceneItem[] = [];
+  const dropped: { item: SceneItem; reason: string }[] = [];
+  for (const item of items) {
+    const reason = !kindFitsRoom(item.kind, type)
+      ? `a ${item.kind} doesn't belong in a ${type}`
+      : item.confidence < MIN_CONFIDENCE && !item.builtIn
+        ? `confidence ${item.confidence} < ${MIN_CONFIDENCE}`
+        : null;
+    if (reason) dropped.push({ item, reason });
+    else kept.push(item);
+  }
+  return { kept, dropped };
 }
 
 /** Rule-based items for this room where no detected item stands, for parts of the room no photo shows. */
