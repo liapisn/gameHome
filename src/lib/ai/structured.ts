@@ -47,6 +47,8 @@ export async function generateStructured<T extends z.ZodType>(
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
+const CALL_TIMEOUT_MS = Number(process.env.GEMINI_CALL_TIMEOUT_MS ?? 12 * 60_000);
+
 /** Default for every Gemini call; GEMINI_MODEL overrides it. */
 export const GEMINI_DEFAULT_MODEL = "gemini-4-carbon";
 /** The object workers' model (many workers, about a dozen calls each). */
@@ -96,6 +98,9 @@ async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY! },
         body: JSON.stringify(body),
+        // A whole call (stream included) gets at most this long, then it is retried: a stalled
+        // stream would otherwise hang the build for good.
+        signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
       });
     } catch (e) {
       lastError = e; // network error: retry

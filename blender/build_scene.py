@@ -105,6 +105,8 @@ def asset_mesh(path):
     before = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=path)
     new = [o for o in bpy.data.objects if o not in before]
+    # Names, not references: joining deletes the joined parts (models built as code have many).
+    new_names = [o.name for o in new]
     meshes = [o for o in new if o.type == "MESH"]
     if len(meshes) > 1:
         bpy.ops.object.select_all(action="DESELECT")
@@ -122,8 +124,9 @@ def asset_mesh(path):
     ob.select_set(True)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     data = ob.data
-    for o in new:
-        if o.name in bpy.data.objects:
+    for name in new_names:
+        o = bpy.data.objects.get(name)
+        if o is not None:
             bpy.data.objects.remove(o)
     _assets[path] = data
     return data

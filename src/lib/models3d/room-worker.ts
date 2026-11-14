@@ -85,7 +85,8 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
   const items = scene.items.map((i) => ({ ...i, views: itemViews(i, detections).filter((v) => gated.has(v.photoId)) }));
 
   // ------------------------------------------------------------------ 1. what gets a model
-  const generated = items.filter((i) => !builtToMeasure(i) && !PICTURE.has(i.kind));
+  // Every item gets a model (fitted units built to measure, see briefs.ts) except pictures.
+  const generated = items.filter((i) => !PICTURE.has(i.kind));
   const firstCrops = new Map<string, string | null>();
   for (const i of generated) {
     if (!i.views.length) {
@@ -127,7 +128,7 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     b.workDir = path.join(objectsDir, b.assetId);
     briefs.set(b.assetId, b);
   }
-  say(`${items.length} item(s): ${briefs.size} model(s) to make for ${generated.length} item(s)${tables.length ? ` + chairs` : ""}, ${items.length - generated.length} built to measure or pictures`);
+  say(`${items.length} item(s): ${briefs.size} model(s) to make for ${generated.length} item(s)${tables.length ? ` + chairs` : ""}, ${items.length - generated.length} picture(s)`);
 
   // ------------------------------------------------------------------ 2. object workers, all at once
   const results = new Map<string, ObjectResult>();
@@ -226,11 +227,14 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
   if (judged.length && cameras.length) {
     say(`orientation: rendering every model at 0°, 90°, 180°, 270° from ${cameras.length} camera(s)`);
     const turns = [0, 90, 180, 270];
+    // The four builds run side by side, each on its own boxd machine.
     const renders: Record<number, Record<string, string>> = {};
-    for (const t of turns) {
-      const res = await build(`turn-${t}`, { turnAll: t });
-      renders[t] = Object.fromEntries(res.cameras.map((c) => [c.id, c.render!]));
-    }
+    await Promise.all(
+      turns.map(async (t) => {
+        const res = await build(`turn-${t}`, { turnAll: t });
+        renders[t] = Object.fromEntries(res.cameras.map((c) => [c.id, c.render!]));
+      }),
+    );
     await pool(judged, 6, async (p) => {
       // The photo where this copy is largest.
       const area = (b: number[]) => (b[2] - b[0]) * (b[3] - b[1]);

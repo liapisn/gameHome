@@ -11,18 +11,12 @@ import type { ObjectBrief, ObjectView } from "./types";
 import { slug } from "./util";
 
 /**
- * Built to measure, not generated: fitted kitchens and wardrobes must meet their walls exactly,
- * which a generated model can't. They stay as parametric boxes in the photo's colours.
+ * Built to measure: fitted kitchens and wardrobes must meet their walls exactly. They get an object
+ * worker like everything else, with `fit: "exact"` and the wall run's length in the brief, so the
+ * code builds the run to size (an L-shaped kitchen is one brief with both runs).
  */
 export const BUILT_TO_MEASURE = new Set<string>(["kitchen", "wardrobe"]);
-/**
- * Large fitted units (a wall of cupboards, a floor-to-ceiling unit) are built to measure too: a
- * generated model draws them as freestanding furniture with tops, sides and legs they don't have.
- * Small built-ins (radiators, air conditioners) generate fine.
- */
-export const builtToMeasure = (i: { kind: string; builtIn?: boolean; w: number; h: number }) =>
-  // The size rule (large built-ins) is off for now: it would discard finished models of fitted units.
-  BUILT_TO_MEASURE.has(i.kind) && i.w >= 0;
+export const builtToMeasure = (i: { kind: string }) => BUILT_TO_MEASURE.has(i.kind);
 /** Flat on a wall: a framed plane textured with the photo crop, no 3D generation. */
 export const PICTURE = new Set<string>(["art"]);
 
@@ -62,6 +56,12 @@ export function briefForItem(tour: Tour, item: SceneItem, views: ItemView[], wor
     color: item.color,
     material: item.material,
     workDir: path.join(workRoot, assetId),
+    ...(builtToMeasure(item)
+      ? {
+          fit: "exact" as const,
+          wall: { length: item.w, notes: `Fitted ${item.kind} along one wall, ${item.w.toFixed(2)} m long, ${item.h.toFixed(2)} m tall, ${item.d.toFixed(2)} m deep: no visible back or outer sides where it meets walls.` },
+        }
+      : {}),
   };
 }
 
