@@ -47,14 +47,14 @@ isOneToOne: false
                   ]
                 },"media": {
                   Row: {
-                    "bytes": number | null,"created_at": string,"height": number | null,"hint": string | null,"id": string,"kind": Database["public"]['Enums']["media_kind"],"level_id": string | null,"property_id": string,"room_id": string | null,"room_type": Database["public"]['Enums']["room_type"] | null,"sort": number,"storage_path": string,"width": number | null
+                    "bytes": number | null,"created_at": string,"height": number | null,"hint": string | null,"id": string,"kind": Database["public"]['Enums']["media_kind"],"level_id": string | null,"property_id": string,"room_estimate": Json | null,"room_id": string | null,"room_type": Database["public"]['Enums']["room_type"] | null,"sort": number,"storage_path": string,"width": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "bytes"?: number | null,"created_at"?: string,"height"?: number | null,"hint"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["media_kind"],"level_id"?: string | null,"property_id": string,"room_id"?: string | null,"room_type"?: Database["public"]['Enums']["room_type"] | null,"sort"?: number,"storage_path": string,"width"?: number | null
+                    "bytes"?: number | null,"created_at"?: string,"height"?: number | null,"hint"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["media_kind"],"level_id"?: string | null,"property_id": string,"room_estimate"?: Json | null,"room_id"?: string | null,"room_type"?: Database["public"]['Enums']["room_type"] | null,"sort"?: number,"storage_path": string,"width"?: number | null
                   }
                   Update: {
-                    "bytes"?: number | null,"created_at"?: string,"height"?: number | null,"hint"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["media_kind"],"level_id"?: string | null,"property_id"?: string,"room_id"?: string | null,"room_type"?: Database["public"]['Enums']["room_type"] | null,"sort"?: number,"storage_path"?: string,"width"?: number | null
+                    "bytes"?: number | null,"created_at"?: string,"height"?: number | null,"hint"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["media_kind"],"level_id"?: string | null,"property_id"?: string,"room_estimate"?: Json | null,"room_id"?: string | null,"room_type"?: Database["public"]['Enums']["room_type"] | null,"sort"?: number,"storage_path"?: string,"width"?: number | null
                   }
                   Relationships: [
                     {

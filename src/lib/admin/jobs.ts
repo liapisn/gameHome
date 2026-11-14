@@ -103,7 +103,7 @@ export async function exportProperty(
 ): Promise<ExportedProperty> {
   const { data: p, error } = await supabase
     .from("properties")
-    .select("id, org_id, title, levels ( id, name, sort, floorplan_path, plan ), media ( id, kind, storage_path, level_id, hint, room_type, room_id, sort )")
+    .select("id, org_id, title, levels ( id, name, sort, floorplan_path, plan ), media ( id, kind, storage_path, level_id, hint, room_type, room_id, room_estimate, sort )")
     .eq("id", propertyId)
     .single();
   if (error || !p) throw new Error(`Property not found: ${error?.message ?? propertyId}`);
@@ -119,14 +119,21 @@ export async function exportProperty(
       ...(l.floorplan_path ? {} : { note: "a floor of this property without a floor plan" }),
     })),
     // Photo files are named after their media row, so the tour's `src` maps straight back to Storage.
-    photos: photos.map((m) => ({
-      file: fileOf(m.id),
-      hint: m.hint ?? undefined,
-      level: m.level_id ?? undefined,
-      roomType: m.room_type ?? undefined,
+    photos: photos.map((m) => {
+      // The owner's room or kind of room, else the estimated room (shown to the owner, who left it as it was).
       // A room id only means something on the stored plan it was picked from.
-      roomId: m.room_id && levels.some((l) => l.id === m.level_id && l.plan) ? m.room_id : undefined,
-    })),
+      const est = m.room_estimate as { levelId: string | null; roomId: string | null } | null;
+      const useEst = !m.room_id && !m.room_type && !!est?.levelId && !!est.roomId && (!m.level_id || m.level_id === est.levelId);
+      const level = useEst ? est!.levelId! : m.level_id;
+      const roomId = useEst ? est!.roomId! : m.room_id;
+      return {
+        file: fileOf(m.id),
+        hint: m.hint ?? undefined,
+        level: level ?? undefined,
+        roomType: m.room_type ?? undefined,
+        roomId: roomId && levels.some((l) => l.id === level && l.plan) ? roomId : undefined,
+      };
+    }),
   };
   if (opts.floorplans !== false) {
     for (const l of levels) if (l.floorplan_path) await download(supabase, l.floorplan_path, path.join(dir, `floorplans/${l.id}.webp`));

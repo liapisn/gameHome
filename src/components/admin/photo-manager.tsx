@@ -25,7 +25,8 @@ import { MAX_PHOTOS_PER_PROPERTY, MEDIA_BUCKET, photoPath, thumbPathFor } from "
 import type { PropertyMedia } from "@/lib/admin/data";
 import { ROOM_TYPES, type RoomType } from "@/lib/floorplan";
 import { ROOM_TYPE_LABEL } from "./plan-rooms";
-import { deletePhotos, recordPhotos, reorderPhotos, updatePhoto } from "@/app/app/properties/[id]/media-actions";
+import { deletePhotos, estimateRooms, recordPhotos, reorderPhotos, updatePhoto } from "@/app/app/properties/[id]/media-actions";
+import type { RoomEstimate } from "@/lib/tour/estimate-room";
 import { DropZone } from "./drop-zone";
 
 type Photo = PropertyMedia["photos"][number];
@@ -40,6 +41,8 @@ interface Upload {
 }
 
 const CONCURRENCY = 3;
+/** Photos per estimate call (the server estimates them in parallel; calls run one after another). */
+const ESTIMATE_BATCH = 6;
 
 export function PhotoManager({
   propertyId,
@@ -75,6 +78,32 @@ export function PhotoManager({
     photosRef.current = photos;
   }, [photos]);
 
+  // Room estimates: which photos are being estimated now, and progress for the button.
+  const hasPlans = levels.some((l) => l.plan);
+  const [estimating, setEstimating] = useState<Set<string>>(new Set());
+  const [estimateProgress, setEstimateProgress] = useState<{ done: number; total: number } | null>(null);
+
+  const runEstimates = async (ids: string[]) => {
+    if (!ids.length || !hasPlans) return;
+    setEstimating((cur) => new Set([...cur, ...ids]));
+    setEstimateProgress({ done: 0, total: ids.length });
+    let done = 0;
+    for (let i = 0; i < ids.length; i += ESTIMATE_BATCH) {
+      const batch = ids.slice(i, i + ESTIMATE_BATCH);
+      try {
+        const found: Record<string, RoomEstimate> = await estimateRooms(propertyId, batch);
+        setPhotos((list) => list.map((p) => (found[p.id] ? { ...p, roomEstimate: found[p.id] } : p)));
+      } catch (e) {
+        setError(e instanceof Error ? `Estimating rooms: ${e.message}` : "Estimating rooms failed");
+      }
+      done += batch.length;
+      setEstimateProgress({ done, total: ids.length });
+      setEstimating((cur) => new Set([...cur].filter((id) => !batch.includes(id))));
+    }
+    setEstimateProgress(null);
+    router.refresh();
+  };
+
   const patchUpload = (key: string, patch: Partial<Upload>) =>
     setUploads((list) => list.map((u) => (u.key === key ? { ...u, ...patch } : u)));
 
@@ -98,6 +127,8 @@ export function PhotoManager({
         for (const u of list) if (u.status === "done") URL.revokeObjectURL(u.preview);
         return list.filter((u) => u.status !== "done");
       });
+      // New photos get a room estimate straight away.
+      void runEstimates(uploaded);
     });
   };
 
@@ -201,6 +232,21 @@ export function PhotoManager({
           {busy && ` · uploading ${uploads.filter((u) => u.status !== "done" && u.status !== "error").length}…`}
           {photos.length > 1 && " · drag ⠿ to reorder"}
         </p>
+        {hasPlans && photos.length > 0 && (
+          <button
+            type="button"
+            disabled={!!estimateProgress}
+            onClick={() => void runEstimates(photos.filter((p) => !p.roomId && !p.roomType).map((p) => p.id))}
+            title="Guess each photo's room from the floor plan. Photos where you picked the room yourself are left alone."
+            className="rounded-lg border border-black/15 px-3 py-1 text-xs font-medium hover:bg-black/5 disabled:opacity-60"
+          >
+            {estimateProgress
+              ? `Estimating rooms ${estimateProgress.done}/${estimateProgress.total}…`
+              : photos.some((p) => p.roomEstimate)
+                ? "Estimate rooms again"
+                : "Estimate rooms"}
+          </button>
+        )}
         {failed.length > 0 && (
           <button
             type="button"
@@ -232,6 +278,7 @@ export function PhotoManager({
                 photo={photo}
                 index={i}
                 levels={levels}
+                estimating={estimating.has(photo.id)}
                 onLevel={(levelId) => {
                   setPhotos((list) => list.map((p) => (p.id === photo.id ? { ...p, levelId, roomId: null } : p)));
                   act(() => updatePhoto(propertyId, photo.id, { levelId }));
@@ -266,6 +313,7 @@ function PhotoCard({
   photo,
   index,
   levels,
+  estimating,
   onLevel,
   onHint,
   onRoom,
@@ -275,6 +323,7 @@ function PhotoCard({
   photo: Photo;
   index: number;
   levels: Level[];
+  estimating: boolean;
   onLevel: (levelId: string | null) => void;
   onHint: (hint: string) => void;
   onRoom: (levelId: string, roomId: string, roomType: RoomType) => void;
@@ -283,7 +332,17 @@ function PhotoCard({
 }) {
   // Rooms come from the stored plans: the photo's floor, or every floor with a plan when it has none.
   const roomLevels = levels.filter((l) => l.plan && (!photo.levelId || l.id === photo.levelId));
-  const roomValue = photo.roomId && photo.levelId ? `room:${photo.levelId}:${photo.roomId}` : photo.roomType ? `type:${photo.roomType}` : "";
+  // Your own pick, else the estimate (which builds use the same way until you change it).
+  const est = photo.roomEstimate;
+  const showEstimate = !photo.roomId && !photo.roomType && !!est && (!photo.levelId || !est.levelId || est.levelId === photo.levelId);
+  const roomValue =
+    photo.roomId && photo.levelId
+      ? `room:${photo.levelId}:${photo.roomId}`
+      : photo.roomType
+        ? `type:${photo.roomType}`
+        : showEstimate && est.levelId && est.roomId
+          ? `room:${est.levelId}:${est.roomId}`
+          : "";
   const pickRoom = (value: string) => {
     if (value.startsWith("room:")) {
       const [, levelId, roomId] = value.split(":");
@@ -377,6 +436,14 @@ function PhotoCard({
             ))}
           </optgroup>
         </select>
+        {estimating ? (
+          <p className="text-[11px] text-neutral-500">Estimating the room…</p>
+        ) : showEstimate ? (
+          <p className="text-[11px] leading-snug text-neutral-500" title={est.reason}>
+            <span className="rounded bg-amber-100 px-1 font-medium text-amber-900">Estimated</span>{" "}
+            {est.roomId ? `${est.confidence} confidence · change it if wrong` : "not on the plan (street, stairwell…)"}
+          </p>
+        ) : null}
         <input
           aria-label="Note"
           defaultValue={photo.hint}
