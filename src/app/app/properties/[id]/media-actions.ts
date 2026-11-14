@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { defaultLevelName } from "@/lib/admin/data";
 import { type FloorPlan, ROOM_TYPES, type RoomType } from "@/lib/floorplan";
 import { planJson, readLevelPlan } from "@/lib/admin/plan-read";
+import { estimatePhotoRooms } from "@/lib/admin/room-estimates";
+import type { RoomEstimate } from "@/lib/tour/estimate-room";
 import {
   MAX_PHOTOS_PER_PROPERTY,
   MEDIA_BUCKET,
@@ -119,6 +121,16 @@ export async function updatePhoto(
     .eq("property_id", propertyId);
   if (error) throw new Error(error.message);
   refresh(propertyId);
+}
+
+/** Most photos one call estimates (in parallel); the page sends larger sets in several calls. */
+const ESTIMATE_BATCH = 6;
+
+/** Guess the room of these photos from the floor plans (one model call each) and store the guesses. */
+export async function estimateRooms(propertyId: string, mediaIds: string[]): Promise<Record<string, RoomEstimate>> {
+  const ids = z.array(Uuid).min(1).max(ESTIMATE_BATCH).parse(mediaIds);
+  const { supabase } = await accessibleProperty(propertyId);
+  return estimatePhotoRooms(supabase, propertyId, ids);
 }
 
 export async function reorderPhotos(propertyId: string, orderedIds: string[]) {

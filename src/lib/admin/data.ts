@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
 import type { FloorPlan } from "@/lib/floorplan";
+import type { RoomEstimate } from "@/lib/tour/estimate-room";
 import { MEDIA_BUCKET, thumbPathFor } from "./media-paths";
 
 export type Property = Database["public"]["Tables"]["properties"]["Row"];
@@ -73,7 +74,7 @@ export async function getPropertyMedia(id: string) {
   const { supabase } = await requireSession();
   const { data: property, error } = await supabase
     .from("properties")
-    .select("id, org_id, title, levels ( id, name, sort, floorplan_path, plan ), media ( id, kind, storage_path, level_id, hint, room_type, room_id, sort, width, height )")
+    .select("id, org_id, title, levels ( id, name, sort, floorplan_path, plan ), media ( id, kind, storage_path, level_id, hint, room_type, room_id, room_estimate, sort, width, height )")
     .eq("id", id)
     .order("sort", { referencedTable: "levels" })
     .order("sort", { referencedTable: "media" })
@@ -112,6 +113,7 @@ export async function getPropertyMedia(id: string) {
       hint: p.hint ?? "",
       roomType: p.room_type,
       roomId: p.room_id,
+      roomEstimate: (p.room_estimate as unknown as RoomEstimate | null) ?? null,
       thumbUrl: urls.get(thumbPathFor(p.storage_path)) ?? urls.get(p.storage_path) ?? null,
       fullUrl: urls.get(p.storage_path) ?? null,
     })),
