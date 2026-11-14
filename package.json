@@ -30,6 +30,7 @@
     "server-only": "^0.0.1",
     "sharp": "^0.35.5",
     "three": "^0.187.0",
+    "workflow": "^5.5.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

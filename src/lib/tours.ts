@@ -99,6 +99,7 @@ export function tourOriginalPath(tourId: string, segments: string[]): string | n
   if (kind !== "view" && kind !== "thumb") return null;
   const src = rest.join("/");
   if (!tour.photos.some((p) => p.src === src)) return null;
-  const file = path.resolve(process.cwd(), tour.mediaRoot, src);
+  // Only the files next.config.ts traces explicitly are deployed; keep this from tracing the whole project.
+  const file = path.resolve(/*turbopackIgnore: true*/ process.cwd(), tour.mediaRoot, src);
   return fs.existsSync(file) ? file : null;
 }
