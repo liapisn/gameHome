@@ -25,6 +25,17 @@ npm run dev
 
 Vision calls go through `src/lib/ai/structured.ts`: Gemini when `GEMINI_API_KEY` is set (`GEMINI_MODEL` overrides `gemini-pro-latest`), otherwise Claude via `ANTHROPIC_API_KEY` or Vercel AI Gateway (`AI_GATEWAY_API_KEY`, or `VERCEL_OIDC_TOKEN` from `vercel env pull`). Put keys in `.env.local`.
 
+## Admin: generating tours from uploads
+
+Owners upload floor plans and photos in `/app`, then press **Generate** on the property's Generate tab. That queues a job, and the worker builds the tour:
+
+```bash
+vercel env pull          # Supabase keys (incl. service role) + model key into .env.local
+npm run worker           # claims queued jobs; --once to process one and exit
+```
+
+Progress shows live on the Generate tab. The result opens in the Tour tab, which is a private preview behind login. Tours are versioned in the `tours` bucket. To load a local listing folder into a workspace as if it had been uploaded: `npx tsx --env-file=.env.local scripts/import-listing.mts <dir> --org "<workspace>" --title "<title>"`.
+
 ## Tour engine: floor plans + photos → walkable tour
 
 ```bash

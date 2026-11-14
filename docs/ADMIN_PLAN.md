@@ -112,7 +112,9 @@ Auth is enforced in `proxy.ts` (Next 16's replacement for middleware) and again 
 | **3. Generate** | `jobs` + worker + Realtime progress; tours table; preview tab | Press Generate → worker runs the engine → preview shows the tour. Uses a stub engine until the engine's `buildTour` lands. |
 | **4. Publish** | Public `/tour/[id]` reads published tours from Supabase | Share link opens without login; unpublishing returns 404 |
 
-**Status (2026-11-14):** Phases 0, 1 and 2 are done. Phase 2: floor plan per floor and photo uploads go straight from the browser to Storage after being resized there (photos 2560 px + 480 px thumbnail, plans 4096 px, WebP). Photos keep the order they were picked in, can be reordered by drag or keyboard, and take a floor and room hint. Floors can be added, renamed and deleted; deleting a property removes its files. Tested with the listing-15970 images.
+**Status (2026-11-14):** Phases 0–3 are done. Phase 3 adds a Generate tab with a readiness checklist, live progress over Realtime, retry and run history; the `npm run worker` script, which exports uploads, runs the engine, and stores versioned tours; and a Tour tab with an embedded viewer using signed photo URLs. Listing 15970 was imported into "nikos's workspace" with `scripts/import-listing.mts` and built end to end.
+
+Earlier: Phases 0, 1 and 2. Phase 2: floor plan per floor and photo uploads go straight from the browser to Storage after being resized there (photos 2560 px + 480 px thumbnail, plans 4096 px, WebP). Photos keep the order they were picked in, can be reordered by drag or keyboard, and take a floor and room hint. Floors can be added, renamed and deleted; deleting a property removes its files. Tested with the listing-15970 images.
 
 Earlier: Phases 0 and 1. The full schema (all tables, RLS, buckets, the job-claim function, Realtime on `jobs`) is applied to Supabase in Frankfurt. Login, the property list, create (with floors), edit and delete are tested end to end, including a check that a second user can't see the first user's property.
 
@@ -136,3 +138,58 @@ Phases 1–2 don't depend on the engine. Phase 3 starts with a stub `buildTour` 
 1. **Supabase account:** provisioned through the Vercel Marketplace; env vars sync to the `gamehome` Vercel project.
 2. **Sign-in:** magic link only.
 3. **Worker:** runs on the developer's machine (`npm run worker`) for now; jobs wait in the queue until it's running.
+
+---
+
+## 8. Phase 3 in detail: Generate
+
+Goal: the owner presses **Generate**, watches progress live, and previews the tour when it's done. The database side already exists: `jobs` (with Realtime), `tours`, the `tours` bucket and `claim_next_job()`.
+
+### 8.1 Generate tab (`/app/properties/[id]/generate`)
+- **Readiness checklist:** every floor has a plan, and there are at least 5 photos (the threshold is to be confirmed with the engine). The button stays disabled until both are met, with links to the tab that needs work.
+- **Generate button:** a server action inserts a `queued` job and sets the property to `processing`. It refuses if a job for that property is already queued or running.
+- **Live status** through a Supabase Realtime subscription on `jobs` filtered by `property_id`, which still respects RLS:
+  - `queued`: "Waiting for the worker". Say clearly that the worker must be running.
+  - `running`: step name plus a progress bar from `progress { step, done, total }`.
+  - `failed`: the error message and a **Retry** button.
+  - `succeeded`: a link to the Tour tab.
+- **Run history:** the last 10 jobs with status, duration and error.
+
+### 8.2 Worker (`scripts/worker.mts`, `npm run worker`)
+1. Uses the service-role key from `.env.local`; never runs in the browser or on Vercel.
+2. Loop: `claim_next_job(worker_id)`, where `worker_id` = hostname + pid. When nothing is queued, sleep 5 s, or listen to Realtime inserts to wake up immediately.
+3. **Export** the property into a temporary folder in the fixtures layout:
+   ```
+   <tmp>/<property-id>/manifest.json   levels[{ id, name, floorplan }], photos[{ file, hint?, level? }]
+   <tmp>/<property-id>/floorplans/<level-id>.webp
+   <tmp>/<property-id>/photos/<nn>.webp            in the owner's order
+   ```
+   Owner hints go in as `hint` (the engine's `placePhoto` already takes one). The manifest's ground-truth fields stay empty.
+4. **Run the engine:** `buildTour(folder, { id, title, onProgress })`. Progress updates are throttled to about one per second into `jobs.progress`.
+5. **Store the result:** upload the tour JSON and per-floor plan JSON to `tours/org/<org>/property/<id>/v<version>/`. Insert a `tours` row with `is_current = true`, clearing the previous one, mark the job `succeeded`, and set the property to `ready`.
+6. **On error:** the job becomes `failed` with a readable message, and the property goes back to `draft`, or stays `ready` if an earlier tour exists. The temporary folder is always deleted.
+7. **Crash recovery:** on startup, jobs still `running` under this worker id are marked failed ("worker restarted"). Jobs running longer than 45 minutes are failed too.
+8. **AI credentials:** the engine's model keys (Gemini or Claude) come from the worker machine's `.env.local`. They're never stored in Supabase.
+
+### 8.3 Tour tab (`/app/properties/[id]/tour`)
+- Loads the current tour JSON server-side through a signed URL.
+- Renders the engine's viewer. Until the engine's photo-tour viewer is on `main`, falls back to the existing dollhouse `TourViewer` with the parsed floor plan.
+- **Photos inside the tour (decided):** the worker names exported photos after their media row (`photos/<media-id>.webp`), so each tour photo's `src` maps back to its upload. The tab signs the full image and thumbnail for 1 hour and passes them to the viewer as `photoUrls`. No proxy route is needed, and RLS still decides who can sign.
+- A Publish toggle is Phase 4; this tab only previews.
+
+### 8.4 Engine (no stub needed)
+The real engine landed before the worker, so the worker calls it directly: `buildTour()` in `src/lib/engine/build-tour.ts`.
+
+### 8.5 Engine contract (settled)
+- [x] `buildTour(folder, { id, title, onProgress, log }) → { tour, plans, poseLog, usage }`, exported as a library. The `build:tour` CLI wraps it, adding plan and placement caches and scoring against fixture labels.
+- [x] `Tour` and `FloorPlan` types live in `src/lib/tour/types.ts` and `src/lib/floorplan.ts`.
+- [x] The manifest accepts owner `hint` and `level` per photo. Both go to the model as owner notes, not ground truth.
+- [x] Photos are referenced by relative file name. The worker uses `photos/<media-id>.webp`; `photoMediaId()` maps it back.
+- [x] Minimum inputs: at least one floor with a plan, and at least 5 photos (`MIN_PHOTOS`). **This departs from 8.1, which asked for a plan on every floor.** Floors without a plan are allowed: the model is told they exist, and photos taken there land in the viewer's "not on the floor plans" gallery.
+- [ ] Run time and cost shown before Generate. Measured on listing 15970 through the worker (2 plans, 48 photos, Gemini at concurrency 4, M4 Mac): about 30 min in total, mostly photo placement at roughly 1–2 min per Gemini call, plus about 0.5 M input tokens. Raising concurrency is the easy speed-up. Not yet shown in the UI.
+
+### 8.6 Done when
+- Pressing Generate on a property with uploads shows queued → running (live progress) → succeeded, with the worker running locally
+- The Tour tab previews the result; a second run creates version 2 and becomes current
+- Killing the worker mid-run leaves a failed job with a clear message, and Retry works
+- Another organization can't see the job, the tour row or the tour files (RLS test)
