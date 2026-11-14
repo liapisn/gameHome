@@ -239,6 +239,10 @@ export function liftDetection(det: PhotoDetection, cam: PhotoCamera, room: Room,
   let fit: Candidate["fit"];
   let extrapolated = false;
   let pts = floor.filter((p) => nearRoom(p, room, 0.5));
+  // Seen through an opening: its contacts are in another room. Leave it to that room's photos.
+  if (floor.length >= 2 && pts.length === 0) {
+    return { candidate: null, floorInside: inside, floorOutside: outside, reason: "outside the room" };
+  }
 
   if (pts.length >= 2) {
     const xs = pts.map((p) => p[0]);
@@ -278,6 +282,9 @@ export function liftDetection(det: PhotoDetection, cam: PhotoCamera, room: Room,
     const bottom = pts[0] ? [pts[0][0], pts[0][1], 0] : cam.onPlane((bx0 + bx1) / 2, by1, 0);
     if (!bottom || Math.hypot(bottom[0] - cx, bottom[1] - cy) > 15) {
       return { candidate: null, floorInside: inside, floorOutside: outside, reason: "no floor contact" };
+    }
+    if (!nearRoom([bottom[0], bottom[1]], room, 0.5)) {
+      return { candidate: null, floorInside: inside, floorOutside: outside, reason: "outside the room" };
     }
     const f = Math.max(0.3, cam.depth([bottom[0], bottom[1], 0]));
     const visibleW = clamp((bx1 - bx0) * 2 * Math.tan((cam.pose.hfov * Math.PI) / 360) * f, 0.2, 4);

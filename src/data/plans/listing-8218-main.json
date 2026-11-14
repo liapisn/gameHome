@@ -1,0 +1,327 @@
+{
+  "id": "listing-8218-main",
+  "title": "One-bedroom apartment · Apartment (single level)",
+  "ceilingHeight": 2.7,
+  "source": {
+    "kind": "parsed",
+    "image": "01.jpg",
+    "model": "gemini-3.1-pro-preview",
+    "parsedAt": "2026-11-14T16:07:40.491Z"
+  },
+  "walls": [
+    {
+      "id": "w0",
+      "a": [
+        0,
+        2.3
+      ],
+      "b": [
+        5.72,
+        2.3
+      ],
+      "thickness": 0.25,
+      "exterior": true
+    },
+    {
+      "id": "w1",
+      "a": [
+        0,
+        3.87
+      ],
+      "b": [
+        1.57,
+        3.87
+      ],
+      "thickness": 0.1,
+      "exterior": false
+    },
+    {
+      "id": "w2",
+      "a": [
+        1.57,
+        5.61
+      ],
+      "b": [
+        5.72,
+        5.61
+      ],
+      "thickness": 0.1,
+      "exterior": false
+    },
+    {
+      "id": "w3",
+      "a": [
+        0,
+        8.65
+      ],
+      "b": [
+        5.72,
+        8.65
+      ],
+      "thickness": 0.25,
+      "exterior": true
+    },
+    {
+      "id": "w4",
+      "a": [
+        1.57,
+        2.3
+      ],
+      "b": [
+        1.57,
+        5.61
+      ],
+      "thickness": 0.1,
+      "exterior": false
+    },
+    {
+      "id": "w5",
+      "a": [
+        0,
+        2.3
+      ],
+      "b": [
+        0,
+        8.65
+      ],
+      "thickness": 0.25,
+      "exterior": true
+    },
+    {
+      "id": "w6",
+      "a": [
+        5.72,
+        2.3
+      ],
+      "b": [
+        5.72,
+        8.65
+      ],
+      "thickness": 0.25,
+      "exterior": true
+    },
+    {
+      "id": "w7",
+      "a": [
+        3.88,
+        5.61
+      ],
+      "b": [
+        3.88,
+        8.65
+      ],
+      "thickness": 0.1,
+      "exterior": false
+    }
+  ],
+  "openings": [
+    {
+      "id": "o0",
+      "wallId": "w4",
+      "kind": "door",
+      "offset": 0.8,
+      "width": 0.8,
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "id": "o1",
+      "wallId": "w4",
+      "kind": "door",
+      "offset": 2.1,
+      "width": 0.8,
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "id": "o2",
+      "wallId": "w2",
+      "kind": "door",
+      "offset": 3.13,
+      "width": 1,
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "id": "o3",
+      "wallId": "w3",
+      "kind": "door",
+      "offset": 4.82,
+      "width": 0.9,
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "id": "o4",
+      "wallId": "w0",
+      "kind": "door",
+      "offset": 3.36,
+      "width": 2,
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "id": "o5",
+      "wallId": "w3",
+      "kind": "window",
+      "offset": 1.19,
+      "width": 1.5,
+      "sill": 0.9,
+      "head": 2.1
+    },
+    {
+      "id": "o6",
+      "wallId": "w0",
+      "kind": "window",
+      "offset": 0.5,
+      "width": 0.6,
+      "sill": 0.9,
+      "head": 2.1
+    }
+  ],
+  "rooms": [
+    {
+      "id": "r0",
+      "name": "Bathroom",
+      "type": "bathroom",
+      "polygon": [
+        [
+          0,
+          2.3
+        ],
+        [
+          1.57,
+          2.3
+        ],
+        [
+          1.57,
+          3.87
+        ],
+        [
+          0,
+          3.87
+        ]
+      ],
+      "labeled": {
+        "width": 1.57,
+        "depth": 1.57
+      }
+    },
+    {
+      "id": "r1",
+      "name": "Balcony",
+      "type": "balcony",
+      "polygon": [
+        [
+          3.01,
+          0
+        ],
+        [
+          5.72,
+          0
+        ],
+        [
+          5.72,
+          2.3
+        ],
+        [
+          3.01,
+          2.3
+        ]
+      ],
+      "labeled": {
+        "width": 2.71,
+        "depth": 2.3
+      }
+    },
+    {
+      "id": "r2",
+      "name": "Living/Dining Room",
+      "type": "living",
+      "polygon": [
+        [
+          1.57,
+          2.3
+        ],
+        [
+          5.72,
+          2.3
+        ],
+        [
+          5.72,
+          5.61
+        ],
+        [
+          1.57,
+          5.61
+        ]
+      ],
+      "labeled": {
+        "width": 4.15,
+        "depth": 3.31
+      }
+    },
+    {
+      "id": "r3",
+      "name": "Kitchen / Entry",
+      "type": "kitchen",
+      "polygon": [
+        [
+          3.88,
+          5.61
+        ],
+        [
+          5.72,
+          5.61
+        ],
+        [
+          5.72,
+          8.65
+        ],
+        [
+          3.88,
+          8.65
+        ]
+      ],
+      "labeled": {
+        "width": 1.84,
+        "depth": 3.04
+      }
+    },
+    {
+      "id": "r4",
+      "name": "Bedroom",
+      "type": "bedroom",
+      "polygon": [
+        [
+          0,
+          3.87
+        ],
+        [
+          1.57,
+          3.87
+        ],
+        [
+          1.57,
+          5.61
+        ],
+        [
+          3.88,
+          5.61
+        ],
+        [
+          3.88,
+          8.65
+        ],
+        [
+          0,
+          8.65
+        ]
+      ],
+      "labeled": {
+        "width": 3.12,
+        "depth": 4.69
+      }
+    }
+  ]
+}

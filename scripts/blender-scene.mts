@@ -51,7 +51,13 @@ console.log(`Blender ${blenderVersion()}`);
 const shell = path.join(dir, "shell.glb");
 fs.writeFileSync(shell, await sceneToGlb(buildDollhouseScene({ ...plan, ceilingHeight: ceiling }, { ceilings: true })));
 
-const photos = tour.photos.filter((p) => p.levelId === levelId && p.roomId === roomId && p.pose);
+// Photos the scene's gate passed (all posed photos of the room for --selftest or before a scene exists).
+const gated = fs.existsSync(sceneFile)
+  ? new Set((JSON.parse(fs.readFileSync(sceneFile, "utf8")) as RoomScene).photos.filter((g) => g.gate === "pass").map((g) => g.id))
+  : null;
+const photos = tour.photos.filter(
+  (p) => p.levelId === levelId && p.roomId === roomId && p.pose && (values.selftest || !gated || gated.has(p.id)),
+);
 const RENDER_W = 1280;
 const cameras = photos.map((p) => ({ id: p.id, pose: p.pose!, width: RENDER_W, height: Math.round((RENDER_W * p.height) / p.width) }));
 

@@ -1,7 +1,51 @@
 # Photos → furnished 3D rooms: implementation plan (v2)
 
-Branch: `blender-pipeline`. Status: plan only, nothing implemented yet. This replaces the first
-draft, which had the model estimate distances and score its own renders (see "Why v2" at the end).
+Branch: `blender-pipeline` (plan), implemented on `blender-impl`. See **Status** below for what
+was built and measured. This replaces the first draft, which had the model estimate distances and
+score its own renders (see "Why v2" at the end).
+
+## Status (2026-11-14)
+
+Milestones 1–6 and 8 are implemented; 7 (better models) is not started.
+
+```
+npm run build:scene -- --tour listing-8218 --all        # gate → detect → lift → check → src/data/scenes/
+npm run blender:scene -- --tour listing-8218 --room main/r2 [--selftest]
+npx tsx scripts/selftest-lift.mts                       # camera model + lift, no model calls
+npx tsx --env-file=.env.local scripts/eval-gate.mts <tour> <fixture-dir>   # model gate vs manifest
+npm run worker -- --furnish                             # or WORKER_FURNISH=1: scenes.json beside tour.json
+```
+
+What was measured, and what changed from the plan because of it:
+
+- **Camera model (M1).** `project()` matches the viewer's three.js camera to 1e-14 and Blender's
+  camera (incl. horizon shift) to 0.005 px. Synthetic boxes lift back to 0.0 cm with exact
+  pixels; ±4/1000 pixel noise gives 3–14 cm.
+- **Gate (M2): the model-judged outline check failed its target** and is opt-in (`--gate-model`).
+  On listing-15970 it kept 3/12 right placements and rejected 6/11 wrong ones; on listing-8218
+  4/7 and 3/4. The pose solver fits the outline to edges, so lines look plausible even in the
+  wrong room, and parsed door/window positions are too rough to arbitrate. The default gate is:
+  owner floor assignment, **room kind from the detect call** (the model says what kind of room
+  the camera stands in; open-plan kinds are compatible), and **floor contacts** (>70% of a
+  photo's contacts outside the room fails it). On listing-8218 this rejects both misplaced
+  photos and keeps 7 of the 9 correct ones (it drops 06, whose pose a large mirror fooled, and
+  07, shot from the vanity niche with everything it sees in the bedroom).
+- **Lift (M3).** Views of the same object from different photos disagree by 0.5–1 m on
+  listing-15970 (pose inconsistency), so geometry comes from the nearest good view rather than an
+  average; kinds seen at most once per photo are merged across photos; built-ins snap to walls up
+  to 1 m away; sizes are clamped per kind; objects whose contacts are in a neighbouring room are
+  dropped instead of clamped into this one.
+- **Check loop (M5)** works as specified but rarely helps: on listing-15970 rounds were kept in
+  4 of 9 rooms, on listing-8218 in 1 of 5. Pixel corrections can't fix inconsistent poses.
+- **Blender (M6)** runs on macOS (`/Applications/Blender.app`, override with `BLENDER_PATH`),
+  ~8 s per room for 3 cameras. The viewer still draws its own primitives; loading the exported
+  .glb is not wired in (it holds boxes only, which look worse than the primitives).
+- **Whole tour (M8).** listing-8218: 5 rooms in ~2 min with 4 in parallel, ~20 model calls.
+  The worker step stores `scenes.json` beside `tour.json`; the admin Tour page loads it.
+
+Next steps, in order of payoff: joint pose refinement across a room's photos using matched
+objects (the main source of error); placement fixes upstream (owner room hints); library models
+for the common kinds (M7).
 
 ## Goal
 
@@ -168,8 +212,9 @@ checking by eye.
 ### 4. Look: Blender
 
 `blender/build_scene.py`, run with `blender -b --factory-startup -P … -- <args>`, started from
-`src/lib/blender/run-blender.ts` (`BLENDER_PATH`, default
-`C:\Program Files\Blender Foundation\Blender 5.3\blender.exe`; fail on a version mismatch).
+`src/lib/blender/run-blender.ts` (`BLENDER_PATH`, default per platform: macOS
+`/Applications/Blender.app/Contents/MacOS/Blender`, Windows
+`C:\Program Files\Blender Foundation\Blender 5.3\blender.exe`; fail on a major-version mismatch).
 
 - **Build:** import the shell .glb, apply `look`, place each item's asset scaled to `w × d × h`,
   or a primitive when there is no asset. Plan `(x, y, h)` → Blender `(x, −y, h)`, rotation `−rot`
@@ -204,7 +249,14 @@ scripts/selftest-lift.mts   synthetic cameras: project known boxes, lift them ba
 blender/build_scene.py      stage 4
 src/lib/blender/run-blender.ts
 src/data/scenes/<tour>/<level>-<room>.json
+src/lib/scene/look.ts        stage 4 colour pass
+src/lib/scene/viewer.ts      scenes → viewer furniture
+scripts/blender-scene.mts    npm run blender:scene (build, render, colour pass, --selftest)
+scripts/eval-gate.mts        model gate vs a fixture manifest
 ```
+
+For admin-built tours (worker), scenes live in Storage beside the tour:
+`tours/org/<org>/property/<id>/v<n>/scenes.json`.
 
 Per-run artefacts (overlays, renders, scores) go to `exports/<tour>/<level>-<room>/`, which stays
 out of git.

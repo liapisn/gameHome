@@ -41,7 +41,7 @@ export interface Manifest {
 }
 
 export interface BuildProgress {
-  step: "plans" | "photos" | "poses" | "done";
+  step: "plans" | "photos" | "poses" | "furnish" | "done";
   label: string;
   done: number;
   total: number;

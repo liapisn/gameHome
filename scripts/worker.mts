@@ -18,8 +18,15 @@ import { MEDIA_BUCKET } from "../src/lib/admin/media-paths";
 import { TOURS_BUCKET, tourFolder } from "../src/lib/admin/tour-paths";
 import { activeProvider } from "../src/lib/ai/structured";
 import { type BuildProgress, type Manifest, buildTour } from "../src/lib/engine/build-tour";
+import { buildTourScenes } from "../src/lib/engine/build-scene";
 
-const { values } = parseArgs({ options: { once: { type: "boolean", default: false } } });
+const { values } = parseArgs({
+  options: {
+    once: { type: "boolean", default: false },
+    // Also furnish photographed rooms from their photos (lib/scene); about 2–4 model calls per photo.
+    furnish: { type: "boolean", default: process.env.WORKER_FURNISH === "1" },
+  },
+});
 
 const POLL_MS = 5000;
 const STALE_MINUTES = 45;
@@ -150,6 +157,17 @@ async function processJob(job: Job) {
     const tourPath = await upload("tour.json", tour);
     const planPaths = [];
     for (const plan of result.plans) planPaths.push({ planId: plan.id, path: await upload(`plan-${plan.id}.json`, plan) });
+
+    // Optional: furniture from the photos, stored beside tour.json (the Tour page loads it if present).
+    if (values.furnish) {
+      const { scenes, calls } = await buildTourScenes(result.tour, result.plans, {
+        workRoot: path.join(dir, "scenes"),
+        log: (m) => log(`  ${m.trim()}`),
+        onProgress: (done, total) => void writeProgress({ step: "furnish", label: "Furnishing rooms from photos", done, total }, true),
+      });
+      if (scenes.length) await upload("scenes.json", scenes);
+      log(`  furnished ${scenes.length} room(s), ${calls} model call(s)`);
+    }
 
     await supabase.from("tours").update({ is_current: false }).eq("property_id", property.id).eq("is_current", true);
     const { error: tourError } = await supabase.from("tours").insert({

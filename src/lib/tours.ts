@@ -5,8 +5,9 @@ import type { FloorPlan } from "@/lib/floorplan";
 import { getPlan } from "@/lib/plans";
 import { resolveLevels } from "@/lib/tour/resolve";
 import type { RoomScene } from "@/lib/scene/types";
+import { sceneFurniture } from "@/lib/scene/viewer";
 import type { Furnishing } from "@/lib/tour/furnish";
-import { type ResolvedTour, type Tour, roomKey } from "@/lib/tour/types";
+import type { ResolvedTour, Tour } from "@/lib/tour/types";
 
 const TOURS_DIR = path.join(process.cwd(), "src/data/tours");
 const SCENES_DIR = path.join(process.cwd(), "src/data/scenes");
@@ -50,15 +51,12 @@ export function resolveTour(id: string): ResolvedTour | null {
 export function getScenes(tourId: string): Record<string, Furnishing[]> | undefined {
   const dir = path.join(SCENES_DIR, tourId);
   if (!fs.existsSync(dir)) return undefined;
-  const out: Record<string, Furnishing[]> = {};
-  for (const f of fs.readdirSync(dir).filter((n) => n.endsWith(".json"))) {
-    const scene = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")) as RoomScene;
-    out[roomKey(scene.levelId, scene.roomId)] = scene.items.map(
-      ({ id, kind, x, y, rot, w, d, h, elevation, seed, uppers, chairs, ceiling, color, label }) =>
-        ({ id, kind, x, y, rot, w, d, h, elevation, seed, uppers, chairs, ceiling, color, label }) as Furnishing,
-    );
-  }
-  return Object.keys(out).length ? out : undefined;
+  return sceneFurniture(
+    fs
+      .readdirSync(dir)
+      .filter((n) => n.endsWith(".json"))
+      .map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")) as RoomScene),
+  );
 }
 
 function planAsTour(plan: FloorPlan): ResolvedTour {

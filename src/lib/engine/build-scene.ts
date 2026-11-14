@@ -11,7 +11,7 @@ import path from "node:path";
 import sharp from "sharp";
 import type { FloorPlan, Room } from "@/lib/floorplan";
 import { applyCheck, checkPhoto, scoreScene, type CheckAnswer } from "@/lib/scene/check";
-import { detectPhoto } from "@/lib/scene/detect";
+import { detectPhoto, roomKindConflict } from "@/lib/scene/detect";
 import { gatePhoto, type GateAnswer } from "@/lib/scene/gate";
 import { fillFromRules, liftDetection, mergeCandidates, type Candidate } from "@/lib/scene/lift";
 import { boxesOverlay, topDown } from "@/lib/scene/overlay";
@@ -44,8 +44,8 @@ interface PhotoCtx {
   jpeg: Buffer;
 }
 
-/** Floor points outside the room above this share fail the photo. */
-const MAX_OUTSIDE = 0.4;
+/** Floor points outside the room above this share fail the photo (below it, those objects are just in a neighbouring room seen through an opening). */
+const MAX_OUTSIDE = 0.7;
 const MIN_GAIN = 0.02;
 
 async function cached<T>(file: string, fresh: boolean, make: () => Promise<T>): Promise<T> {
@@ -57,6 +57,41 @@ async function cached<T>(file: string, fresh: boolean, make: () => Promise<T>): 
 
 export function scenePhotos(tour: Tour, levelId: string, roomId: string) {
   return tour.photos.filter((p) => p.levelId === levelId && p.roomId === roomId && p.pose);
+}
+
+/** Every room of a tour that has posed photos, as `${levelId}/${roomId}`. */
+export function sceneRooms(tour: Tour) {
+  return [...new Set(tour.photos.filter((p) => p.pose && p.levelId && p.roomId).map((p) => roomKey(p.levelId!, p.roomId!)))];
+}
+
+/**
+ * Furnish every photographed room of a tour (the worker's optional step after buildTour). A room
+ * that fails is logged and skipped; rooms where nothing came from photos are left out.
+ */
+export async function buildTourScenes(
+  tour: Tour,
+  plans: FloorPlan[],
+  opts: { workRoot: string; rounds?: number; log?: (m: string) => void; onProgress?: (done: number, total: number) => void },
+): Promise<{ scenes: RoomScene[]; calls: number }> {
+  const rooms = sceneRooms(tour);
+  const scenes: RoomScene[] = [];
+  let calls = 0;
+  for (const [i, key] of rooms.entries()) {
+    opts.onProgress?.(i, rooms.length);
+    const [levelId, roomId] = key.split("/");
+    const level = tour.levels.find((l) => l.id === levelId);
+    const plan = plans.find((p) => p.id === level?.planId);
+    if (!plan) continue;
+    try {
+      const r = await buildRoomScene({ tour, plan, levelId, roomId, workDir: path.join(opts.workRoot, `${levelId}-${roomId}`), rounds: opts.rounds ?? 1, log: opts.log });
+      calls += r.usage;
+      if (r.scene.items.some((it) => it.source === "photos")) scenes.push(r.scene);
+    } catch (err) {
+      opts.log?.(`${key}: furnishing failed: ${(err as Error).message}`);
+    }
+  }
+  opts.onProgress?.(rooms.length, rooms.length);
+  return { scenes, calls };
 }
 
 export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: RoomScene; usage: number }> {
@@ -112,18 +147,29 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
 
   // ------------------------------------------------------------------ 1. detect
   let dets: PhotoDetection[] = [];
+  const wrongKind = new Set<string>();
   await Promise.all(
     passed.map(async (c) => {
-      const d = await cached(path.join(workDir, `detect-${c.photo.id}.json`), fresh, async () => {
+      const d = await cached(path.join(workDir, `detect-${c.photo.id}.v2.json`), fresh, async () => {
         calls++;
         const r = await detectPhoto({ photoJpeg: c.jpeg, room, levelName: level.name });
         model = r.model;
-        return r.items;
+        return { cameraRoom: r.cameraRoom, items: r.items };
       });
-      dets.push(...d.map((x, i) => ({ ...x, faceCorners: x.faceCorners ?? [], id: `${c.photo.id}:${i}`, photoId: c.photo.id })));
-      log(`  detect ${c.photo.id}: ${d.length} object(s) — ${d.map((x) => x.label).join(", ")}`);
+      // Gate, free with detection: the photo clearly shows another kind of room.
+      if (roomKindConflict(room.type, d.cameraRoom)) {
+        const g = gates.find((x) => x.id === c.photo.id)!;
+        g.gate = "fail";
+        g.reason = `photo shows a ${d.cameraRoom}, not a ${room.type}`;
+        wrongKind.add(c.photo.id);
+        log(`  gate ${c.photo.id}: FAIL after detect — ${g.reason}`);
+        return;
+      }
+      dets.push(...d.items.map((x, i) => ({ ...x, faceCorners: x.faceCorners ?? [], id: `${c.photo.id}:${i}`, photoId: c.photo.id })));
+      log(`  detect ${c.photo.id} (${d.cameraRoom}): ${d.items.length} object(s) — ${d.items.map((x) => x.label).join(", ")}`);
     }),
   );
+  for (let i = passed.length - 1; i >= 0; i--) if (wrongKind.has(passed[i].photo.id)) passed.splice(i, 1);
 
   // ------------------------------------------------------------------ 2. lift (+ floor-point sanity)
   const cams = new Map(passed.map((c) => [c.photo.id, c.cam]));
@@ -144,7 +190,7 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
   const first = lift(dets);
   for (const [photoId, s] of first.stats) {
     const total = s.inside + s.outside;
-    if (total >= 6 && s.outside / total > MAX_OUTSIDE) {
+    if (total >= 3 && s.outside / total > MAX_OUTSIDE) {
       const g = gates.find((x) => x.id === photoId)!;
       g.gate = "fail";
       g.reason = `${s.outside}/${total} floor contacts land outside the room`;

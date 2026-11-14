@@ -1,0 +1,346 @@
+{
+  "id": "listing-8218",
+  "title": "One-bedroom apartment",
+  "mediaRoot": "fixtures/listing-8218",
+  "levels": [
+    {
+      "id": "main",
+      "name": "Apartment (single level)",
+      "planId": "listing-8218-main",
+      "elevation": 0,
+      "offset": [
+        0,
+        0
+      ],
+      "ceilingHeight": 2.68
+    }
+  ],
+  "photos": [
+    {
+      "id": "01",
+      "src": "photos/01.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A bright living room featuring a striking red accent wall and direct access to a private balcony.",
+      "levelId": "main",
+      "roomId": "r2",
+      "location": "living room, looking towards the balcony",
+      "confidence": "high",
+      "pose": {
+        "x": 5.37,
+        "y": 5,
+        "yaw": 215.5,
+        "pitch": 0,
+        "hfov": 104.5,
+        "height": 1.17,
+        "horizon": 0.5
+      },
+      "fit": {
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 221,
+        "margin": null,
+        "ceiling": 2.7
+      }
+    },
+    {
+      "id": "02",
+      "src": "photos/02.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "View of the living room featuring a large painting, wood floors, and a sliding glass door opening to the balcony.",
+      "levelId": "main",
+      "roomId": "r2",
+      "location": "living room, near the kitchen doorway",
+      "confidence": "high",
+      "pose": {
+        "x": 5.32,
+        "y": 5.2,
+        "yaw": 226.3,
+        "pitch": 0,
+        "hfov": 101.5,
+        "height": 1.15,
+        "horizon": 0.5
+      },
+      "fit": {
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 176,
+        "margin": null,
+        "ceiling": 2.88
+      }
+    },
+    {
+      "id": "03",
+      "src": "photos/03.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "View from the kitchen looking through the living area towards the balcony.",
+      "levelId": "main",
+      "roomId": "r3",
+      "location": "Kitchen, looking towards the living room",
+      "confidence": "high",
+      "pose": {
+        "x": 4.38,
+        "y": 8.31,
+        "yaw": 260.2,
+        "pitch": 0,
+        "hfov": 94.9,
+        "height": 1.15,
+        "horizon": 0.504
+      },
+      "fit": {
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 123,
+        "margin": null,
+        "ceiling": 2.88
+      }
+    },
+    {
+      "id": "04",
+      "src": "photos/04.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The modern kitchen is equipped with built-in appliances and features a striking red accent wall by the entry.",
+      "levelId": "main",
+      "roomId": "r3",
+      "location": "kitchen, near the living room",
+      "confidence": "high",
+      "pose": {
+        "x": 5.38,
+        "y": 6.31,
+        "yaw": 118.4,
+        "pitch": 0,
+        "hfov": 101.4,
+        "height": 1.56,
+        "horizon": 0.498
+      },
+      "fit": {
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 207,
+        "margin": null,
+        "ceiling": 2.68
+      }
+    },
+    {
+      "id": "05",
+      "src": "photos/05.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "View across the living space towards the open-plan bedroom and the striking red bathroom.",
+      "levelId": "main",
+      "roomId": "r2",
+      "location": "living/dining room, facing the bedroom and bathroom",
+      "confidence": "high",
+      "pose": {
+        "x": 5.32,
+        "y": 5.2,
+        "yaw": 231.2,
+        "pitch": 0,
+        "hfov": 103.5,
+        "height": 1.3,
+        "horizon": 0.497
+      },
+      "fit": {
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 215,
+        "margin": 1.19,
+        "ceiling": 3.1
+      }
+    },
+    {
+      "id": "06",
+      "src": "photos/06.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A vibrant red accent wall highlights the sleeping area in this bedroom.",
+      "levelId": "main",
+      "roomId": "r4",
+      "location": "bedroom, top alcove",
+      "confidence": "high",
+      "pose": {
+        "x": 3.5,
+        "y": 5.97,
+        "yaw": 247.2,
+        "pitch": 0,
+        "hfov": 101,
+        "height": 1.25,
+        "horizon": 0.504
+      },
+      "fit": {
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 253,
+        "margin": 1.13,
+        "ceiling": 2.5
+      }
+    },
+    {
+      "id": "07",
+      "src": "photos/07.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "View from the bathroom into the adjoining bedroom area.",
+      "levelId": "main",
+      "roomId": "r0",
+      "location": "bathroom, looking into the bedroom alcove",
+      "confidence": "low",
+      "pose": {
+        "x": 0.3,
+        "y": 2.7,
+        "yaw": 91.7,
+        "pitch": 0,
+        "hfov": 95,
+        "height": 1.3,
+        "horizon": 0.5
+      },
+      "fit": {
+        "method": "vanishing",
+        "landmarks": 3,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "08",
+      "src": "photos/08.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "View from the bedroom area showing the open en-suite bathroom and a glimpse into the living room.",
+      "levelId": "main",
+      "roomId": "r4",
+      "location": "bedroom, by the vanity",
+      "confidence": "high",
+      "pose": {
+        "x": 1.9,
+        "y": 7.97,
+        "yaw": 268.3,
+        "pitch": 0,
+        "hfov": 94.3,
+        "height": 1.46,
+        "horizon": 0.474
+      },
+      "fit": {
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 223,
+        "margin": null,
+        "ceiling": 2.48
+      }
+    },
+    {
+      "id": "09",
+      "src": "photos/09.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The modern bathroom features a walk-in shower, wood-look floor tiles, and a bright red vanity.",
+      "levelId": "main",
+      "roomId": "r0",
+      "location": "bathroom, near the entrance",
+      "confidence": "low",
+      "pose": {
+        "x": 0.8,
+        "y": 3.7,
+        "yaw": 239.8,
+        "pitch": 0,
+        "hfov": 104,
+        "height": 1.3,
+        "horizon": 0.5
+      },
+      "fit": {
+        "method": "vanishing",
+        "landmarks": 3,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "10",
+      "src": "photos/10.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A modern bathroom with a glass-enclosed shower and wood-effect tiles.",
+      "levelId": "main",
+      "roomId": "r0",
+      "location": "bathroom, near the door",
+      "confidence": "high",
+      "pose": {
+        "x": 1.1,
+        "y": 3.3,
+        "yaw": 266.9,
+        "pitch": 0,
+        "hfov": 100,
+        "height": 1.23,
+        "horizon": 0.5
+      },
+      "fit": {
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 59,
+        "margin": null,
+        "ceiling": 2.65
+      }
+    },
+    {
+      "id": "11",
+      "src": "photos/11.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "Private balcony with a glass railing and expansive city views.",
+      "levelId": "main",
+      "roomId": "r1",
+      "location": "balcony, looking outward",
+      "confidence": "high",
+      "pose": {
+        "x": 3.91,
+        "y": 2,
+        "yaw": 270.2,
+        "pitch": 0,
+        "hfov": 110,
+        "height": 1.3,
+        "horizon": 0.452
+      },
+      "fit": {
+        "method": "edges",
+        "landmarks": 0,
+        "rmsDeg": null,
+        "score": 245,
+        "margin": null,
+        "ceiling": 2.5
+      }
+    }
+  ],
+  "looks": {
+    "main/r2": {
+      "floor": "#8b5a2b",
+      "walls": "#e6e0df"
+    },
+    "main/r3": {
+      "floor": "#5C3A21",
+      "walls": "#B03038"
+    },
+    "main/r4": {
+      "floor": "#8b5a33",
+      "walls": "#f0f0f0"
+    },
+    "main/r0": {
+      "floor": "#352520",
+      "walls": "#c4a484"
+    },
+    "main/r1": {
+      "floor": "#c2c7c8",
+      "walls": "#9a9b9e"
+    }
+  },
+  "builtAt": "2026-11-14T16:15:24.292Z",
+  "model": "gemini-3.1-pro-preview"
+}

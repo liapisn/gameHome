@@ -5,6 +5,8 @@ import type { FloorPlan } from "@/lib/floorplan";
 import { isUuid, requireSession } from "@/lib/admin/data";
 import { MEDIA_BUCKET, thumbPathFor } from "@/lib/admin/media-paths";
 import { type PlanPaths, TOURS_BUCKET, photoMediaId } from "@/lib/admin/tour-paths";
+import type { RoomScene } from "@/lib/scene/types";
+import { sceneFurniture } from "@/lib/scene/viewer";
 import { resolveLevels } from "@/lib/tour/resolve";
 import type { ResolvedTour, Tour } from "@/lib/tour/types";
 import { TourViewer } from "@/components/tour/TourViewer";
@@ -66,7 +68,12 @@ async function TourPreview({ params }: { params: PageProps<"/app/properties/[id]
     if (view) photoUrls[`photos/${m.id}.webp`] = { view, thumb: url.get(thumbPathFor(m.storage_path)) ?? view };
   }
 
-  const resolved: ResolvedTour = { ...tour, levels, mediaUrl: null, photoUrls };
+  // Furniture from photos, when the worker built it (scenes.json beside tour.json).
+  const scenesPath = row.tour_path.replace(/[^/]+$/, "scenes.json");
+  const { data: scenesBlob } = await supabase.storage.from(TOURS_BUCKET).download(scenesPath);
+  const scenes = scenesBlob ? sceneFurniture(JSON.parse(await scenesBlob.text()) as RoomScene[]) : undefined;
+
+  const resolved: ResolvedTour = { ...tour, levels, mediaUrl: null, photoUrls, scenes };
   return (
     <div>
       <p className="mb-3 text-xs text-neutral-500">

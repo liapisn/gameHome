@@ -3,13 +3,28 @@
  * The model names things and points at image positions; lift.ts turns those into metres.
  */
 import { z } from "zod";
-import type { Room } from "@/lib/floorplan";
+import { ROOM_TYPES, type Room, type RoomType } from "@/lib/floorplan";
 import { generateStructured } from "@/lib/ai/structured";
 import { Detection, SCENE_KINDS } from "./types";
 
 export const DetectAnswer = z.object({
+  cameraRoom: z
+    .enum([...ROOM_TYPES, "entry", "other"])
+    .describe("Your own judgement of the kind of room the CAMERA STANDS IN (not rooms seen through openings)"),
   items: z.array(Detection),
 });
+
+/** Room kinds that share one open space often enough that a photo can't tell them apart. */
+const OPEN_PLAN: RoomType[][] = [["living", "dining", "kitchen"], ["hallway", "stairs"], ["office", "bedroom"]];
+
+/**
+ * Does the model's room kind contradict the room the photo was placed in? Lenient: open-plan
+ * kinds, entries (which plans file as hallways, kitchens or living rooms) and 'other' never do.
+ */
+export function roomKindConflict(placed: RoomType, seen: z.infer<typeof DetectAnswer>["cameraRoom"]): boolean {
+  if (seen === placed || seen === "other" || seen === "entry") return false;
+  return !OPEN_PLAN.some((g) => g.includes(placed) && g.includes(seen));
+}
 
 export const KIND_GUIDE = `Kinds (use the closest; 'generic' for anything else, with a precise label):
 - kitchen: one straight run of base cabinets with worktop (an L-shaped kitchen is TWO kitchen items, one per wall). Tall built-in units next to it (oven tower, pantry) are 'generic' builtIn.
@@ -46,9 +61,12 @@ export async function detectPhoto(opts: { photoJpeg: Buffer; room: Room; levelNa
     schema: DetectAnswer,
     system: `${SYSTEM}\n\n${KIND_GUIDE}`,
     parts: [
-      { type: "text", text: `This photo was taken in the "${opts.room.name}" (${opts.room.type}) on ${opts.levelName}. Allowed kinds: ${SCENE_KINDS.join(", ")}.` },
+      {
+        type: "text",
+        text: `An automatic step placed this photo in the "${opts.room.name}" (${opts.room.type}) on ${opts.levelName}; that may be wrong, so judge cameraRoom from the photo alone. Allowed object kinds: ${SCENE_KINDS.join(", ")}.`,
+      },
       { type: "image", data: opts.photoJpeg.toString("base64"), mediaType: "image/jpeg" },
     ],
   });
-  return { items: res.data.items, model: res.model, usage: res.usage };
+  return { items: res.data.items, cameraRoom: res.data.cameraRoom, model: res.model, usage: res.usage };
 }

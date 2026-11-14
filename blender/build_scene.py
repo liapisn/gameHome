@@ -84,18 +84,14 @@ def material(color, kind):
     return m
 
 
-# The room's observed finishes on the shell: its floor, and the interior wall faces.
+# The room's observed floor on the shell. Walls stay neutral, as in the viewer: wall meshes are
+# shared between rooms and one photo's colour is often a single feature wall.
 look = job.get("look")
-if look:
+if look and look.get("floor"):
     for o in list(scene.objects):
-        if o.type != "MESH":
-            continue
-        if o.name.startswith("floor__") and o.name.endswith(f"__{job.get('roomId', '')}") and look.get("floor"):
+        if o.type == "MESH" and o.name.startswith("floor__") and o.name.endswith(f"__{job.get('roomId', '')}"):
             o.data.materials.clear()
             o.data.materials.append(material(look["floor"], "stone"))
-        elif o.name.startswith("wall__interior") and look.get("walls"):
-            o.data.materials.clear()
-            o.data.materials.append(material(look["walls"], "plaster"))
 
 items = []
 for it in job.get("items", []):

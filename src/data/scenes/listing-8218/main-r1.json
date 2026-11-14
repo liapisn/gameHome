@@ -1,0 +1,110 @@
+{
+  "tourId": "listing-8218",
+  "levelId": "main",
+  "roomId": "r1",
+  "roomName": "Balcony",
+  "look": {
+    "floor": "#c2c7c8",
+    "walls": "#9a9b9e"
+  },
+  "items": [
+    {
+      "id": "generic-1",
+      "kind": "generic",
+      "label": "planter box",
+      "x": 5.306,
+      "y": 0.311,
+      "rot": 0,
+      "w": 0.5,
+      "d": 0.622,
+      "h": 0.45,
+      "seed": 1958389723,
+      "color": "#353839",
+      "material": "plastic",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "11"
+      ],
+      "detections": [
+        "11:0"
+      ],
+      "confidence": 0.47
+    },
+    {
+      "id": "r1-railing-1",
+      "kind": "railing",
+      "x": 5.72,
+      "y": 1.15,
+      "rot": -1.571,
+      "w": 2.3,
+      "d": 0.05,
+      "h": 1.05,
+      "seed": 1,
+      "onBalcony": true,
+      "label": "railing",
+      "source": "rules",
+      "seenIn": [],
+      "detections": [],
+      "confidence": 0.3
+    },
+    {
+      "id": "r1-railing-3",
+      "kind": "railing",
+      "x": 3.01,
+      "y": 1.15,
+      "rot": 1.571,
+      "w": 2.3,
+      "d": 0.05,
+      "h": 1.05,
+      "seed": 3,
+      "onBalcony": true,
+      "label": "railing",
+      "source": "rules",
+      "seenIn": [],
+      "detections": [],
+      "confidence": 0.3
+    },
+    {
+      "id": "r1-plant-1",
+      "kind": "plant",
+      "x": 3.285,
+      "y": 0.305,
+      "rot": 0,
+      "w": 0.45,
+      "d": 0.45,
+      "h": 0.9,
+      "seed": 2208881792,
+      "onBalcony": true,
+      "label": "plant",
+      "source": "rules",
+      "seenIn": [],
+      "detections": [],
+      "confidence": 0.3
+    }
+  ],
+  "photos": [
+    {
+      "id": "11",
+      "gate": "pass",
+      "reason": "geometric checks only"
+    }
+  ],
+  "score": 0.413,
+  "rounds": [
+    {
+      "round": 0,
+      "score": 0.413,
+      "kept": true,
+      "changes": 0
+    },
+    {
+      "round": 1,
+      "score": 0.288,
+      "kept": false,
+      "changes": 2
+    }
+  ],
+  "model": "gemini-3.1-pro-preview",
+  "builtAt": "2026-11-14T16:21:49.489Z"
+}

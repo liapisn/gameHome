@@ -1,0 +1,309 @@
+{
+  "tourId": "listing-8218",
+  "levelId": "main",
+  "roomId": "r2",
+  "roomName": "Living/Dining Room",
+  "look": {
+    "floor": "#7a482b",
+    "walls": "#b40b10"
+  },
+  "items": [
+    {
+      "id": "pendant-1",
+      "kind": "pendant",
+      "label": "pendant light",
+      "x": 4.058,
+      "y": 3.794,
+      "rot": 1.571,
+      "w": 0.4,
+      "d": 0.4,
+      "h": 0.809,
+      "seed": 2368683439,
+      "color": "#1c1817",
+      "material": "glass",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "01",
+        "02"
+      ],
+      "detections": [
+        "01:6",
+        "02:0"
+      ],
+      "confidence": 0.52,
+      "ceiling": 2.68
+    },
+    {
+      "id": "coffeeTable-1",
+      "kind": "coffeeTable",
+      "label": "coffee table",
+      "x": 3.62,
+      "y": 4.078,
+      "rot": 1.571,
+      "w": 0.949,
+      "d": 0.884,
+      "h": 0.362,
+      "seed": 3848586505,
+      "color": "#222222",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "01",
+        "02"
+      ],
+      "detections": [
+        "01:1",
+        "02:6"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "id": "tvUnit-1",
+      "kind": "tvUnit",
+      "label": "tv unit",
+      "x": 2.941,
+      "y": 5.274,
+      "rot": 3.142,
+      "w": 0.8,
+      "d": 0.672,
+      "h": 0.453,
+      "seed": 1075470993,
+      "color": "#1c1c1c",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "02",
+        "01"
+      ],
+      "detections": [
+        "02:2",
+        "01:2"
+      ],
+      "confidence": 0.64
+    },
+    {
+      "id": "sofa-1",
+      "kind": "sofa",
+      "label": "sofa",
+      "x": 3.718,
+      "y": 2.57,
+      "rot": 0,
+      "w": 2.19,
+      "d": 0.54,
+      "h": 0.622,
+      "seed": 3332815207,
+      "color": "#e9e7e0",
+      "material": "fabric",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "01"
+      ],
+      "detections": [
+        "01:0"
+      ],
+      "confidence": 0.47
+    },
+    {
+      "id": "art-1",
+      "kind": "art",
+      "label": "framed art",
+      "x": 3.828,
+      "y": 2.32,
+      "rot": 0,
+      "w": 0.552,
+      "d": 0.04,
+      "h": 0.758,
+      "seed": 3504052170,
+      "color": "#b81206",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "01"
+      ],
+      "detections": [
+        "01:5"
+      ],
+      "confidence": 0.47,
+      "elevation": 1.987
+    },
+    {
+      "id": "generic-1",
+      "kind": "generic",
+      "label": "ottoman",
+      "x": 2.619,
+      "y": 3.262,
+      "rot": 1.571,
+      "w": 0.613,
+      "d": 0.5,
+      "h": 0.254,
+      "seed": 696448014,
+      "color": "#e2d5c0",
+      "material": "leather",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "02"
+      ],
+      "detections": [
+        "02:4"
+      ],
+      "confidence": 0.47
+    },
+    {
+      "id": "generic-2",
+      "kind": "generic",
+      "label": "ottoman stool",
+      "x": 2.012,
+      "y": 5.096,
+      "rot": 0,
+      "w": 0.5,
+      "d": 0.364,
+      "h": 0.27,
+      "seed": 3301707926,
+      "color": "#f5f5f5",
+      "material": "leather",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "01"
+      ],
+      "detections": [
+        "01:3"
+      ],
+      "confidence": 0.47
+    },
+    {
+      "id": "generic-3",
+      "kind": "generic",
+      "label": "ottoman",
+      "x": 2.689,
+      "y": 2.638,
+      "rot": 0,
+      "w": 0.5,
+      "d": 0.676,
+      "h": 0.236,
+      "seed": 330444396,
+      "color": "#e2d5c0",
+      "material": "leather",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "02"
+      ],
+      "detections": [
+        "02:5"
+      ],
+      "confidence": 0.47
+    },
+    {
+      "id": "generic-4",
+      "kind": "generic",
+      "label": "radiator",
+      "x": 3.158,
+      "y": 2.55,
+      "rot": 0,
+      "w": 0.466,
+      "d": 0.5,
+      "h": 0.403,
+      "seed": 959693581,
+      "color": "#ffffff",
+      "material": "metal",
+      "builtIn": true,
+      "source": "photos",
+      "seenIn": [
+        "01"
+      ],
+      "detections": [
+        "01:4"
+      ],
+      "confidence": 0.47,
+      "elevation": 0.939
+    },
+    {
+      "id": "art-2",
+      "kind": "art",
+      "label": "framed painting",
+      "x": 1.59,
+      "y": 4.085,
+      "rot": 1.571,
+      "w": 1.654,
+      "d": 0.04,
+      "h": 1.447,
+      "seed": 809896418,
+      "color": "#b71309",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "02"
+      ],
+      "detections": [
+        "02:1"
+      ],
+      "confidence": 0.47,
+      "elevation": 1.635
+    },
+    {
+      "id": "console-1",
+      "kind": "console",
+      "label": "console table",
+      "x": 1.85,
+      "y": 3.085,
+      "rot": 1.571,
+      "w": 0.55,
+      "d": 0.56,
+      "h": 0.333,
+      "seed": 1001761425,
+      "color": "#1c1c1c",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "02"
+      ],
+      "detections": [
+        "02:3"
+      ],
+      "confidence": 0.3
+    }
+  ],
+  "photos": [
+    {
+      "id": "01",
+      "gate": "pass",
+      "reason": "geometric checks only"
+    },
+    {
+      "id": "02",
+      "gate": "pass",
+      "reason": "geometric checks only"
+    },
+    {
+      "id": "05",
+      "gate": "fail",
+      "reason": "photo shows a bedroom, not a living"
+    }
+  ],
+  "score": 0.517,
+  "rounds": [
+    {
+      "round": 0,
+      "score": 0.517,
+      "kept": true,
+      "changes": 0
+    },
+    {
+      "round": 1,
+      "score": 0.475,
+      "kept": false,
+      "changes": 12
+    }
+  ],
+  "model": "gemini-3.1-pro-preview",
+  "builtAt": "2026-11-14T16:21:49.335Z"
+}
