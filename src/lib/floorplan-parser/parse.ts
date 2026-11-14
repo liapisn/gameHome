@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { generateStructured, type ImageMediaType } from "@/lib/ai/structured";
 import { ParsedPlanSchema, type ParsedPlan } from "./schema";
 
 const SYSTEM_PROMPT = `You convert architectural floor plan drawings into precise geometry for a 3D renderer.
@@ -22,7 +21,7 @@ List anything ambiguous in warnings instead of guessing silently.`;
 
 export interface ParseOptions {
   imageBase64: string;
-  mediaType: "image/jpeg" | "image/png" | "image/webp";
+  mediaType: ImageMediaType;
   /** Extra context, e.g. "upper floor of a two-storey house". */
   hint?: string;
 }
@@ -30,62 +29,21 @@ export interface ParseOptions {
 export interface ParseResult {
   parsed: ParsedPlan;
   model: string;
-  usage: Anthropic.Usage;
-}
-
-/**
- * Uses ANTHROPIC_API_KEY directly when set. Otherwise routes through Vercel AI Gateway,
- * authenticating with AI_GATEWAY_API_KEY or the linked project's VERCEL_OIDC_TOKEN.
- */
-export function createClient(): { client: Anthropic; model: string } {
-  if (process.env.ANTHROPIC_API_KEY) {
-    return { client: new Anthropic(), model: "claude-opus-5-5" };
-  }
-  const token = process.env.AI_GATEWAY_API_KEY ?? process.env.VERCEL_OIDC_TOKEN;
-  if (!token) {
-    throw new Error(
-      "No credentials: set ANTHROPIC_API_KEY or AI_GATEWAY_API_KEY, or run `vercel env pull` for VERCEL_OIDC_TOKEN.",
-    );
-  }
-  return {
-    client: new Anthropic({ apiKey: null, authToken: token, baseURL: "https://ai-gateway.vercel.sh" }),
-    model: "anthropic/claude-opus-5.5",
-  };
+  usage: { input: number; output: number };
 }
 
 export async function parseFloorPlanImage(opts: ParseOptions): Promise<ParseResult> {
-  const { client, model } = createClient();
-
-  // Streamed because long outputs exceed the SDK's non-streaming timeout; finalMessage() still parses.
-  const stream = client.messages.stream({
-    model,
-    max_tokens: 32000,
-    output_config: { effort: "high", format: zodOutputFormat(ParsedPlanSchema) },
+  const { data, model, usage } = await generateStructured({
+    schema: ParsedPlanSchema,
     system: SYSTEM_PROMPT,
-    messages: [
+    effort: "high",
+    parts: [
+      { type: "image", data: opts.imageBase64, mediaType: opts.mediaType },
       {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: opts.mediaType, data: opts.imageBase64 } },
-          {
-            type: "text",
-            text: `Convert this floor plan into rooms and openings.${opts.hint ? ` Context: ${opts.hint}` : ""}`,
-          },
-        ],
+        type: "text",
+        text: `Convert this floor plan into rooms and openings.${opts.hint ? ` Context: ${opts.hint}` : ""}`,
       },
     ],
   });
-  const response = await stream.finalMessage();
-
-  if (response.stop_reason === "refusal") {
-    throw new Error(`Model refused: ${response.stop_details?.explanation ?? "no explanation"}`);
-  }
-  if (response.stop_reason === "max_tokens") {
-    throw new Error("Output hit max_tokens before the plan was complete");
-  }
-  if (!response.parsed_output) {
-    throw new Error("Model output did not match the floor plan schema");
-  }
-
-  return { parsed: response.parsed_output, model: response.model, usage: response.usage };
+  return { parsed: data, model, usage };
 }
