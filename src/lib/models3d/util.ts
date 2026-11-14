@@ -19,6 +19,7 @@ const MARKER: Record<string, string> = {
   "render_compare.py": "COMPARE_DONE",
   "join_house.py": "JOIN_HOUSE_OK",
   "web_copy.py": "WEB_COPY_OK",
+  "test_gh_parts.py": "GH_PARTS_OK",
 };
 
 /** Write `job` beside `jobFile` and run a script from blender/ on it (on its own boxd machine; see run-blender.ts). */
