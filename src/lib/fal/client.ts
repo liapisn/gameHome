@@ -42,8 +42,12 @@ async function call<T>(url: string, init: RequestInit = {}, name: KeyName = curr
   return (text ? JSON.parse(text) : null) as T;
 }
 
+/** Thrown instead of submitting when FAL_NO_NEW_JOBS is set (no credit): only finish what is paid for. */
+export const NO_NEW_JOBS = "no new fal jobs (FAL_NO_NEW_JOBS)";
+
 /** Submit with the current key; if it is out of credit and a backup exists, switch to the backup for good. */
 async function submit(endpoint: string, input: Record<string, unknown>, log: (m: string) => void): Promise<Job> {
+  if (process.env.FAL_NO_NEW_JOBS) throw new Error(NO_NEW_JOBS);
   try {
     return { ...(await call<Job>(`https://queue.fal.run/${endpoint}`, { method: "POST", body: JSON.stringify(input) })), key: current };
   } catch (err) {
@@ -130,7 +134,7 @@ export async function falRunRetry<T = Record<string, unknown>>(
     try {
       return await falRun<T>(endpoint, input, opts);
     } catch (err) {
-      if (attempt >= retries) throw err;
+      if (attempt >= retries || (err as Error).message.includes(NO_NEW_JOBS)) throw err;
       opts.log?.(`retry ${attempt + 1}/${retries} ${endpoint}: ${(err as Error).message.slice(0, 160)}`);
       // A network error while polling leaves the job running: keep the pending file so the retry
       // resumes it instead of paying for a new one. Only a job the queue itself failed is dropped.

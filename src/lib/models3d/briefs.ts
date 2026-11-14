@@ -15,6 +15,14 @@ import { slug } from "./util";
  * which a generated model can't. They stay as parametric boxes in the photo's colours.
  */
 export const BUILT_TO_MEASURE = new Set<string>(["kitchen", "wardrobe"]);
+/**
+ * Large fitted units (a wall of cupboards, a floor-to-ceiling unit) are built to measure too: a
+ * generated model draws them as freestanding furniture with tops, sides and legs they don't have.
+ * Small built-ins (radiators, air conditioners) generate fine.
+ */
+export const builtToMeasure = (i: { kind: string; builtIn?: boolean; w: number; h: number }) =>
+  // The size rule (large built-ins) is off for now: it would discard finished models of fitted units.
+  BUILT_TO_MEASURE.has(i.kind) && i.w >= 0;
 /** Flat on a wall: a framed plane textured with the photo crop, no 3D generation. */
 export const PICTURE = new Set<string>(["art"]);
 

@@ -22,13 +22,15 @@ import { itemBox, pointInPolygon } from "@/lib/scene/lift";
 import type { V3 } from "@/lib/scene/project";
 import type { RoomScene, SceneItem } from "@/lib/scene/types";
 import type { Tour } from "@/lib/tour/types";
-import { BUILT_TO_MEASURE, PICTURE, briefForItem, chairBrief, chairPlacements, itemViews, loadDetections } from "./briefs";
+import { PICTURE, briefForItem, builtToMeasure, chairBrief, chairPlacements, itemViews, loadDetections } from "./briefs";
 import { pickTurn, sameModels } from "./critic";
 import { fitFor, runObjectWorker } from "./object-worker";
 import { cropViews } from "./reference";
 import type { ObjectBrief, ObjectResult } from "./types";
 import { blenderJob, cachedJson, pool, slug } from "./util";
 
+/** A placed model whose long side (both sides, for flat things) is more than this far off its item's stays a box. */
+const MAX_PROPORTION_OFF = 0.5;
 /** Object workers in flight at once (each runs two generators). */
 const OBJECT_CONCURRENCY = 8;
 const RENDER_W = 1024;
@@ -83,7 +85,7 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
   const items = scene.items.map((i) => ({ ...i, views: itemViews(i, detections).filter((v) => gated.has(v.photoId)) }));
 
   // ------------------------------------------------------------------ 1. what gets a model
-  const generated = items.filter((i) => !BUILT_TO_MEASURE.has(i.kind) && !PICTURE.has(i.kind));
+  const generated = items.filter((i) => !builtToMeasure(i) && !PICTURE.has(i.kind));
   const firstCrops = new Map<string, string | null>();
   for (const i of generated) {
     if (!i.views.length) {
@@ -143,6 +145,16 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     const b = itemBox(i);
     const fit = fitFor({ w: i.w, d: i.d, h: i.h });
     const scale = fit === "flat" ? Math.max(i.w, i.d) / Math.max(r.size.w, r.size.d, 1e-3) : i.h / Math.max(r.size.h, 1e-3);
+    // A model far from its item's proportions would push through walls or neighbours: keep the box.
+    const placed = [Math.max(r.size.w, r.size.d) * scale, Math.min(r.size.w, r.size.d) * scale];
+    const want = [Math.max(i.w, i.d), Math.min(i.w, i.d)];
+    // The long side decides whether it fits; depth matters only for flat things (a square rug for a runner).
+    const sides = fit === "flat" ? [0, 1] : [0];
+    const worst = Math.max(...sides.map((k) => Math.abs(placed[k] - want[k]) / Math.max(want[k], 0.1)));
+    if (i.kind !== "plant" && worst > MAX_PROPORTION_OFF) {
+      say(`stand-in ${i.id}: model is ${placed.map((v) => v.toFixed(2)).join("×")} m placed, item ${want.map((v) => v.toFixed(2)).join("×")} m; keeping the box`);
+      continue;
+    }
     placements.push({ id: i.id, label: i.label, kind: String(i.kind), assetId: r.assetId, x: i.x, y: i.y, z: b.z0, rot: i.rot, scale, floor: b.z0 < 0.02, turn: 0, views: i.views });
   }
   for (const t of tables) {
@@ -272,7 +284,7 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     builtAt: new Date().toISOString(),
     models: [...results.values()],
     placements: placements.map((p) => ({ id: p.id, assetId: p.assetId, turn: p.turn, scale: Math.round(p.scale * 1000) / 1000 })),
-    builtToMeasure: items.filter((i) => BUILT_TO_MEASURE.has(i.kind)).map((i) => i.id),
+    builtToMeasure: items.filter((i) => builtToMeasure(i)).map((i) => i.id),
     pictures: [...pictures.keys()],
     standIns: generated.filter((i) => !placements.some((p) => p.id === i.id)).map((i) => ({ id: i.id, reason: results.get(assetFor.get(i.id)!)?.reason ?? "no model" })),
     checks: final.checks,

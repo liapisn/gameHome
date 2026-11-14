@@ -21,11 +21,21 @@ const MARKER: Record<string, string> = {
   "web_copy.py": "WEB_COPY_OK",
 };
 
-/** Write `job` beside `jobFile` and run a script from blender/ on it. */
-export async function blenderJob(script: string, jobFile: string, job: unknown) {
-  fs.mkdirSync(path.dirname(jobFile), { recursive: true });
-  fs.writeFileSync(jobFile, JSON.stringify(job, null, 2));
-  return runBlender(path.resolve("blender", script), [jobFile], undefined, MARKER[script] ?? "BUILD_SCENE_OK");
+/**
+ * Blender runs one at a time: several Cycles renders at once exhaust the GPU (Metal "Command buffer
+ * not completed"), and a failed render would count as a failed attempt. Generation stays parallel.
+ */
+let blenderQueue: Promise<unknown> = Promise.resolve();
+
+/** Write `job` beside `jobFile` and run a script from blender/ on it (queued: one Blender at a time). */
+export function blenderJob(script: string, jobFile: string, job: unknown): Promise<string> {
+  const run = blenderQueue.then(() => {
+    fs.mkdirSync(path.dirname(jobFile), { recursive: true });
+    fs.writeFileSync(jobFile, JSON.stringify(job, null, 2));
+    return runBlender(path.resolve("blender", script), [jobFile], undefined, MARKER[script] ?? "BUILD_SCENE_OK");
+  });
+  blenderQueue = run.catch(() => {});
+  return run;
 }
 
 /** Run tasks with at most `n` at once, keeping order of results. */

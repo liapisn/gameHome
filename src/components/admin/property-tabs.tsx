@@ -12,6 +12,7 @@ export function PropertyTabs({ id }: { id: string }) {
     { href: `${base}/photos`, label: "Photos" },
     { href: `${base}/generate`, label: "Generate" },
     { href: `${base}/tour`, label: "Tour" },
+    { href: `${base}/model`, label: "3D model" },
   ];
 
   return (
