@@ -18,17 +18,42 @@ export const EST_USD: Record<string, number> = {
 
 const SPEND_LOG = path.resolve("exports", "fal-spend.jsonl");
 
-function key() {
-  const k = process.env.FAL_KEY ?? process.env.FAL_API_KEY;
-  if (!k) throw new Error("FAL_KEY is not set (.env.local)");
+/**
+ * fal keys: FAL_KEY, then FAL_KEY_BACKUP once the main one is out of credit. New jobs go to the
+ * current key; a submitted job is always polled with the key that submitted it (fal only lets the
+ * submitting key read a job).
+ */
+type KeyName = "main" | "backup";
+let current: KeyName = "main";
+
+function keyOf(name: KeyName) {
+  const k = name === "main" ? (process.env.FAL_KEY ?? process.env.FAL_API_KEY) : process.env.FAL_KEY_BACKUP;
+  if (!k) throw new Error(name === "main" ? "FAL_KEY is not set (.env.local)" : "FAL_KEY_BACKUP is not set (.env.local)");
   return k;
 }
 
-async function call<T>(url: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(url, { ...init, headers: { authorization: `Key ${key()}`, "content-type": "application/json" } });
+/** fal's answer when a key has no credit left. */
+const OUT_OF_CREDIT = /\b(402|403)\b.*(balance|credit|billing|locked|exhausted|insufficient)/i;
+
+async function call<T>(url: string, init: RequestInit = {}, name: KeyName = current): Promise<T> {
+  const res = await fetch(url, { ...init, headers: { authorization: `Key ${keyOf(name)}`, "content-type": "application/json" } });
   const text = await res.text();
   if (!res.ok) throw new Error(`${res.status} ${url}: ${text.slice(0, 600)}`);
   return (text ? JSON.parse(text) : null) as T;
+}
+
+/** Submit with the current key; if it is out of credit and a backup exists, switch to the backup for good. */
+async function submit(endpoint: string, input: Record<string, unknown>, log: (m: string) => void): Promise<Job> {
+  try {
+    return { ...(await call<Job>(`https://queue.fal.run/${endpoint}`, { method: "POST", body: JSON.stringify(input) })), key: current };
+  } catch (err) {
+    if (current === "main" && process.env.FAL_KEY_BACKUP && OUT_OF_CREDIT.test((err as Error).message)) {
+      current = "backup";
+      log(`fal: main key is out of credit, switching to FAL_KEY_BACKUP`);
+      return { ...(await call<Job>(`https://queue.fal.run/${endpoint}`, { method: "POST", body: JSON.stringify(input) })), key: current };
+    }
+    throw err;
+  }
 }
 
 function logSpend(row: Record<string, unknown>) {
@@ -40,6 +65,8 @@ interface Job {
   request_id: string;
   status_url: string;
   response_url: string;
+  /** Which key submitted it (older pending files: main). */
+  key?: KeyName;
 }
 
 /**
@@ -57,15 +84,15 @@ export async function falRun<T = Record<string, unknown>>(
   if (opts.pending && fs.existsSync(opts.pending)) {
     try {
       job = JSON.parse(fs.readFileSync(opts.pending, "utf8")) as Job;
-      await call(job.status_url); // still known to the queue?
+      await call(job.status_url, {}, job.key ?? "main"); // still known to the queue?
       log(`resuming ${endpoint} ${job.request_id}`);
     } catch {
       job = null; // expired or unknown: submit again
     }
   }
   if (!job) {
-    job = await call<Job>(`https://queue.fal.run/${endpoint}`, { method: "POST", body: JSON.stringify(input) });
-    logSpend({ endpoint, est_usd: EST_USD[endpoint] ?? 0, request_id: job.request_id, ...opts.meta });
+    job = await submit(endpoint, input, log);
+    logSpend({ endpoint, est_usd: EST_USD[endpoint] ?? 0, request_id: job.request_id, key: job.key, ...opts.meta });
     if (opts.pending) {
       fs.mkdirSync(path.dirname(opts.pending), { recursive: true });
       fs.writeFileSync(opts.pending, JSON.stringify(job));
@@ -78,7 +105,7 @@ export async function falRun<T = Record<string, unknown>>(
     if (Date.now() - t0 > timeout) throw new Error(`timed out; request ${job.request_id}`);
     let st: { status: string };
     try {
-      st = await call<{ status: string }>(job.status_url);
+      st = await call<{ status: string }>(job.status_url, {}, job.key ?? "main");
       blips = 0;
     } catch (err) {
       // A dropped connection says nothing about the job: keep polling it (up to ~2 min of outage).
@@ -87,7 +114,7 @@ export async function falRun<T = Record<string, unknown>>(
     }
     if (st.status === "COMPLETED") break;
   }
-  const result = await call<T>(job.response_url);
+  const result = await call<T>(job.response_url, {}, job.key ?? "main");
   if (opts.pending) fs.rmSync(opts.pending, { force: true });
   return { result, requestId: job.request_id, seconds: (Date.now() - t0) / 1000 };
 }
