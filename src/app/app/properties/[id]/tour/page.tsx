@@ -8,7 +8,7 @@ import { type PlanPaths, TOURS_BUCKET, photoMediaId } from "@/lib/admin/tour-pat
 import type { RoomScene } from "@/lib/scene/types";
 import { sceneFurniture } from "@/lib/scene/viewer";
 import { resolveLevels } from "@/lib/tour/resolve";
-import type { ResolvedTour, Tour } from "@/lib/tour/types";
+import { type ResolvedTour, type Tour, roomKey } from "@/lib/tour/types";
 import { TourViewer } from "@/components/tour/TourViewer";
 
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
@@ -73,7 +73,21 @@ async function TourPreview({ params }: { params: PageProps<"/app/properties/[id]
   const { data: scenesBlob } = await supabase.storage.from(TOURS_BUCKET).download(scenesPath);
   const scenes = scenesBlob ? sceneFurniture(JSON.parse(await scenesBlob.text()) as RoomScene[]) : undefined;
 
-  const resolved: ResolvedTour = { ...tour, levels, mediaUrl: null, photoUrls, scenes };
+  // Generated 3D models of furnished rooms, when built (models.json beside tour.json; npm run build:models).
+  const modelsPath = row.tour_path.replace(/[^/]+$/, "models.json");
+  const { data: modelsBlob } = await supabase.storage.from(TOURS_BUCKET).download(modelsPath);
+  let roomModels: ResolvedTour["roomModels"];
+  if (modelsBlob) {
+    const index = JSON.parse(await modelsBlob.text()) as { rooms: { levelId: string; roomId: string; path: string }[] };
+    const { data: signedModels } = await supabase.storage.from(TOURS_BUCKET).createSignedUrls(index.rooms.map((r) => r.path), SIGNED_URL_TTL);
+    roomModels = {};
+    for (const r of index.rooms) {
+      const u = signedModels?.find((s) => s.path === r.path)?.signedUrl;
+      if (u) roomModels[roomKey(r.levelId, r.roomId)] = u;
+    }
+  }
+
+  const resolved: ResolvedTour = { ...tour, levels, mediaUrl: null, photoUrls, scenes, roomModels };
   return (
     <div>
       <p className="mb-3 text-xs text-neutral-500">

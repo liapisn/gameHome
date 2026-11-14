@@ -21,6 +21,22 @@ Decisions already made with the owner:
 - Only a Gemini key is available for reasoning, so workers are our own TypeScript, not the
   Claude Agent SDK. Image and 3D generation run on fal (`FAL_KEY`).
 
+Decided after reviewing this plan against `main` (2026-11-14):
+
+1. **Item boxes are stored on the item.** `SceneItem.views` keeps each item's box in every photo,
+   so stored scenes of admin-built tours can be cropped too. Older scenes fall back to the build's
+   `detections.json`.
+2. **Virtually staged photos** are removed from the listings by hand; nothing in code for now.
+3. **Orientation is fixed by the room worker**, not the object worker: it renders every model at
+   0°, 90°, 180° and 270° from each photo's camera and Gemini picks the turn that matches the photo.
+   The object worker's front check (step 6 below) is dropped.
+4. **Anything that repeats is made once and placed many times**: the room worker asks Gemini which
+   items are copies of one product and briefs one model per group; a dining table also gets one
+   chair model placed for every chair.
+5. **Fitted kitchens and wardrobes are built to measure** (boxes in the photo's colours), not
+   generated: a generated run rarely matches its wall.
+6. Where photos are sent is not a concern for the hackathon.
+
 ## Shape
 
 Three layers of workers. Each layer starts the next and waits for it.

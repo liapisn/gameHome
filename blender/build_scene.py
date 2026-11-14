@@ -6,7 +6,12 @@ Stage 4 (look): build a room in Blender from a job file written by scripts/blend
 Job: {
   "mode": "selftest" | "build",
   "shell": "<house .glb in plan space, three.js Y-up>",
-  "items": [{ "id", "label", "kind", "color", "material", "box": [x0, y0, x1, y1, z0, z1] }],
+  "items": [{ "id", "label", "kind", "color", "material", "box": [x0, y0, x1, y1, z0, z1],
+              # a generated model instead of the box (prepared: metres, front −Y, origin on the floor):
+              "asset": "<prepared .glb>", "pos": [x, y, z], "rot": <radians, plan>, "scale": s,
+              # a picture: a framed plane at the box, textured with this image:
+              "image": "<crop .jpg>", "size": [w, h] }],
+  "turnAll": <degrees added to every model's rotation, for orientation renders>,
   "cameras": [{ "id", "pose": {x, y, yaw, pitch, hfov, height, horizon}, "width", "height" }],
   "probes": [[x, y, z], ...],          # plan points to project (selftest)
   "lights": [[x, y, z], ...],          # plan points for interior lights
@@ -94,7 +99,88 @@ if look and look.get("floor"):
             o.data.materials.append(material(look["floor"], "stone"))
 
 items = []
+_assets = {}
+
+
+def asset_mesh(path):
+    """A prepared model's mesh, imported once; every placement links the same mesh data."""
+    if path in _assets:
+        return _assets[path]
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    meshes = [o for o in new if o.type == "MESH"]
+    if len(meshes) > 1:
+        bpy.ops.object.select_all(action="DESELECT")
+        for o in meshes:
+            o.select_set(True)
+        bpy.context.view_layer.objects.active = meshes[0]
+        bpy.ops.object.join()
+        meshes = [bpy.context.view_layer.objects.active]
+    ob = meshes[0]
+    mw = ob.matrix_world.copy()
+    ob.parent = None
+    ob.matrix_world = mw
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.select_all(action="DESELECT")
+    ob.select_set(True)
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    data = ob.data
+    for o in new:
+        if o.name in bpy.data.objects:
+            bpy.data.objects.remove(o)
+    _assets[path] = data
+    return data
+
+
+def picture(it):
+    """A picture or mirror: a thin framed plane, its image on the room side."""
+    w, h = it["size"]
+    x0, y0, x1, y1, z0, z1 = it["box"]
+    mesh = bpy.data.meshes.new(it["id"])
+    hw, hh = w / 2, h / 2
+    mesh.from_pydata([(-hw, 0, -hh), (hw, 0, -hh), (hw, 0, hh), (-hw, 0, hh)], [], [(0, 1, 2, 3)])
+    mesh.uv_layers.new(name="UV")
+    for loop, uv in zip(mesh.loops, [(0, 0), (1, 0), (1, 1), (0, 1)]):
+        mesh.uv_layers["UV"].data[loop.index].uv = uv
+    obj = bpy.data.objects.new(it["id"], mesh)
+    m = bpy.data.materials.new(it["id"] + "-img")
+    m.use_nodes = True
+    tex = m.node_tree.nodes.new("ShaderNodeTexImage")
+    tex.image = bpy.data.images.load(it["image"])
+    m.node_tree.links.new(tex.outputs["Color"], m.node_tree.nodes["Principled BSDF"].inputs["Base Color"])
+    m.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.5
+    obj.data.materials.append(m)
+    # Front −Y at rot 0, like everything else; stand it 1 cm off the wall-side of its box.
+    obj.rotation_mode = "XYZ"
+    obj.rotation_euler = (0, 0, it.get("rot", 0))
+    obj.location = P((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
+    frame = obj.modifiers.new("frame", "SOLIDIFY")
+    frame.thickness = 0.02
+    return obj
+
+
+turn_all = math.radians(job.get("turnAll", 0))
 for it in job.get("items", []):
+    if it.get("asset"):
+        obj = bpy.data.objects.new(it["id"], asset_mesh(it["asset"]))
+        x, y, z = it["pos"]
+        obj.location = P(x, y, z)
+        obj.rotation_mode = "XYZ"
+        # Plan rotation r (three.js, about Y) is the same angle about Blender's Z under (x, −y, h).
+        obj.rotation_euler = (0, 0, it.get("rot", 0) + (turn_all if it.get("turnable", True) else 0))
+        s = it.get("scale", 1)
+        obj.scale = (s, s, s)
+        obj["label"] = it.get("label", "")
+        obj["kind"] = it.get("kind", "")
+        scene.collection.objects.link(obj)
+        items.append(obj)
+        continue
+    if it.get("image"):
+        obj = picture(it)
+        scene.collection.objects.link(obj)
+        items.append(obj)
+        continue
     x0, y0, x1, y1, z0, z1 = it["box"]
     mesh = bpy.data.meshes.new(it["id"])
     # Box in plan space, converted per vertex (no object rotation needed: rotations are 90° steps).
@@ -129,7 +215,26 @@ scene.camera = cam
 cam_data.clip_start = 0.05
 cam_data.clip_end = 100
 
-result = {"blender": bpy.app.version_string, "engine": scene.render.engine, "cameras": []}
+result = {"blender": bpy.app.version_string, "engine": scene.render.engine, "cameras": [], "checks": []}
+
+# ------------------------------------------------------------------ checks
+# Simple placement checks on what was built: floor things that float or sink, anything outside
+# the room. (Plan coordinates: Blender y is −plan y.)
+bpy.context.view_layer.update()
+room_box = job.get("roomBox")  # [x0, y0, x1, y1] in plan space
+for o, it in zip(items, job.get("items", [])):
+    if not it.get("asset"):
+        continue
+    pts = [o.matrix_world @ Vector(c) for c in o.bound_box]
+    zs = [p.z for p in pts]
+    px = [p.x for p in pts]
+    py = [-p.y for p in pts]
+    entry = {"id": it["id"], "size": [max(px) - min(px), max(py) - min(py), max(zs) - min(zs)]}
+    if it.get("floor") and abs(min(zs)) > 0.02:
+        entry["FLOAT"] = round(min(zs), 3)
+    if room_box and (min(px) < room_box[0] - 0.1 or max(px) > room_box[2] + 0.1 or min(py) < room_box[1] - 0.1 or max(py) > room_box[3] + 0.1):
+        entry["OUT"] = [round(min(px), 2), round(min(py), 2), round(max(px), 2), round(max(py), 2)]
+    result["checks"].append(entry)
 for c in job.get("cameras", []):
     pose = c["pose"]
     W, H = c["width"], c["height"]

@@ -29,7 +29,8 @@ export function blenderVersion(bin = blenderPath()): string {
   return `${m[1]}.${m[2]}.${m[3]}`;
 }
 
-export function runBlender(script: string, args: string[], log?: (line: string) => void): Promise<string> {
+/** `marker`: the line the script prints when it finished (Blender exits 0 even when the script raised). */
+export function runBlender(script: string, args: string[], log?: (line: string) => void, marker = "BUILD_SCENE_OK"): Promise<string> {
   const bin = blenderPath();
   return new Promise((resolve, reject) => {
     const child = spawn(bin, ["-b", "--factory-startup", "-P", script, "--", ...args], { stdio: ["ignore", "pipe", "pipe"] });
@@ -37,13 +38,13 @@ export function runBlender(script: string, args: string[], log?: (line: string) 
     const onData = (d: Buffer) => {
       const s = d.toString();
       out += s;
-      if (log) for (const line of s.split("\n")) if (/Error|Traceback|BUILD_SCENE|Saved:/.test(line)) log(line.trim());
+      if (log) for (const line of s.split("\n")) if (/Error|Traceback|_OK|Saved:/.test(line)) log(line.trim());
     };
     child.stdout.on("data", onData);
     child.stderr.on("data", onData);
     child.on("close", (code) => {
       // Blender exits 0 even when the Python script raises; look for the script's own success marker.
-      if (code === 0 && out.includes("BUILD_SCENE_OK")) resolve(out);
+      if (code === 0 && out.includes(marker)) resolve(out);
       else reject(new Error(`Blender failed (exit ${code}):\n${out.split("\n").slice(-30).join("\n")}`));
     });
   });

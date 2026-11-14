@@ -13,7 +13,8 @@
     "build:tour": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-tour.mts",
     "worker": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/worker.mts",
     "build:scene": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-scene.mts",
-    "blender:scene": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/blender-scene.mts"
+    "blender:scene": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/blender-scene.mts",
+    "build:models": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-models.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
