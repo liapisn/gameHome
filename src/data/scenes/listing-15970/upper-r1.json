@@ -4,8 +4,8 @@
   "roomId": "r1",
   "roomName": "Kitchen",
   "look": {
-    "floor": "#d8c3b0",
-    "walls": "#f5ebd9"
+    "floor": "#d7c6ad",
+    "walls": "#d7d2c3"
   },
   "items": [
     {
@@ -423,7 +423,7 @@
       "d": 0.755,
       "h": 0.8,
       "seed": 1858981709,
-      "color": "#e1ccad",
+      "color": "#eb874a",
       "material": "wood",
       "builtIn": true,
       "source": "photos",
