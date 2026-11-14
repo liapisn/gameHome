@@ -701,6 +701,7 @@ export function mergeCandidates(cands: Candidate[], room: Room, ceiling: number)
       source: "photos",
       seenIn: [...new Set(all.map((c) => c.det.photoId))],
       detections: all.map((c) => c.det.id),
+      views: all.map((c) => ({ photoId: c.det.photoId, detectionId: c.det.id, box: c.det.box })),
       confidence,
     };
     if (wallHung) item.elevation = (z0 + z1) / 2;
@@ -740,6 +741,7 @@ function dropOverlaps(items: SceneItem[]): SceneItem[] {
       continue;
     }
     host.detections = [...host.detections, ...it.detections];
+    host.views = [...(host.views ?? []), ...(it.views ?? [])];
     host.seenIn = [...new Set([...host.seenIn, ...it.seenIn])];
   }
   return items.filter((i) => kept.includes(i));
