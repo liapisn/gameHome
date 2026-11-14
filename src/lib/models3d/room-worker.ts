@@ -25,14 +25,14 @@ import type { Tour } from "@/lib/tour/types";
 import { PICTURE, briefForItem, builtToMeasure, chairBrief, chairPlacements, itemViews, loadDetections } from "./briefs";
 import { pickTurn, sameModels } from "./critic";
 import { fitFor, runObjectWorker } from "./object-worker";
-import { cropViews } from "./reference";
+import { cropViews } from "./crops";
 import type { ObjectBrief, ObjectResult } from "./types";
 import { blenderJob, cachedJson, pool, slug } from "./util";
 
 /** A placed model whose long side (both sides, for flat things) is more than this far off its item's stays a box. */
 const MAX_PROPORTION_OFF = 0.5;
-/** Object workers in flight at once (each runs two generators). */
-const OBJECT_CONCURRENCY = 8;
+/** Object workers in flight at once (each builds on its own boxd machine; the pool caps machines). */
+const OBJECT_CONCURRENCY = Number(process.env.OBJECT_CONCURRENCY ?? 30);
 const RENDER_W = 1024;
 
 export interface RoomRun {

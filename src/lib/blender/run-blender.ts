@@ -9,7 +9,7 @@
 import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { boxdBlenderVersion, runOnMachine, withMachine } from "@/lib/boxd/runner";
+import { boxd, boxdBlenderVersion, runOnMachine, withMachine } from "@/lib/boxd/runner";
 
 export const blenderRunner = (): "boxd" | "local" => (process.env.BLENDER_RUNNER === "local" ? "local" : "boxd");
 /** Scripts that execute model-written code: boxd only, on a machine that is deleted afterwards. */
@@ -51,7 +51,16 @@ export function runBlender(script: string, args: string[], log?: (line: string) 
   const untrusted = UNTRUSTED.has(path.basename(script));
   if (blenderRunner() === "boxd") {
     if (args.length !== 1) throw new Error("runBlender on boxd takes exactly one argument: the job file");
-    return withMachine((m) => runOnMachine(m, script, args[0], marker, log), { discard: untrusted });
+    if (!untrusted) return withMachine((m) => runOnMachine(m, script, args[0], marker, log));
+    // Model-written code: no internet (files travel through the SDK), 5 minutes at most, and the
+    // machine is deleted afterwards.
+    return withMachine(
+      async (m) => {
+        await boxd().machines.setEgressAllow(m.id, ["none"]);
+        return runOnMachine(m, script, args[0], marker, log, { timeoutMs: 5 * 60_000 });
+      },
+      { discard: true },
+    );
   }
   if (untrusted) throw new Error(`${path.basename(script)} runs model-written code: boxd only (unset BLENDER_RUNNER=local)`);
   const run = localQueue.then(() => runLocal(script, args, log, marker));

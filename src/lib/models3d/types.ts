@@ -26,6 +26,9 @@ export interface ObjectBrief {
   material?: SceneMaterial;
   /** Extra words for the reference, e.g. "the dining chairs around this table, one chair only". */
   note?: string;
+  /** Built to the exact size of a wall run (fitted kitchens, wardrobes). */
+  fit?: "exact";
+  wall?: { length: number; cornerAt?: "left" | "right"; notes?: string };
   workDir: string;
 }
 
@@ -49,4 +52,7 @@ export interface ObjectResult {
   reason: string;
   /** No photo showed it: drawn from its label. */
   invented?: boolean;
+  /** Code worker: the critic's score (0–10) of the chosen run, and the Blender code it ran. */
+  score?: number;
+  script?: string;
 }

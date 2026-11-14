@@ -11,6 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { NO_NEW_JOBS } from "@/lib/fal/client";
+import { runCodeObjectWorker } from "./code-worker";
 import { checkReference, pickModel } from "./critic";
 import { meshBoth } from "./mesh";
 import { cleanReference, cropViews } from "./reference";
@@ -36,7 +37,16 @@ interface Attempt {
   good: boolean;
 }
 
-export async function runObjectWorker(brief: ObjectBrief, log: (m: string) => void = () => {}): Promise<ObjectResult> {
+/**
+ * One object → one model. Default: Blender code written by Gemini, run on boxd (code-worker.ts).
+ * OBJECT_WORKER=fal: the image-to-3D path below, kept until the code path has proved itself
+ * (docs/boxd-models-plan.md, milestone 5 removes it).
+ */
+export function runObjectWorker(brief: ObjectBrief, log: (m: string) => void = () => {}): Promise<ObjectResult> {
+  return process.env.OBJECT_WORKER === "fal" ? runFalObjectWorker(brief, log) : runCodeObjectWorker(brief, log);
+}
+
+async function runFalObjectWorker(brief: ObjectBrief, log: (m: string) => void = () => {}): Promise<ObjectResult> {
   const say = (m: string) => log(`[${brief.assetId}] ${m}`);
   fs.mkdirSync(brief.workDir, { recursive: true });
   fs.writeFileSync(path.join(brief.workDir, "brief.json"), JSON.stringify(brief, null, 2));

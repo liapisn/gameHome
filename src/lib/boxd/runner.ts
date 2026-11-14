@@ -185,7 +185,15 @@ async function exec(lease: Lease, command: string, timeout = 60_000) {
  * Run `blender -b -P <script> -- <jobFile>` on `lease`. Resolves with Blender's output when the
  * script printed `marker` (Blender exits 0 even when the script raised).
  */
-export async function runOnMachine(lease: Lease, script: string, jobFile: string, marker: string, log?: (line: string) => void): Promise<string> {
+export async function runOnMachine(
+  lease: Lease,
+  script: string,
+  jobFile: string,
+  marker: string,
+  log?: (line: string) => void,
+  opts: { timeoutMs?: number } = {},
+): Promise<string> {
+  const timeoutMs = opts.timeoutMs ?? EXEC_TIMEOUT_MS;
   const b = boxd();
   const job: unknown = JSON.parse(fs.readFileSync(jobFile, "utf8"));
   const refs = [...pathsIn(job)];
@@ -215,11 +223,13 @@ export async function runOnMachine(lease: Lease, script: string, jobFile: string
   // stdin closed and output to a file: with the exec's stdin left open, Blender finishes the
   // script but never exits. `timeout` stops a stuck Blender on the machine itself.
   const logFile = `${stamp}.log`;
-  const secs = Math.floor(EXEC_TIMEOUT_MS / 1000) - 15;
+  // The machine stops Blender first (SIGTERM, then SIGKILL 10 s later), so its log still comes back
+  // before the SDK's own deadline (60 s later) gives up on the call.
+  const secs = Math.max(30, Math.floor(timeoutMs / 1000));
   const r = await exec(
     lease,
-    `timeout ${secs} blender -b --factory-startup -P ${sh(path.resolve(script))} -- ${sh(path.resolve(jobFile))} < /dev/null > ${logFile} 2>&1; code=$?; cat ${logFile}; exit $code`,
-    EXEC_TIMEOUT_MS,
+    `timeout -k 10 ${secs} blender -b --factory-startup -P ${sh(path.resolve(script))} -- ${sh(path.resolve(jobFile))} < /dev/null > ${logFile} 2>&1; code=$?; cat ${logFile}; exit $code`,
+    timeoutMs + 60_000,
   );
   const out = r.stdout + r.stderr;
   if (log) for (const line of out.split("\n")) if (/Error|Traceback|_OK|Saved:/.test(line)) log(line.trim());
