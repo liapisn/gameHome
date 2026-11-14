@@ -7,3 +7,4 @@ Reference data for developing and testing the pipeline: floor plan parsing, phot
 | Folder | Contents |
 |---|---|
 | `listing-15970/` | Marousi house (theprosperty.com): 2 floor plans, 48 photos, `manifest.json` with photo → level/room labels |
+| `listing-8218/` | One-bedroom apartment (theprosperty.com): 1 floor plan, 11 photos, `manifest.json` with photo → room labels |

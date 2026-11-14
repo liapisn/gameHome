@@ -1,0 +1,93 @@
+{
+  "listingId": "8218",
+  "name": "One-bedroom apartment",
+  "source": "theprosperty.com listing 8218 (third-party, watermarked; internal testing only, do not publish)",
+  "labelledBy": "manual review, 2026-11-14",
+  "purpose": "Ground truth for photo→room assignment and floor plan parsing tests (small single-level case)",
+  "levels": [
+    {
+      "id": "main",
+      "name": "Apartment (single level)",
+      "floorplan": "floorplans/01.jpg",
+      "note": "Rooms on plan: Living/dining 4.15 x 3.31 m, Bedroom 3.12 x 4.69 m, Bathroom 1.57 x 1.57 m, Kitchen/entry 1.84 x 3.04 m, Balcony 2.71 x 2.30 m. Bathroom vanity sits in an open niche between bedroom and living room; only the shower is enclosed."
+    }
+  ],
+  "photos": [
+    {
+      "file": "photos/01.jpg",
+      "level": "main",
+      "room": "Living/dining room",
+      "confidence": "high",
+      "note": "Red feature wall with sofa; sliding door to balcony on the left"
+    },
+    {
+      "file": "photos/02.jpg",
+      "level": "main",
+      "room": "Living/dining room",
+      "confidence": "high",
+      "note": "TV unit wall; balcony door on the right"
+    },
+    {
+      "file": "photos/03.jpg",
+      "level": "main",
+      "room": "Kitchen",
+      "confidence": "high",
+      "note": "Galley kitchen looking through into the living room and balcony door"
+    },
+    {
+      "file": "photos/04.jpg",
+      "level": "main",
+      "room": "Kitchen",
+      "confidence": "high",
+      "note": "Looking back toward the entry door; doubles as the entry"
+    },
+    {
+      "file": "photos/05.jpg",
+      "level": "main",
+      "room": "Bedroom",
+      "confidence": "high",
+      "note": "From the bed toward the bathroom vanity niche and the living room opening"
+    },
+    {
+      "file": "photos/06.jpg",
+      "level": "main",
+      "room": "Bedroom",
+      "confidence": "high",
+      "note": "Mirrored wardrobe on the left, red wall behind the bed"
+    },
+    {
+      "file": "photos/07.jpg",
+      "level": "main",
+      "room": "Bathroom",
+      "confidence": "medium",
+      "note": "Vanity in the foreground, looking into the bedroom"
+    },
+    {
+      "file": "photos/08.jpg",
+      "level": "main",
+      "room": "Bathroom",
+      "confidence": "medium",
+      "note": "Vanity and shower on the left, living room visible on the right through the opening"
+    },
+    {
+      "file": "photos/09.jpg",
+      "level": "main",
+      "room": "Bathroom",
+      "confidence": "high",
+      "note": "Vanity and glass shower enclosure"
+    },
+    {
+      "file": "photos/10.jpg",
+      "level": "main",
+      "room": "Bathroom",
+      "confidence": "high",
+      "note": "Inside the shower, window on the north wall"
+    },
+    {
+      "file": "photos/11.jpg",
+      "level": "main",
+      "room": "Balcony",
+      "confidence": "high"
+    }
+  ]
+}
