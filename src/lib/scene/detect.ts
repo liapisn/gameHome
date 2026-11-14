@@ -3,7 +3,7 @@
  * The model names things and points at image positions; lift.ts turns those into metres.
  */
 import { z } from "zod";
-import { ROOM_TYPES, type Room, type RoomType } from "@/lib/floorplan";
+import { OPEN_PLAN, ROOM_TYPES, type Room, type RoomType } from "@/lib/floorplan";
 import { generateStructured } from "@/lib/ai/structured";
 import { Detection, SCENE_KINDS } from "./types";
 
@@ -13,9 +13,6 @@ export const DetectAnswer = z.object({
     .describe("Your own judgement of the kind of room the CAMERA STANDS IN (not rooms seen through openings)"),
   items: z.array(Detection),
 });
-
-/** Room kinds that share one open space often enough that a photo can't tell them apart. */
-const OPEN_PLAN: RoomType[][] = [["living", "dining", "kitchen"], ["hallway", "stairs"], ["office", "bedroom"]];
 
 /**
  * Does the model's room kind contradict the room the photo was placed in? Lenient: open-plan

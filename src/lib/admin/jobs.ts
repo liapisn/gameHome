@@ -84,7 +84,7 @@ export async function exportProperty(
 ): Promise<ExportedProperty> {
   const { data: p, error } = await supabase
     .from("properties")
-    .select("id, org_id, title, levels ( id, name, sort, floorplan_path ), media ( id, kind, storage_path, level_id, hint, sort )")
+    .select("id, org_id, title, levels ( id, name, sort, floorplan_path ), media ( id, kind, storage_path, level_id, hint, room_type, sort )")
     .eq("id", propertyId)
     .single();
   if (error || !p) throw new Error(`Property not found: ${error?.message ?? propertyId}`);
@@ -100,7 +100,7 @@ export async function exportProperty(
       ...(l.floorplan_path ? {} : { note: "a floor of this property without a floor plan" }),
     })),
     // Photo files are named after their media row, so the tour's `src` maps straight back to Storage.
-    photos: photos.map((m) => ({ file: fileOf(m.id), hint: m.hint ?? undefined, level: m.level_id ?? undefined })),
+    photos: photos.map((m) => ({ file: fileOf(m.id), hint: m.hint ?? undefined, level: m.level_id ?? undefined, roomType: m.room_type ?? undefined })),
   };
   if (opts.floorplans !== false) {
     for (const l of levels) if (l.floorplan_path) await download(supabase, l.floorplan_path, path.join(dir, `floorplans/${l.id}.webp`));

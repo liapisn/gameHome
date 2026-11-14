@@ -47,14 +47,14 @@ isOneToOne: false
                   ]
                 },"media": {
                   Row: {
-                    "bytes": number | null,"created_at": string,"height": number | null,"hint": string | null,"id": string,"kind": Database["public"]['Enums']["media_kind"],"level_id": string | null,"property_id": string,"sort": number,"storage_path": string,"width": number | null
+                    "bytes": number | null,"created_at": string,"height": number | null,"hint": string | null,"id": string,"kind": Database["public"]['Enums']["media_kind"],"level_id": string | null,"property_id": string,"room_type": Database["public"]['Enums']["room_type"] | null,"sort": number,"storage_path": string,"width": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "bytes"?: number | null,"created_at"?: string,"height"?: number | null,"hint"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["media_kind"],"level_id"?: string | null,"property_id": string,"sort"?: number,"storage_path": string,"width"?: number | null
+                    "bytes"?: number | null,"created_at"?: string,"height"?: number | null,"hint"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["media_kind"],"level_id"?: string | null,"property_id": string,"room_type"?: Database["public"]['Enums']["room_type"] | null,"sort"?: number,"storage_path": string,"width"?: number | null
                   }
                   Update: {
-                    "bytes"?: number | null,"created_at"?: string,"height"?: number | null,"hint"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["media_kind"],"level_id"?: string | null,"property_id"?: string,"sort"?: number,"storage_path"?: string,"width"?: number | null
+                    "bytes"?: number | null,"created_at"?: string,"height"?: number | null,"hint"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["media_kind"],"level_id"?: string | null,"property_id"?: string,"room_type"?: Database["public"]['Enums']["room_type"] | null,"sort"?: number,"storage_path"?: string,"width"?: number | null
                   }
                   Relationships: [
                     {
@@ -183,7 +183,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "job_status": "queued"|"running"|"succeeded"|"failed","media_kind": "photo"|"floorplan","member_role": "owner"|"editor","property_kind": "apartment"|"house"|"studio"|"maisonette"|"villa"|"other","property_status": "draft"|"processing"|"ready"|"published"
+            "job_status": "queued"|"running"|"succeeded"|"failed","media_kind": "photo"|"floorplan","member_role": "owner"|"editor","property_kind": "apartment"|"house"|"studio"|"maisonette"|"villa"|"other","property_status": "draft"|"processing"|"ready"|"published","room_type": "living"|"kitchen"|"dining"|"bedroom"|"bathroom"|"hallway"|"office"|"storage"|"stairs"|"balcony"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -299,7 +299,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "job_status": ["queued", "running", "succeeded", "failed"],"media_kind": ["photo", "floorplan"],"member_role": ["owner", "editor"],"property_kind": ["apartment", "house", "studio", "maisonette", "villa", "other"],"property_status": ["draft", "processing", "ready", "published"]
+            "job_status": ["queued", "running", "succeeded", "failed"],"media_kind": ["photo", "floorplan"],"member_role": ["owner", "editor"],"property_kind": ["apartment", "house", "studio", "maisonette", "villa", "other"],"property_status": ["draft", "processing", "ready", "published"],"room_type": ["living", "kitchen", "dining", "bedroom", "bathroom", "hallway", "office", "storage", "stairs", "balcony"]
           }
         }
 } as const

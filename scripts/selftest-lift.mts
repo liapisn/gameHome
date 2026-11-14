@@ -4,14 +4,18 @@
  *   2. Known boxes in the upper-floor kitchen, projected into synthetic photos, lift back to the
  *      same footprint and height (target: within 2 cm with exact pixels).
  *   3. With ±4 px of pixel noise, report the error a real photo can expect.
+ *   4. Every kind's size limits: clamping, the typical-size fallback, wall-hung faces, anchors.
+ *   5. Merging `generic` by label, dropping overlapping duplicates, screening by room and confidence.
  *   npx tsx scripts/selftest-lift.mts
  */
 import fs from "node:fs";
 import * as THREE from "three";
 import type { FloorPlan } from "../src/lib/floorplan";
-import { liftDetection, mergeCandidates, type Candidate } from "../src/lib/scene/lift";
+import {
+  fitSize, KIND_LIMITS, KIND_SIZE, kindFitsRoom, liftDetection, mergeCandidates, normaliseLabel, screenItems, type Candidate,
+} from "../src/lib/scene/lift";
 import { photoCamera, type V3 } from "../src/lib/scene/project";
-import type { PhotoDetection } from "../src/lib/scene/types";
+import { SCENE_KINDS, type PhotoDetection } from "../src/lib/scene/types";
 import { photoCamera as threeCamera } from "../src/lib/tour/space";
 import type { PhotoPose } from "../src/lib/tour/types";
 
@@ -143,6 +147,92 @@ for (const noisePx of [0, 4]) {
     if (noisePx) console.log(`  ..  ${msg}`);
     else check(err <= tol && herr <= tol, msg);
   }
+}
+
+// ---------------------------------------------------------------- 4. size limits
+console.log("\nsize limits");
+{
+  const within = (v: number, [lo, hi]: [number, number]) => v >= lo - 1e-9 && v <= hi + 1e-9;
+  const bad: string[] = [];
+  // Every kind, every dimension: too small, too large (clamped) and far too large (typical size).
+  for (const kind of SCENE_KINDS) {
+    const L = KIND_LIMITS[kind];
+    const [tw, td, th] = KIND_SIZE[kind];
+    const mid = (r: [number, number]) => (r[0] + r[1]) / 2;
+    for (const dim of ["w", "d", "h"] as const) {
+      for (const [factor, far] of [[0.6, false], [1.5, false], [2.5, true]] as const) {
+        const size = { w: mid(L.w), d: mid(L.d), h: mid(L.h), [dim]: L[dim][factor < 1 ? 0 : 1] * factor };
+        // Against the N wall (y = 1): width along x, depth along y.
+        const s = fitSize({ x0: 1, y0: 1, x1: 1 + size.w, y1: 1 + size.d }, 0, size.h, "N", kind, "floor", 2.6);
+        const [w, d, h] = [s.rect.x1 - s.rect.x0, s.rect.y1 - s.rect.y0, s.z1 - s.z0];
+        const typical = { w: tw, d: td, h: th }[dim];
+        const got = { w, d, h }[dim];
+        const ok =
+          within(w, L.w) && within(d, L.d) && within(h, L.h) && s.rect.y0 === 1 && s.z0 === 0 && s.off === far &&
+          (!far || Math.abs(got - Math.min(L[dim][1], Math.max(L[dim][0], typical))) < 1e-9);
+        if (!ok) bad.push(`${kind}.${dim}×${factor}: ${w.toFixed(2)}×${d.toFixed(2)}×${h.toFixed(2)} off=${s.off}`);
+      }
+    }
+  }
+  check(!bad.length, `every kind clamped into its limits, back on the wall, typical size when far off${bad.length ? `: ${bad.slice(0, 5).join("; ")}` : ""}`);
+
+  // The cases from the committed scenes.
+  const fridge = fitSize({ x0: 0, y0: 1.45, x1: 0.58, y1: 1.45 + 1.04 }, 0, 1.93, "N", "fridge", "floor", 2.6);
+  check(Math.abs(fridge.rect.y1 - fridge.rect.y0 - 0.8) < 1e-9 && fridge.rect.y0 === 1.45 && !fridge.off, "fridge 1.04 m deep → 0.8 m, back stays on the wall");
+  const sofa = fitSize({ x0: 0, y0: 0, x1: 2.2, y1: 0.9 }, 0, 0.36, null, "sofa", "floor", 2.6);
+  check(Math.abs(sofa.z1 - 0.6) < 1e-9 && !sofa.off, "sofa 0.36 m tall → 0.6 m");
+  const vanity = fitSize({ x0: 0, y0: 0, x1: 0.6, y1: 0.48 }, 0, 0.12, "N", "vanity", "floor", 2.6);
+  check(Math.abs(vanity.z1 - 0.85) < 1e-9 && vanity.off, "floor vanity 0.12 m tall → typical 0.85 m, flagged");
+  const mirror = fitSize({ x0: 0, y0: 3, x1: 0.35, y1: 3.09 }, 1.3, 1.39, "W", "generic", "wall", 2.6);
+  const [mw, md, mh] = [mirror.rect.y1 - mirror.rect.y0, mirror.rect.x1 - mirror.rect.x0, mirror.z1 - mirror.z0];
+  check(Math.abs(mw - 0.2) < 1e-9 && Math.abs(md - 0.35) < 1e-9 && Math.abs(mh - 0.2) < 1e-9 && mirror.rect.x0 === 0 && Math.abs((mirror.z0 + mirror.z1) / 2 - 1.345) < 1e-9,
+    `wall cabinet 9 cm wide → face 0.2 × 0.2 m, 0.35 m thick, centre height kept (${mw.toFixed(2)}×${md.toFixed(2)}×${mh.toFixed(2)})`);
+  const art = fitSize({ x0: 3.15, y0: 4, x1: 3.19, y1: 4.05 }, 1.5, 1.55, "E", "art", "wall", 2.6);
+  check(Math.abs(art.rect.x1 - art.rect.x0 - 0.04) < 1e-9 && art.rect.x1 === 3.19 && art.rect.y1 - art.rect.y0 >= 0.2 - 1e-9, "picture keeps its 4 cm thickness on the wall and a 0.2 m face");
+  const bed = fitSize({ x0: 0, y0: 0, x1: 1.6, y1: 2.0 }, 0, 0.5, null, "bed", "floor", 2.6);
+  // x extent 1.6 is the short side: a bed's width runs along it, its 2 m length is depth.
+  check(bed.alongX && !bed.off && Math.abs(bed.rect.y1 - bed.rect.y0 - 2.0) < 1e-9, "free-standing bed: width across the short side, length as depth");
+  const pendant = fitSize({ x0: 0, y0: 0, x1: 0.4, y1: 0.4 }, 0.2, 2.6, null, "pendant", "ceiling", 2.6);
+  check(pendant.z1 === 2.6 && Math.abs(pendant.z0 - 1.4) < 1e-9, "pendant hangs from the ceiling, drop clamped to 1.2 m");
+}
+
+// ---------------------------------------------------------------- 5. labels, overlaps, screening
+console.log("\nmerging and screening");
+{
+  check(normaliseLabel("Wall cabinets") === "wall cabinet" && normaliseLabel("left wall cabinets") === "wall cabinet", "'Wall cabinets' = 'left wall cabinets' = 'wall cabinet'");
+  check(normaliseLabel("open shelves") === "open shelf" && normaliseLabel("glass") === "glass" && normaliseLabel("boxes") === "box", "singular: shelves → shelf, glass stays, boxes → box");
+  check(normaliseLabel("extractor wall cabinets") !== normaliseLabel("wall cabinets"), "'extractor wall cabinets' stays its own thing");
+
+  const kitchenRoom = { ...room, type: "kitchen" as const };
+  const mk = (id: string, kind: PhotoDetection["kind"], label: string, rect: [number, number, number, number], z: [number, number], mount: PhotoDetection["mount"] = "floor", side: Candidate["side"] = null): Candidate => ({
+    det: { id, photoId: id.split(":")[0], label, kind, mount, builtIn: false, color: "#888888", material: "wood", box: [0, 0, 1, 1], floorPoints: [], topPoints: [], faceCorners: [], againstWall: !!side },
+    rect: { x0: rect[0], y0: rect[1], x1: rect[2], y1: rect[3] }, z0: z[0], z1: z[1], side, axis: "x", weight: 1, dist: 2,
+    fit: mount === "wall" ? "wall" : "footprint",
+  });
+  // Two fridges in one photo, almost on top of each other: one object detected twice.
+  const twice = mergeCandidates([mk("a:0", "fridge", "fridge", [2.5, 1.45, 3.15, 2.1], [0, 1.85], "floor", "N"), mk("a:1", "fridge", "fridge", [2.55, 1.45, 3.19, 2.05], [0, 1.8], "floor", "N")], kitchenRoom, ceiling);
+  check(twice.length === 1 && twice[0].detections.length === 2, `overlapping same-kind items → one, keeping both detections (${twice.length})`);
+  // Side by side, not overlapping: two.
+  const pair = mergeCandidates([mk("a:0", "armchair", "armchair", [1, 3, 1.8, 3.8], [0, 0.85]), mk("a:1", "armchair", "armchair", [2, 3, 2.8, 3.8], [0, 0.85])], kitchenRoom, ceiling);
+  check(pair.length === 2, "two armchairs side by side stay two");
+  // Same generic thing seen once in each of two photos, poses 1.4 m apart: one wall cabinet run.
+  const gen = mergeCandidates([
+    mk("a:0", "generic", "wall cabinets", [0, 3, 0.35, 4.2], [1.4, 2.1], "wall", "W"),
+    mk("b:0", "generic", "Wall cabinet", [0, 4.4, 0.35, 5.6], [1.4, 2.1], "wall", "W"),
+    mk("b:1", "generic", "radiator", [0, 6, 0.1, 6.8], [0.2, 0.8], "wall", "W"),
+  ], kitchenRoom, ceiling);
+  check(gen.length === 2 && gen.some((i) => i.detections.length === 2 && /cabinet/i.test(i.label)), `generic merges by label: wall cabinets ×2 → 1, radiator apart (${gen.map((i) => i.label).join(", ")})`);
+  // Same geometry, different generic labels seen in one photo each: not merged by identity.
+  const diff = mergeCandidates([mk("a:0", "generic", "washing machine", [1, 3, 1.6, 3.6], [0, 0.85]), mk("b:0", "generic", "stool", [2.4, 3, 2.8, 3.4], [0, 0.6])], kitchenRoom, ceiling);
+  check(diff.length === 2, "differently labelled generic things far apart stay apart");
+
+  check(!kindFitsRoom("sofa", "bathroom") && !kindFitsRoom("bed", "bathroom") && !kindFitsRoom("bathtub", "kitchen"), "no sofa or bed in a bathroom, no bathtub in a kitchen");
+  check(kindFitsRoom("sofa", "kitchen") && kindFitsRoom("diningTable", "living") && kindFitsRoom("bed", "office") && kindFitsRoom("plant", "bathroom"), "open-plan partners and anywhere-kinds fit");
+
+  const item = (kind: string, confidence: number, builtIn = false) => ({ ...pair[0], id: `${kind}-x`, kind: kind as PhotoDetection["kind"], confidence, builtIn });
+  const s = screenItems([item("sofa", 0.9), item("toilet", 0.9), item("armchair", 0.3), item("vanity", 0.3, true), item("armchair", 0.45)], "bathroom");
+  check(s.kept.map((i) => i.kind).join(",") === "toilet,vanity,armchair" && s.dropped.length === 2,
+    `bathroom keeps toilet, built-in vanity at 0.3 and armchair at 0.45; drops sofa and a 0.3 guess (${s.dropped.map((d) => d.reason).join("; ")})`);
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");
