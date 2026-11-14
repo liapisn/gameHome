@@ -1,0 +1,574 @@
+{
+  "parsed": {
+    "levelName": "Upper Floor",
+    "scaleMethod": "printed_dimensions",
+    "rooms": [
+      {
+        "name": "STORAGE",
+        "type": "storage",
+        "labeledWidth": null,
+        "labeledDepth": null,
+        "polygon": [
+          {
+            "x": 0,
+            "y": -3.53
+          },
+          {
+            "x": 3.19,
+            "y": -3.53
+          },
+          {
+            "x": 3.19,
+            "y": -2.08
+          },
+          {
+            "x": 0,
+            "y": -2.08
+          }
+        ]
+      },
+      {
+        "name": "KITCHEN",
+        "type": "kitchen",
+        "labeledWidth": 3.04,
+        "labeledDepth": 5.67,
+        "polygon": [
+          {
+            "x": 0,
+            "y": -2.08
+          },
+          {
+            "x": 3.19,
+            "y": -2.08
+          },
+          {
+            "x": 3.19,
+            "y": 3.74
+          },
+          {
+            "x": 0,
+            "y": 3.74
+          }
+        ]
+      },
+      {
+        "name": "BATHROOM",
+        "type": "bathroom",
+        "labeledWidth": 1.8,
+        "labeledDepth": 3.59,
+        "polygon": [
+          {
+            "x": 3.19,
+            "y": 0
+          },
+          {
+            "x": 5.14,
+            "y": 0
+          },
+          {
+            "x": 5.14,
+            "y": 3.74
+          },
+          {
+            "x": 3.19,
+            "y": 3.74
+          }
+        ]
+      },
+      {
+        "name": "BEDROOM",
+        "type": "bedroom",
+        "labeledWidth": 3.39,
+        "labeledDepth": 3.59,
+        "polygon": [
+          {
+            "x": 5.14,
+            "y": 0
+          },
+          {
+            "x": 8.68,
+            "y": 0
+          },
+          {
+            "x": 8.68,
+            "y": 3.74
+          },
+          {
+            "x": 5.14,
+            "y": 3.74
+          }
+        ]
+      },
+      {
+        "name": "CLOSET",
+        "type": "storage",
+        "labeledWidth": null,
+        "labeledDepth": null,
+        "polygon": [
+          {
+            "x": 8.68,
+            "y": 0.29
+          },
+          {
+            "x": 9.54,
+            "y": 0.29
+          },
+          {
+            "x": 9.54,
+            "y": 3.74
+          },
+          {
+            "x": 8.68,
+            "y": 3.74
+          }
+        ]
+      },
+      {
+        "name": "CLOSET",
+        "type": "storage",
+        "labeledWidth": null,
+        "labeledDepth": null,
+        "polygon": [
+          {
+            "x": 9.54,
+            "y": 0.29
+          },
+          {
+            "x": 10.4,
+            "y": 0.29
+          },
+          {
+            "x": 10.4,
+            "y": 3.74
+          },
+          {
+            "x": 9.54,
+            "y": 3.74
+          }
+        ]
+      },
+      {
+        "name": "BEDROOM",
+        "type": "bedroom",
+        "labeledWidth": 3.34,
+        "labeledDepth": 3.3,
+        "polygon": [
+          {
+            "x": 10.4,
+            "y": 0.29
+          },
+          {
+            "x": 13.89,
+            "y": 0.29
+          },
+          {
+            "x": 13.89,
+            "y": 3.74
+          },
+          {
+            "x": 10.4,
+            "y": 3.74
+          }
+        ]
+      },
+      {
+        "name": "HALLWAY",
+        "type": "hallway",
+        "labeledWidth": 5.06,
+        "labeledDepth": 1.35,
+        "polygon": [
+          {
+            "x": 8.68,
+            "y": 3.74
+          },
+          {
+            "x": 13.89,
+            "y": 3.74
+          },
+          {
+            "x": 13.89,
+            "y": 5.24
+          },
+          {
+            "x": 8.68,
+            "y": 5.24
+          }
+        ]
+      },
+      {
+        "name": "PRIMARY BATHROOM",
+        "type": "bathroom",
+        "labeledWidth": 2.3,
+        "labeledDepth": 2.12,
+        "polygon": [
+          {
+            "x": 13.89,
+            "y": 0
+          },
+          {
+            "x": 16.34,
+            "y": 0
+          },
+          {
+            "x": 16.34,
+            "y": 2.27
+          },
+          {
+            "x": 13.89,
+            "y": 2.27
+          }
+        ]
+      },
+      {
+        "name": "PRIMARY BEDROOM",
+        "type": "bedroom",
+        "labeledWidth": 4.81,
+        "labeledDepth": 4.86,
+        "polygon": [
+          {
+            "x": 16.34,
+            "y": 0.23
+          },
+          {
+            "x": 18.85,
+            "y": 0.23
+          },
+          {
+            "x": 18.85,
+            "y": 5.24
+          },
+          {
+            "x": 13.89,
+            "y": 5.24
+          },
+          {
+            "x": 13.89,
+            "y": 2.27
+          },
+          {
+            "x": 16.34,
+            "y": 2.27
+          }
+        ]
+      },
+      {
+        "name": "DINING ROOM",
+        "type": "dining",
+        "labeledWidth": 8.56,
+        "labeledDepth": 4.24,
+        "polygon": [
+          {
+            "x": 0,
+            "y": 3.74
+          },
+          {
+            "x": 8.68,
+            "y": 3.74
+          },
+          {
+            "x": 8.68,
+            "y": 8.13
+          },
+          {
+            "x": 0,
+            "y": 8.13
+          }
+        ]
+      },
+      {
+        "name": "LIVING ROOM",
+        "type": "living",
+        "labeledWidth": 5.98,
+        "labeledDepth": 3.88,
+        "polygon": [
+          {
+            "x": 2.55,
+            "y": 8.13
+          },
+          {
+            "x": 8.68,
+            "y": 8.13
+          },
+          {
+            "x": 8.68,
+            "y": 12.16
+          },
+          {
+            "x": 2.55,
+            "y": 12.16
+          }
+        ]
+      },
+      {
+        "name": "HALLWAY (Stairs)",
+        "type": "stairs",
+        "labeledWidth": 3.73,
+        "labeledDepth": 2.38,
+        "polygon": [
+          {
+            "x": 10.04,
+            "y": 5.24
+          },
+          {
+            "x": 12.56,
+            "y": 5.24
+          },
+          {
+            "x": 12.56,
+            "y": 7.77
+          },
+          {
+            "x": 8.68,
+            "y": 7.77
+          },
+          {
+            "x": 8.68,
+            "y": 6.24
+          },
+          {
+            "x": 10.04,
+            "y": 6.24
+          }
+        ]
+      },
+      {
+        "name": "STORAGE",
+        "type": "storage",
+        "labeledWidth": null,
+        "labeledDepth": null,
+        "polygon": [
+          {
+            "x": 8.68,
+            "y": 5.24
+          },
+          {
+            "x": 10.04,
+            "y": 5.24
+          },
+          {
+            "x": 10.04,
+            "y": 6.24
+          },
+          {
+            "x": 8.68,
+            "y": 6.24
+          }
+        ]
+      },
+      {
+        "name": "STORAGE",
+        "type": "storage",
+        "labeledWidth": null,
+        "labeledDepth": null,
+        "polygon": [
+          {
+            "x": 12.56,
+            "y": 5.24
+          },
+          {
+            "x": 13.89,
+            "y": 5.24
+          },
+          {
+            "x": 13.89,
+            "y": 7.77
+          },
+          {
+            "x": 12.56,
+            "y": 7.77
+          }
+        ]
+      }
+    ],
+    "openings": [
+      {
+        "kind": "door",
+        "x": 2.5,
+        "y": 3.74,
+        "width": 0.9,
+        "note": "Kitchen to Dining"
+      },
+      {
+        "kind": "door",
+        "x": 4.2,
+        "y": 3.74,
+        "width": 0.8,
+        "note": "Bathroom to Dining"
+      },
+      {
+        "kind": "door",
+        "x": 8.2,
+        "y": 3.74,
+        "width": 0.9,
+        "note": "Bedroom to Dining"
+      },
+      {
+        "kind": "opening",
+        "x": 5.61,
+        "y": 8.13,
+        "width": 6.13,
+        "note": "Dining to Living"
+      },
+      {
+        "kind": "door",
+        "x": 8.68,
+        "y": 4.49,
+        "width": 1.4,
+        "note": "Dining to Hallway"
+      },
+      {
+        "kind": "door",
+        "x": 11,
+        "y": 3.74,
+        "width": 0.9,
+        "note": "Bedroom to Hallway"
+      },
+      {
+        "kind": "door",
+        "x": 13.89,
+        "y": 4.49,
+        "width": 0.9,
+        "note": "Hallway to Primary Bedroom"
+      },
+      {
+        "kind": "door",
+        "x": 15,
+        "y": 2.27,
+        "width": 0.8,
+        "note": "Primary Bed to Primary Bath"
+      },
+      {
+        "kind": "door",
+        "x": 8.68,
+        "y": 6.5,
+        "width": 0.9,
+        "note": "Dining to Stairs"
+      },
+      {
+        "kind": "door",
+        "x": 12.56,
+        "y": 6.5,
+        "width": 0.8,
+        "note": "Stairs to Storage"
+      },
+      {
+        "kind": "door",
+        "x": 10.04,
+        "y": 5.74,
+        "width": 0.8,
+        "note": "Stairs to Storage"
+      },
+      {
+        "kind": "door",
+        "x": 8.68,
+        "y": 2,
+        "width": 0.8,
+        "note": "Bedroom 1 to Closet"
+      },
+      {
+        "kind": "door",
+        "x": 10.4,
+        "y": 2,
+        "width": 0.8,
+        "note": "Bedroom 2 to Closet"
+      },
+      {
+        "kind": "door",
+        "x": 5.61,
+        "y": 12.16,
+        "width": 2,
+        "note": "Living room south wall"
+      },
+      {
+        "kind": "door",
+        "x": 0,
+        "y": 1,
+        "width": 0.9,
+        "note": "Kitchen west wall"
+      },
+      {
+        "kind": "door",
+        "x": 3.19,
+        "y": -2.8,
+        "width": 0.9,
+        "note": "Storage east wall"
+      },
+      {
+        "kind": "window",
+        "x": 0,
+        "y": -0.5,
+        "width": 1.2,
+        "note": "Kitchen west wall"
+      },
+      {
+        "kind": "window",
+        "x": 4.16,
+        "y": 0,
+        "width": 0.8,
+        "note": "Bathroom north wall"
+      },
+      {
+        "kind": "window",
+        "x": 6.91,
+        "y": 0,
+        "width": 1.2,
+        "note": "Bedroom north wall"
+      },
+      {
+        "kind": "window",
+        "x": 12.14,
+        "y": 0.29,
+        "width": 1.2,
+        "note": "Bedroom north wall"
+      },
+      {
+        "kind": "window",
+        "x": 15.11,
+        "y": 0,
+        "width": 0.8,
+        "note": "Bathroom north wall"
+      },
+      {
+        "kind": "window",
+        "x": 18.85,
+        "y": 2.73,
+        "width": 1.2,
+        "note": "Bedroom east wall"
+      },
+      {
+        "kind": "window",
+        "x": 16.37,
+        "y": 5.24,
+        "width": 1.2,
+        "note": "Bedroom south wall"
+      },
+      {
+        "kind": "window",
+        "x": 2.55,
+        "y": 10.14,
+        "width": 1.2,
+        "note": "Living west wall"
+      },
+      {
+        "kind": "window",
+        "x": 0,
+        "y": 5.93,
+        "width": 1.5,
+        "note": "Dining west wall"
+      },
+      {
+        "kind": "window",
+        "x": 10.62,
+        "y": 7.77,
+        "width": 1,
+        "note": "Stairs south wall"
+      }
+    ],
+    "warnings": [
+      "Small angled corner walls for doorways to Bedrooms 1 and 2 were simplified into rectangular corners for the room polygons.",
+      "Storage rooms on the top-left and under/around the stairs are unlabeled; proportions and areas were estimated based on nearby dimensions."
+    ]
+  },
+  "model": "gemini-3.1-pro-preview",
+  "parsedAt": "2026-11-14T13:06:45.914Z"
+}

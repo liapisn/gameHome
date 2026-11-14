@@ -2,17 +2,18 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TourViewer } from "@/components/tour/TourViewer";
-import { getPlan, listPlanIds } from "@/lib/plans";
+import { listPlanIds } from "@/lib/plans";
+import { listTourIds, resolveTour } from "@/lib/tours";
 
 export function generateStaticParams() {
-  return listPlanIds().map((id) => ({ id }));
+  return [...new Set([...listTourIds(), ...listPlanIds()])].map((id) => ({ id }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/tour/[id]">): Promise<Metadata> {
-  const plan = getPlan((await params).id);
+  const tour = resolveTour((await params).id);
   return {
-    title: plan ? `${plan.title} · gameHome` : "Tour · gameHome",
-    description: "A 3D dollhouse tour generated from structured floor plan geometry.",
+    title: tour ? `${tour.title} · gameHome` : "Tour · gameHome",
+    description: "A walkable 3D tour generated from the floor plan and photos.",
   };
 }
 
@@ -31,7 +32,7 @@ export default function TourPage({ params }: PageProps<"/tour/[id]">) {
 }
 
 async function Tour({ params }: { params: PageProps<"/tour/[id]">["params"] }) {
-  const plan = getPlan((await params).id);
-  if (!plan) notFound();
-  return <TourViewer plan={plan} />;
+  const tour = resolveTour((await params).id);
+  if (!tour) notFound();
+  return <TourViewer tour={tour} />;
 }

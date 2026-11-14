@@ -1,0 +1,1634 @@
+{
+  "photos/10.jpg": {
+    "placement": {
+      "view": "From left to right: a window with curtains on the left wall, an orange-painted section with a radiator recess, and a large built-in white wardrobe. Next is the inner room corner, followed by a pale pinkish wall with an open door leading to a hallway with its own built-in closets. On the right, against the adjacent wall, sits a desk with a mirror. The camera has its back to the exterior wall with the second window.",
+      "levelId": "upper",
+      "roomId": "r9",
+      "location": "Primary Bedroom",
+      "caption": "A spacious, warmly colored primary bedroom featuring ample built-in wardrobe space and a vanity desk.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C19",
+          "what": "corner between the wardrobe and the open door",
+          "u": 0.55,
+          "v": 0.58
+        },
+        {
+          "featureId": "o6:b",
+          "what": "left frame of the door to the hallway",
+          "u": 0.59,
+          "v": 0.58
+        },
+        {
+          "featureId": "o6:a",
+          "what": "right frame of the door to the hallway",
+          "u": 0.7,
+          "v": 0.61
+        }
+      ],
+      "estimate": {
+        "x": 17.5,
+        "y": 7.5,
+        "yawDeg": 165,
+        "hfovDeg": 105,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#b57b49",
+        "walls": "#f5d5c6"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:16:48.661Z"
+  },
+  "photos/30.jpg": {
+    "placement": {
+      "view": "left to right: the edge of a stainless steel refrigerator, a wall with a radiator, an open double glass door leading out to a covered patio and garden, an inward wall corner, and a built-in wooden cabinet with frosted glass upper doors on the right wall.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "second unit kitchen, facing the patio",
+      "caption": "The kitchen in the garden-level unit features built-in cabinetry and opens directly to a covered patio.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d3c3b0",
+        "walls": "#f3e8e8"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:14:16.198Z"
+  },
+  "photos/01.jpg": {
+    "placement": {
+      "view": "On the left wall, a large framed painting hangs next to a wide, multi-pane window with a radiator underneath. The walls meet at a solid corner. The facing wall on the right features a large central fireplace with a white marble surround, flanked by wood paneling. Further right on this wall is a mirror. The camera has its back to the rest of this large, furnished living space.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "living room",
+      "caption": "The grand formal living room features an elegant fireplace and warm wood paneling.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d2a878",
+        "walls": "#dcd8ce"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:16:24.151Z"
+  },
+  "photos/06.jpg": {
+    "placement": {
+      "view": "From left to right: a kitchen counter with an oven and stove on the left wall, turning a corner; the front wall with more counters, a silver fridge, and an open doorway revealing a wooden door; a narrow strip of wall; and the right wall featuring a large wooden storage cabinet and a small dining table. The camera has its back to the kitchen's south wall and doorway.",
+      "levelId": "upper",
+      "roomId": "r1",
+      "location": "kitchen, near the dining room door",
+      "caption": "A bright, fully equipped kitchen featuring orange cabinets and a small dining area.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C4",
+          "what": "corner between the left wall and the front wall",
+          "u": 0.27,
+          "v": null
+        },
+        {
+          "featureId": "C3",
+          "what": "corner between the front wall and the right wall, next to the large cabinet",
+          "u": 0.54,
+          "v": null
+        },
+        {
+          "featureId": "o15:b",
+          "what": "lower frame of the exterior door in the storage room, seen through the open doorway",
+          "u": 0.53,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 2.05,
+        "y": 7.1,
+        "yawDeg": 276,
+        "hfovDeg": 95,
+        "cameraHeight": 1.4
+      },
+      "look": {
+        "floor": "#d3c3ad",
+        "walls": "#d5e0d2"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:17:16.061Z"
+  },
+  "photos/04.jpg": {
+    "placement": {
+      "view": "Looking from the living area across the dining room. On the far left, the edge of the kitchen doorway is visible. Next is the bathroom door, showing a bathtub inside. A long wall with a painting follows, leading to a custom built-in shelving unit acting as a room divider. To the right of the divider is a wide opening to a hallway, and further right, a wall segment decorated with square plates and frames. The camera has its back to the living room's rear space.",
+      "levelId": "upper",
+      "roomId": "r11",
+      "location": "living room, looking towards the dining area and bathroom",
+      "caption": "The open-plan living and dining area features a built-in room divider and easy access to the kitchen and bathroom.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "o0:b",
+          "what": "right jamb of the doorway to the Kitchen",
+          "u": 0.11,
+          "v": 0.75
+        },
+        {
+          "featureId": "o1:a",
+          "what": "left frame of the Bathroom door",
+          "u": 0.21,
+          "v": 0.7
+        },
+        {
+          "featureId": "o1:b",
+          "what": "right frame of the Bathroom door",
+          "u": 0.3,
+          "v": 0.71
+        },
+        {
+          "featureId": "o4:b",
+          "what": "lower jamb of the Hallway door (right edge of the opening in the photo)",
+          "u": 0.79,
+          "v": 0.75
+        },
+        {
+          "featureId": "o8:a",
+          "what": "upper jamb of the stairs hallway door (left edge of the doorway behind the chair)",
+          "u": 0.87,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 4.5,
+        "y": 12.5,
+        "yawDeg": 290,
+        "hfovDeg": 95,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#e3ba85",
+        "walls": "#ebd9c3"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:18:46.254Z"
+  },
+  "photos/03.jpg": {
+    "placement": {
+      "view": "From left to right: a wall with artworks and a glass cabinet, double glass doors with curtains, the room corner, a wide wooden-framed window with an AC unit above, and a large wooden display cabinet against the right wall. The camera has its back to the open area leading to the dining room.",
+      "levelId": "upper",
+      "roomId": "r11",
+      "location": "living room",
+      "caption": "Elegant and spacious living room with large windows and balcony doors.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "o13:b",
+          "what": "right frame of the double glass doors",
+          "u": 0.25,
+          "v": null
+        },
+        {
+          "featureId": "o13:a",
+          "what": "left frame of the double glass doors",
+          "u": 0.4,
+          "v": null
+        },
+        {
+          "featureId": "C32",
+          "what": "bottom-left corner of the living room",
+          "u": 0.52,
+          "v": null
+        },
+        {
+          "featureId": "o23:b",
+          "what": "left frame of the large window",
+          "u": 0.6,
+          "v": null
+        },
+        {
+          "featureId": "o23:a",
+          "what": "right frame of the large window",
+          "u": 0.77,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 8.5,
+        "y": 11.8,
+        "yawDeg": 144,
+        "hfovDeg": 90,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#d8a36d",
+        "walls": "#eeddbf"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:18:50.599Z"
+  },
+  "photos/07.jpg": {
+    "placement": {
+      "view": "Looking from left to right: left wall with lower and upper orange cabinets, a sink under a double window, and the main corner. The facing wall features a stove, oven, hood, glass upper cabinets, a tall silver fridge, and a built-in wine rack ending at the right corner. On the far right, a wall steps back to a recessed exterior window. A dining table is in the foreground. The camera has its back to the dining room doors.",
+      "levelId": "upper",
+      "roomId": "r1",
+      "location": "kitchen, near the dining area",
+      "caption": "The vibrant kitchen features orange cabinetry, modern appliances, and a cozy casual dining spot.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "o16:b",
+          "what": "left frame of the window over the sink",
+          "u": 0.29,
+          "v": null
+        },
+        {
+          "featureId": "o16:a",
+          "what": "right frame of the window over the sink",
+          "u": 0.42,
+          "v": null
+        },
+        {
+          "featureId": "C4",
+          "what": "top-left corner of the kitchen",
+          "u": 0.49,
+          "v": null
+        },
+        {
+          "featureId": "C3",
+          "what": "top-right corner of the kitchen, at the edge of the wine rack",
+          "u": 0.88,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 2.2,
+        "y": 5.5,
+        "yawDeg": 242,
+        "hfovDeg": 95,
+        "cameraHeight": 1.35
+      },
+      "look": {
+        "floor": "#d3c2b0",
+        "walls": "#e2d1bc"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:19:11.292Z"
+  },
+  "photos/08.jpg": {
+    "placement": {
+      "view": "On the left, an open door leading to the dining room, followed by a wall with a large pass-through window. In the center is a room corner. The right wall features a kitchen counter, a sink under a window, and an oven on the far right, with a dining table in the foreground. The camera has its back towards the center of the kitchen, facing the bottom-left corner.",
+      "levelId": "upper",
+      "roomId": "r1",
+      "location": "kitchen, near the center",
+      "caption": "A bright kitchen with orange cabinets and a pass-through to the dining area.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C6",
+          "what": "bottom-left corner of the kitchen",
+          "u": 0.55,
+          "v": 0.65
+        },
+        {
+          "featureId": "o0:b",
+          "what": "left frame of the open doorway to the dining room",
+          "u": 0.05,
+          "v": 0.8
+        },
+        {
+          "featureId": "o0:a",
+          "what": "right frame of the open doorway to the dining room",
+          "u": 0.25,
+          "v": 0.75
+        },
+        {
+          "featureId": "o16:b",
+          "what": "left jamb of the window above the sink",
+          "u": 0.75,
+          "v": null
+        },
+        {
+          "featureId": "o16:a",
+          "what": "right jamb of the window above the sink",
+          "u": 0.85,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 2.5,
+        "y": 5.5,
+        "yawDeg": 150,
+        "hfovDeg": 110,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#d8c3b0",
+        "walls": "#f5ebd9"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:19:28.492Z"
+  },
+  "photos/05.jpg": {
+    "placement": {
+      "view": "From left to right: a piano next to a window, a living area with a red sofa and armchair, a fireplace on the back wall, a prominent custom room divider with display cutouts and a central archway. Through the archway, a room with green walls and a small window is visible. On the far right, a solid wall displays a large framed painting above a console table. The camera has its back to the open living space.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "living area",
+      "caption": "Spacious open-plan living area featuring a custom room divider and elegant furnishings.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d49e64",
+        "walls": "#e3d2b3"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:19:55.021Z"
+  },
+  "photos/09.jpg": {
+    "placement": {
+      "view": "Looking down the narrow hallway from right to left: on the left wall, there is a built-in closet, followed by a recessed opening with a coat rack, and then another built-in closet. Straight ahead is an open doorway leading into the dining room. On the right wall, there is a wall-mounted control panel, followed by an open door leading into a bedroom. The camera has its back towards the primary bedroom at the end of the hall.",
+      "levelId": "upper",
+      "roomId": "r7",
+      "location": "hallway, looking towards the dining room",
+      "caption": "A bright hallway with built-in closets and warm wooden flooring.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C34",
+          "what": "edge of the first closet block on the left",
+          "u": 0.29,
+          "v": 0.9
+        },
+        {
+          "featureId": "C33",
+          "what": "far corner of the recessed coat rack area",
+          "u": 0.44,
+          "v": 0.66
+        },
+        {
+          "featureId": "o4:b",
+          "what": "left jamb of the doorway at the end of the hall",
+          "u": 0.51,
+          "v": 0.53
+        },
+        {
+          "featureId": "o4:a",
+          "what": "right jamb of the doorway at the end of the hall",
+          "u": 0.55,
+          "v": 0.53
+        },
+        {
+          "featureId": "o5:a",
+          "what": "far jamb of the open door on the right",
+          "u": 0.58,
+          "v": 0.58
+        },
+        {
+          "featureId": "o5:b",
+          "what": "near jamb of the open door on the right",
+          "u": 0.7,
+          "v": 0.72
+        }
+      ],
+      "estimate": {
+        "x": 13.6,
+        "y": 8.3,
+        "yawDeg": 180,
+        "hfovDeg": 90,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#d09c6f",
+        "walls": "#f0d5c8"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:20:05.698Z"
+  },
+  "photos/13.jpg": {
+    "placement": {
+      "view": "desk and shelves on the left wall, the left corner of the room, an open door leading to the entry hallway, a large built-in wardrobe on the same wall, and a bed on the right. The camera has its back to the exterior wall with the window.",
+      "levelId": "ground",
+      "roomId": "r1",
+      "location": "office/bedroom, facing the entry door",
+      "caption": "A bright bedroom set up with a workspace, featuring a desk, bed, and ample built-in storage.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C10",
+          "what": "bottom-left corner of the room",
+          "u": 0.435,
+          "v": null
+        },
+        {
+          "featureId": "o4:a",
+          "what": "left frame of the door",
+          "u": 0.455,
+          "v": null
+        },
+        {
+          "featureId": "o4:b",
+          "what": "right frame of the door (with hinges)",
+          "u": 0.61,
+          "v": 0.68
+        }
+      ],
+      "estimate": {
+        "x": 6,
+        "y": 1.5,
+        "yawDeg": 120,
+        "hfovDeg": 95,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#d48a47",
+        "walls": "#fcd5c5"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:20:32.986Z"
+  },
+  "photos/02.jpg": {
+    "placement": {
+      "view": "From left to right: a window on the left wall partially obscured by a blue armchair, a wide opening leading into the dining room where a dark wooden cabinet is visible, a custom built-in wooden partition featuring a marble fireplace and a TV unit, a glass door with a yellow checked valance, and a light green accent wall on the right with a painting and a large L-shaped sofa. The camera is backing towards the south wall of the living room.",
+      "levelId": "upper",
+      "roomId": "r11",
+      "location": "living room, looking towards the dining area",
+      "caption": "View from the living room looking towards the dining area, featuring a custom fireplace partition and a green accent wall.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "o23:b",
+          "what": "left frame of the window on the far left",
+          "u": 0.05,
+          "v": null
+        },
+        {
+          "featureId": "o23:a",
+          "what": "right frame of the window on the far left",
+          "u": 0.1,
+          "v": null
+        },
+        {
+          "featureId": "C30",
+          "what": "left corner of the wide opening to the dining room",
+          "u": 0.28,
+          "v": null
+        },
+        {
+          "featureId": "o8:a",
+          "what": "left frame of the glass door",
+          "u": 0.52,
+          "v": 0.65
+        },
+        {
+          "featureId": "o8:b",
+          "what": "right frame of the glass door",
+          "u": 0.56,
+          "v": 0.65
+        }
+      ],
+      "estimate": {
+        "x": 6,
+        "y": 14.5,
+        "yawDeg": 260,
+        "hfovDeg": 95,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#D09050",
+        "walls": "#C0D0A0"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:20:51.998Z"
+  },
+  "photos/11.jpg": {
+    "placement": {
+      "view": "left wall with an open door to the en-suite bathroom, a concave corner, back wall with a balcony door, a small window and a bed, another concave corner, and the right wall with a window. The camera has its back to the bottom wall of the room.",
+      "levelId": "upper",
+      "roomId": "r9",
+      "location": "primary bedroom, near the entry",
+      "caption": "A bright and spacious primary bedroom featuring an en-suite bathroom, balcony access, and rich wooden ceilings.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C25",
+          "what": "corner to the left of the balcony door",
+          "u": 0.32,
+          "v": null
+        },
+        {
+          "featureId": "C26",
+          "what": "corner to the right of the bed",
+          "u": 0.84,
+          "v": null
+        },
+        {
+          "featureId": "o21:a",
+          "what": "left frame of the window on the right wall",
+          "u": 0.89,
+          "v": null
+        },
+        {
+          "featureId": "o21:b",
+          "what": "right frame of the window on the right wall",
+          "u": 0.98,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 16.5,
+        "y": 7.5,
+        "yawDeg": 290,
+        "hfovDeg": 95,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#c48b55",
+        "walls": "#fcece0"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:20:59.497Z"
+  },
+  "photos/14.jpg": {
+    "placement": {
+      "view": "left wall with a bed, the top-left corner of the room, the top wall with a centered window, the top-right corner, and the right wall with a dresser. The camera is near the door on the bottom wall, looking slightly left.",
+      "levelId": "upper",
+      "roomId": "r3",
+      "location": "bedroom, by the door",
+      "caption": "A bedroom with a pink carpet, peach walls, and a large window.",
+      "confidence": "medium",
+      "landmarks": [
+        {
+          "featureId": "C8",
+          "what": "top-left corner of the bedroom",
+          "u": 0.35,
+          "v": null
+        },
+        {
+          "featureId": "o18:a",
+          "what": "left jamb of the window",
+          "u": 0.51,
+          "v": null
+        },
+        {
+          "featureId": "o18:b",
+          "what": "right jamb of the window",
+          "u": 0.66,
+          "v": null
+        },
+        {
+          "featureId": "C10",
+          "what": "top-right corner of the bedroom",
+          "u": 0.74,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 8.2,
+        "y": 7,
+        "yawDeg": 250,
+        "hfovDeg": 95,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#D8A0A6",
+        "walls": "#FDE1D3"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:21:23.387Z"
+  },
+  "photos/16.jpg": {
+    "placement": {
+      "view": "From left to right: a wooden dresser against the left wall, a recessed wall section with an open door revealing a hallway, an inner corner, a short wall stepping forward, an outer corner, a projecting wall section with a framed picture and a large white built-in wardrobe, and a bed against the right wall. The camera has its back to the wall opposite the door.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "bedroom in second unit",
+      "caption": "A bedroom featuring two-tone walls, a built-in wardrobe, and pink carpeting.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d59fa7",
+        "walls": "#f4dfd2"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:22:20.051Z"
+  },
+  "photos/19.jpg": {
+    "placement": {
+      "view": "From left to right: the left wall with a toilet; the top-left corner above the bathtub; the far wall with a bathtub and a window with white blinds; a tall wooden cabinet hiding most of the top-right corner; the right wall featuring a large double vanity and a wide mirror that reflects the bathroom door behind the camera.",
+      "levelId": "upper",
+      "roomId": "r2",
+      "location": "bathroom",
+      "caption": "A spacious bathroom featuring a bathtub, double sink vanity, and a large mirror.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C7",
+          "what": "top-left corner of the bathroom",
+          "u": 0.17,
+          "v": null
+        },
+        {
+          "featureId": "o17:a",
+          "what": "left jamb of the window",
+          "u": 0.24,
+          "v": null
+        },
+        {
+          "featureId": "o17:b",
+          "what": "right jamb of the window",
+          "u": 0.37,
+          "v": null
+        },
+        {
+          "featureId": "C8",
+          "what": "top-right corner of the bathroom, visible above the cabinet",
+          "u": 0.47,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 4.6,
+        "y": 7.1,
+        "yawDeg": 275,
+        "hfovDeg": 95,
+        "cameraHeight": 1.25
+      },
+      "look": {
+        "floor": "#D4C5B0",
+        "walls": "#E3D5C1"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:22:23.866Z"
+  },
+  "photos/20.jpg": {
+    "placement": {
+      "view": "An outdoor balcony with a round table and chairs. On the left is a light green exterior wall and a white railing. The camera looks out over the railing towards trees and other buildings.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "balcony",
+      "caption": "Enjoy outdoor dining on the balcony.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d9ceba",
+        "walls": "#dbe3cd"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:22:27.233Z"
+  },
+  "photos/12.jpg": {
+    "placement": {
+      "view": "From left to right: a solid pink wall with a bed and artwork, the corner where it meets the top wall (partially obscured by a curtain), a double glass balcony door on the top wall, the top-right corner of the room, and a right wall entirely covered by a wooden desk and tall shelving unit. The camera has its back to the bottom wall, near the room's entrance door.",
+      "levelId": "ground",
+      "roomId": "r0",
+      "location": "bedroom, near the door",
+      "caption": "A colorful bedroom with a balcony door and a dedicated study area.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "o0:a",
+          "what": "left jamb of the balcony door, just behind the curtain",
+          "u": 0.4,
+          "v": 0.69
+        },
+        {
+          "featureId": "o0:b",
+          "what": "right jamb of the balcony door, behind the right curtain",
+          "u": 0.52,
+          "v": 0.69
+        },
+        {
+          "featureId": "C2",
+          "what": "top-right corner of the room, visible in the gap between the window wall's small shelf and the large desk unit",
+          "u": 0.57,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 3,
+        "y": 3.5,
+        "yawDeg": 250,
+        "hfovDeg": 95,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#d4a373",
+        "walls": "#e8747a"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:22:27.708Z"
+  },
+  "photos/22.jpg": {
+    "placement": {
+      "view": "An outdoor patio area covered by a pergola with vines. On the left is a built-in BBQ and outdoor kitchen counter. In the center is a dining table with chairs. A fence borders the patio to the right.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "outdoor patio",
+      "caption": "A spacious outdoor patio features a built-in BBQ and dining area under a shaded pergola.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d2c5b4",
+        "walls": "#ebe9dc"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:22:34.156Z"
+  },
+  "photos/15.jpg": {
+    "placement": {
+      "view": "From left to right: a wall with a large window draped with pink curtains, a room corner featuring a chair and floor lamp, and a long wall with a large vintage wooden credenza, a TV, and artwork. On the far right edge, a white door frame and handle are visible. The camera is looking over a bed, with its back to the opposite wall and the room's entry.",
+      "levelId": "ground",
+      "roomId": "r1",
+      "location": "bedroom (labeled office), behind the bed",
+      "caption": "A spacious bedroom featuring a large vintage credenza and wide window.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "o3:a",
+          "what": "left frame of the window",
+          "u": 0.13,
+          "v": null
+        },
+        {
+          "featureId": "o3:b",
+          "what": "right frame of the window",
+          "u": 0.28,
+          "v": null
+        },
+        {
+          "featureId": "C9",
+          "what": "corner of the room behind the chair",
+          "u": 0.48,
+          "v": null
+        },
+        {
+          "featureId": "o4:b",
+          "what": "left edge of the door frame on the far right",
+          "u": 0.97,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 4.1,
+        "y": 3,
+        "yawDeg": 20,
+        "hfovDeg": 83,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#c091a1",
+        "walls": "#efd3c6"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:22:44.624Z"
+  },
+  "photos/23.jpg": {
+    "placement": {
+      "view": "From left to right, we see a covered outdoor space: a wall with an open set of wooden double doors leading into a kitchen, an outward-facing wall corner, another wall section with closed wooden shuttered doors, and on the far right, an opening to a terrace with a view of a low wall and trees. The camera has its back to the open terrace area.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "terrace, second unit",
+      "caption": "The spacious covered terrace features direct double-door access into the kitchen.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#dfd8ce",
+        "walls": "#e5e2da"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:22:53.770Z"
+  },
+  "photos/17.jpg": {
+    "placement": {
+      "view": "From left to right: a long flat wall with framed diplomas and a bookshelf. The wall then steps forward at an inside corner, forming a protruding section. This top wall meets the right wall at a room corner. The right wall features a large folding glass door leading to an outdoor parking area. The camera is standing near the bottom-left doorway, with its back to the bottom wall of the room.",
+      "levelId": "ground",
+      "roomId": "r1",
+      "location": "office, near the entry door",
+      "caption": "A bright and spacious office with a large desk and glass doors leading outside.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C6",
+          "what": "inside corner where the top wall steps forward",
+          "u": 0.585,
+          "v": null
+        },
+        {
+          "featureId": "C7",
+          "what": "protruding outside corner of the top wall",
+          "u": 0.636,
+          "v": 0.665
+        },
+        {
+          "featureId": "C8",
+          "what": "top-right corner of the room",
+          "u": 0.742,
+          "v": 0.672
+        }
+      ],
+      "estimate": {
+        "x": 4.5,
+        "y": 4.2,
+        "yawDeg": 292,
+        "hfovDeg": 90,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#9ca9b3",
+        "walls": "#eedbc5"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:22:54.214Z"
+  },
+  "photos/18.jpg": {
+    "placement": {
+      "view": "On the far left, an open door reveals a bathroom across a hallway. The left wall features a patterned sofa and meets the front wall at a corner. The front wall displays framed certificates, followed by an inward corner, a protruding column, and an outward corner. The wall continues to the right with more framed pictures and a bookcase. A large desk with a red chair sits in the center of the room. The camera has its back to the rear-left corner, looking across the space.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "office, second unit",
+      "caption": "This office space is equipped with a large desk and has an adjacent bathroom.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#9ca3a8",
+        "walls": "#ebd5b6"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:23:02.564Z"
+  },
+  "photos/24.jpg": {
+    "placement": {
+      "view": "From left to right: a light-colored wall with large wood-framed sliding glass doors leading to a garden patio; a corner; a solid blue accent wall with a small radiator on the left; another corner; and a right-hand light-colored wall with an open doorway leading to a tiled hallway with a staircase. The camera has its back to the rest of the living space.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "second unit living room",
+      "caption": "The garden-level unit's living room features a blue accent wall and direct access to the outdoor patio.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#cebfaa",
+        "walls": "#719cbf"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:23:02.737Z"
+  },
+  "photos/21.jpg": {
+    "placement": {
+      "view": "From left to right: a white exterior wall, wide open wooden double doors leading into the living room, a wall section with an outdoor light and a retracted awning, and the corner of the building. In the background on the right, across the balcony, is a pale green exterior wall with a window, before the view is blocked by a white balcony divider in the foreground. The camera has its back to the open balcony, facing the building.",
+      "levelId": "upper",
+      "roomId": null,
+      "location": "balcony, outside the living room",
+      "caption": "A sunny balcony featuring a dining set and beautiful wooden double doors.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "o13:a",
+          "what": "left frame of the wooden double door",
+          "u": 0.26,
+          "v": 0.68
+        },
+        {
+          "featureId": "o13:b",
+          "what": "right frame of the wooden double door",
+          "u": 0.48,
+          "v": 0.67
+        },
+        {
+          "featureId": "C31",
+          "what": "corner of the white wall on the right",
+          "u": 0.72,
+          "v": 0.69
+        },
+        {
+          "featureId": "o25:b",
+          "what": "right frame of the window on the green wall in the background",
+          "u": 0.78,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 7,
+        "y": 19.5,
+        "yawDeg": 267,
+        "hfovDeg": 105,
+        "cameraHeight": 1.1
+      },
+      "look": {
+        "floor": "#d2b496",
+        "walls": "#ffffff"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:24:22.482Z"
+  },
+  "photos/26.jpg": {
+    "placement": {
+      "view": "Looking from left to right: an open doorway leading to a bright, differently colored space (possibly an entryway or porch), a convex wall corner, a wall segment with a small window and a sofa, a room corner, a wall with large sliding glass doors leading out to a patio and garden, and a wall segment with a radiator. The camera has its back to the interior of this living space.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "living room, garden level",
+      "caption": "The ground-level living space features tiled floors and large sliding doors that open directly to the garden.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d0c6b5",
+        "walls": "#e8dfe0"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:24:23.684Z"
+  },
+  "photos/27.jpg": {
+    "placement": {
+      "view": "From left to right: a long wall painted partially white and partially blue, the room's top-left corner, the far blue wall featuring double glass doors that open to an exterior patio with a spiral staircase, an inward corner, a short wall coming towards the camera, an outward corner, and finally a right blue wall with a white radiator mounted on it. The camera has its back to the bottom wall of the room.",
+      "levelId": "ground",
+      "roomId": "r1",
+      "location": "office",
+      "caption": "An unfurnished office space with a blue accent wall and glass doors opening to a patio.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C5",
+          "what": "top-left corner of the office",
+          "u": 0.432,
+          "v": 0.695
+        },
+        {
+          "featureId": "o2:a",
+          "what": "left frame of the glass double door",
+          "u": 0.605,
+          "v": 0.655
+        },
+        {
+          "featureId": "o2:b",
+          "what": "right frame of the glass double door",
+          "u": 0.76,
+          "v": 0.665
+        },
+        {
+          "featureId": "C6",
+          "what": "inward top corner of the office to the right of the door",
+          "u": 0.812,
+          "v": 0.672
+        },
+        {
+          "featureId": "C7",
+          "what": "outward top corner of the office on the right",
+          "u": 0.89,
+          "v": 0.718
+        }
+      ],
+      "estimate": {
+        "x": 5,
+        "y": 4.1,
+        "yawDeg": 264,
+        "hfovDeg": 110,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#d8cebf",
+        "walls": "#4a87bc"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:24:29.320Z"
+  },
+  "photos/29.jpg": {
+    "placement": {
+      "view": "From left to right: a plain wall section leading to a tall wooden cabinet on the left wall, followed by a countertop with upper cabinets. The left wall meets the back wall at a room corner. The back wall features wooden cabinets, a sink, a white tiled backsplash, and a stove with a hood, meeting the right wall at another corner. The right wall has a stainless steel refrigerator. In the right foreground, a white door frame with a strike plate is prominently visible. The camera has its back to the rest of the room or an open doorway.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "kitchen, garden level",
+      "caption": "This well-equipped kitchen features warm wooden cabinetry, a tiled backsplash, and stainless steel appliances.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d4c4b4",
+        "walls": "#f0e6e6"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:24:39.572Z"
+  },
+  "photos/28.jpg": {
+    "placement": {
+      "view": "From left to right: a blue wall facing the camera with a radiator, an outward corner where the wall steps back, a short recessed pink wall, an inward corner, a pink wall with an open door, and a wall entirely covered by white built-in wardrobes. The camera has its back to the opposite bedroom wall.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "bedroom, second unit",
+      "caption": "Bedroom featuring a striking blue accent wall and built-in wardrobes.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#ded5c8",
+        "walls": "#6599c2"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:24:48.907Z"
+  },
+  "photos/25.jpg": {
+    "placement": {
+      "view": "From left to right, we look through a large archway into a blue-painted dining room. On the far left, a doorway opens into a kitchen with red cabinets and an exterior door. The blue wall continues to the right, showing a coat rack and a radiator, followed by a dark red folding door. In the foreground living room, we see the right pillar of the archway, a white wall with a small wooden window, and a light-colored sofa on the right. The camera has its back to the living room's exterior wall.",
+      "levelId": "upper",
+      "roomId": "r11",
+      "location": "living room, looking towards the dining room",
+      "caption": "A spacious living area with an open archway leading into the dining room.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "o0:a",
+          "what": "left jamb of the kitchen door",
+          "u": 0.03,
+          "v": 0.66
+        },
+        {
+          "featureId": "o0:b",
+          "what": "right jamb of the kitchen door",
+          "u": 0.15,
+          "v": 0.66
+        },
+        {
+          "featureId": "o8:a",
+          "what": "left jamb of the dark red folding door",
+          "u": 0.49,
+          "v": 0.64
+        },
+        {
+          "featureId": "o8:b",
+          "what": "right jamb of the dark red folding door",
+          "u": 0.53,
+          "v": 0.65
+        },
+        {
+          "featureId": "C28",
+          "what": "right inner corner of the archway",
+          "u": 0.56,
+          "v": 0.67
+        }
+      ],
+      "estimate": {
+        "x": 8.3,
+        "y": 14.5,
+        "yawDeg": 270,
+        "hfovDeg": 100,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#d3c8ba",
+        "walls": "#f0ebe6"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:24:50.918Z"
+  },
+  "photos/32.jpg": {
+    "placement": {
+      "view": "On the left, an open doorway leads into a bright room with a glass door opening to a patio. In the center, a protruding blue wall forms a convex corner housing an electrical panel. On the right, an open door reveals a bathroom with beige tiles and a vanity. The camera is standing in a hallway.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "hallway",
+      "caption": "Hallway connecting to a bathroom and a garden-facing room.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d9cbb9",
+        "walls": "#66859b"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:25:02.816Z"
+  },
+  "photos/35.jpg": {
+    "placement": {
+      "view": "From left to right: a tiled wall with a protruding section and a radiator, a corner occupied by a tall white cabinet, a long white vanity with a single sink, and a large mirror reflecting a shower cabin and a door. The right tiled wall extends towards the camera. The camera has its back to the wall opposite the vanity.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "bathroom",
+      "caption": "A fully tiled bathroom featuring a wide vanity and a large mirror.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#dfc1a9",
+        "walls": "#dfccbf"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:25:21.617Z"
+  },
+  "photos/33.jpg": {
+    "placement": {
+      "view": "From left to right: a plain white wall outside the bathroom, the doorway, a toilet, a wooden vanity with a sink and a large mirror reflecting the open door and an adjacent room with windows, and a glass shower enclosure on the right.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "bathroom (second unit)",
+      "caption": "The bathroom features a wooden vanity, a shower, and fully tiled walls.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d5b58e",
+        "walls": "#e0cba8"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:25:46.584Z"
+  },
+  "photos/31.jpg": {
+    "placement": {
+      "view": "From left to right: the left wall of the entry hallway, the doorway to a bedroom with blue walls, the wall stepping forward with an inner and outer corner, the open doorway to an office with red and white walls, and a blue wall segment in the right foreground. The camera has its back to the rest of the entry hallway.",
+      "levelId": "ground",
+      "roomId": "r3",
+      "location": "entry hallway, looking at the bedroom and office",
+      "caption": "Looking from the entry hallway towards the bedroom and office.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "o1:a",
+          "what": "left jamb of the door to the Bedroom",
+          "u": 0.334,
+          "v": 0.83
+        },
+        {
+          "featureId": "o1:b",
+          "what": "right jamb of the door to the Bedroom",
+          "u": 0.457,
+          "v": 0.88
+        },
+        {
+          "featureId": "C3",
+          "what": "inner corner of the wall between the rooms",
+          "u": 0.472,
+          "v": 0.89
+        },
+        {
+          "featureId": "C10",
+          "what": "outer corner of the wall between the rooms",
+          "u": 0.485,
+          "v": 0.93
+        },
+        {
+          "featureId": "o4:a",
+          "what": "left frame of the door to the Office",
+          "u": 0.505,
+          "v": 0.925
+        },
+        {
+          "featureId": "o2:a",
+          "what": "left jamb of the glass door/window inside the Office",
+          "u": 0.692,
+          "v": 0.62
+        },
+        {
+          "featureId": "o4:b",
+          "what": "right frame of the door to the Office",
+          "u": 0.742,
+          "v": 0.7
+        }
+      ],
+      "estimate": {
+        "x": 3.9,
+        "y": 5.5,
+        "yawDeg": 270,
+        "hfovDeg": 85,
+        "cameraHeight": 1.4
+      },
+      "look": {
+        "floor": "#e6e0d4",
+        "walls": "#f5ecec"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:25:48.365Z"
+  },
+  "photos/34.jpg": {
+    "placement": {
+      "view": "From left to right: a vanity with a sink and a mirror, a tiled partition wall, a shower area with a curtain, a fully tiled back wall with a decorative border, a toilet, and an open white door on the far right. The camera has its back to the wall opposite the shower, standing just inside or at the doorway.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "bathroom",
+      "caption": "A fully tiled bathroom featuring a vanity sink, a shower area, and warm peach tones.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#e4d5c7",
+        "walls": "#dfbcab"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:25:59.859Z"
+  },
+  "photos/41.jpg": {
+    "placement": {
+      "view": "We see a paved outdoor area, possibly a driveway or side patio. On the left is a fence and a large black water tank under a metal canopy. On the right is the white exterior wall of the house, featuring a glass door and a window further down, both with open wooden shutters. In the distance, a blue car is parked under a carport.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "outdoor",
+      "caption": "Side patio and driveway along the house exterior.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d4d1cc",
+        "walls": "#f0eee7"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:26:10.825Z"
+  },
+  "photos/42.jpg": {
+    "placement": {
+      "view": "Looking at an exterior corner of the building from the veranda. On the left, a covered walkway stretches into the distance with several open wooden doors along the white wall. In the middle is the protruding corner of the building. On the right, the veranda continues past a window with green bars and another wooden door. The camera has its back to the open outdoor space.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "veranda",
+      "caption": "A wrap-around covered veranda lines the exterior of the building.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d0baa5",
+        "walls": "#f0f0f0"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:26:21.736Z"
+  },
+  "photos/36.jpg": {
+    "placement": {
+      "view": "From left to right, we see a long white vanity cabinet with a sink on the left wall, leading to the back wall which features a shower area. The top-right room corner is clearly visible, followed by a tiled right wall containing a door frame. An open white door leaf extends into the foreground on the right. The camera has its back to the bottom wall.",
+      "levelId": "ground",
+      "roomId": "r2",
+      "location": "bathroom",
+      "caption": "The bathroom is finished in beige tiles and features a long vanity counter and an open shower area.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C11",
+          "what": "top-left corner of the bathroom, visible above the vanity counter",
+          "u": 0.38,
+          "v": null
+        },
+        {
+          "featureId": "C12",
+          "what": "top-right corner of the bathroom",
+          "u": 0.74,
+          "v": 0.84
+        },
+        {
+          "featureId": "o6:a",
+          "what": "far jamb of the door on the right wall",
+          "u": 0.82,
+          "v": 0.98
+        }
+      ],
+      "estimate": {
+        "x": 1.7,
+        "y": 5.8,
+        "yawDeg": 268,
+        "hfovDeg": 90,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#C1AF9A",
+        "walls": "#E0D3C1"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:26:23.607Z"
+  },
+  "photos/43.jpg": {
+    "placement": {
+      "view": "Looking across a paved front yard towards a green metal pedestrian gate and driveway gate, flanked by light-colored walls and planters with bushes. Behind the camera is the facade of the house.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "front yard",
+      "caption": "Front yard with a paved path leading to the entrance gates.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#cebaab",
+        "walls": "#dedbd2"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:26:29.575Z"
+  },
+  "photos/44.jpg": {
+    "placement": {
+      "view": "From left to right: a white section of the building with arched details, a paved pathway flanked by low green hedges leading up to the main entrance, which features a wooden front door sheltered by a glass canopy. The central facade is painted pale green with white trim. On the right, a garden area with a tree and a covered outdoor structure is visible. The camera is standing outdoors, facing the front entrance.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "Front yard",
+      "caption": "The paved pathway leading to the main entrance of the house.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#c2b197",
+        "walls": "#d6e3cd"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:26:35.547Z"
+  },
+  "photos/45.jpg": {
+    "placement": {
+      "view": "Looking down the paved driveway from the front of the property. The house's facade is on the left, featuring an entry door under a glass canopy. To the right, a metal fence separates the driveway from a lawn area that includes a large tree and a pergola.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "front yard and driveway",
+      "caption": "A wide paved driveway runs alongside the front lawn and garden area.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d1cfc7",
+        "walls": "#e0ead2"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:26:37.909Z"
+  },
+  "photos/39.jpg": {
+    "placement": {
+      "view": "From left to right: a tiled partition wall in the foreground, the left wall with a toilet and shower fixture, the top-left corner of the room within the shower area, the back wall of the walk-in shower, the top-right corner, and the right wall with a towel radiator. The camera has its back to the entrance door.",
+      "levelId": "ground",
+      "roomId": "r2",
+      "location": "bathroom, by the door",
+      "caption": "The bathroom features a walk-in shower and neutral beige tiling.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C11",
+          "what": "top-left corner of the bathroom, in the shower",
+          "u": 0.46,
+          "v": 0.83
+        },
+        {
+          "featureId": "C12",
+          "what": "top-right corner of the bathroom, in the shower",
+          "u": 0.96,
+          "v": 0.74
+        },
+        {
+          "featureId": "o6:a",
+          "what": "door frame on the right wall, closest to the shower",
+          "u": 0.99,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 2.3,
+        "y": 4.8,
+        "yawDeg": 235,
+        "hfovDeg": 100,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#d0c6b6",
+        "walls": "#dacdbd"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:26:43.250Z"
+  },
+  "photos/46.jpg": {
+    "placement": {
+      "view": "Looking along a narrow outdoor balcony or walkway. On the left is a low wall with a railing and a large lemon tree. Above is a yellow awning. On the right is the exterior wall of the house, painted light green and white, featuring a window with open wooden shutters and an air conditioning unit on the floor.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "balcony",
+      "caption": "A narrow balcony shaded by an awning, next to a lush lemon tree.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#cca779",
+        "walls": "#dbe3c6"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:26:46.764Z"
+  },
+  "photos/47.jpg": {
+    "placement": {
+      "view": "A view of an outdoor patio or courtyard showing the building's facade on the left with shuttered glass doors, a green spiral staircase leading to an upper balcony, and a tiled floor.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "patio",
+      "caption": "The patio features a spiral staircase to the upper level.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d9d4cc",
+        "walls": "#e8e5dc"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:26:46.955Z"
+  },
+  "photos/48.jpg": {
+    "placement": {
+      "view": "Looking down a paved path towards the entrance of a building. On the left, there is a large lemon tree behind a green metal fence. Under the building's overhang, there is a wooden entrance door. On the right, a white block wall separates the property from a neighboring light-green building.",
+      "levelId": "none",
+      "roomId": null,
+      "location": "garden, front",
+      "caption": "A path leading to the entrance through a small garden area.",
+      "confidence": "high",
+      "landmarks": [],
+      "estimate": null,
+      "look": {
+        "floor": "#d7c5b6",
+        "walls": "#f0f2f4"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:26:51.397Z"
+  },
+  "photos/37.jpg": {
+    "placement": {
+      "view": "Left wall with a radiator, an inner corner, the top wall featuring a glass double door, another inner corner, a short wall protruding forward towards the camera, an outer corner, and finally a right wall with a white desk against it. The camera has its back to the bottom wall of the room.",
+      "levelId": "ground",
+      "roomId": "r1",
+      "location": "office",
+      "caption": "The office features a bold painted lower wall and glass doors leading to the outdoor area.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C5",
+          "what": "inner corner left of the glass doors",
+          "u": 0.15,
+          "v": 0.7
+        },
+        {
+          "featureId": "o2:a",
+          "what": "left frame of the glass double door",
+          "u": 0.32,
+          "v": 0.71
+        },
+        {
+          "featureId": "o2:b",
+          "what": "right frame of the glass double door",
+          "u": 0.48,
+          "v": 0.68
+        },
+        {
+          "featureId": "C6",
+          "what": "inner corner right of the glass doors",
+          "u": 0.58,
+          "v": 0.65
+        },
+        {
+          "featureId": "C7",
+          "what": "outer corner of the wall protrusion",
+          "u": 0.69,
+          "v": 0.73
+        }
+      ],
+      "estimate": {
+        "x": 4,
+        "y": 4.1,
+        "yawDeg": 300,
+        "hfovDeg": 90,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#dfd4c5",
+        "walls": "#c8241e"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:27:38.570Z"
+  },
+  "photos/40.jpg": {
+    "placement": {
+      "view": "On the far left, a heavy wooden entrance door stands partially open. Behind it is a white wall that forms an inner corner, then a short wall segment facing the camera with light switches. This turns at an outer corner to form the left wall of a straight staircase. The staircase ascends away from the camera, featuring white marble treads, wooden risers, and illuminated square niches in the right-hand wall. At the top of the stairs is a doorway leading to a brightly lit room. The camera is in the entry hall, with its back to the exterior wall with windows.",
+      "levelId": "ground",
+      "roomId": "r3",
+      "location": "entry, facing the stairs",
+      "caption": "Looking from the entry up the straight staircase with illuminated wall niches.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C17",
+          "what": "inner corner just past the open entrance door",
+          "u": 0.22,
+          "v": 0.95
+        },
+        {
+          "featureId": "C18",
+          "what": "outer corner on the left, before the stairs",
+          "u": 0.32,
+          "v": 0.88
+        },
+        {
+          "featureId": "o12:b",
+          "what": "left frame of the doorway at the top of the stairs",
+          "u": 0.49,
+          "v": null
+        },
+        {
+          "featureId": "o12:a",
+          "what": "right frame of the doorway at the top of the stairs",
+          "u": 0.56,
+          "v": null
+        }
+      ],
+      "estimate": {
+        "x": 7,
+        "y": 7.4,
+        "yawDeg": 180,
+        "hfovDeg": 90,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#e6e6e6",
+        "walls": "#ffffff"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:28:00.679Z"
+  },
+  "photos/38.jpg": {
+    "placement": {
+      "view": "From left to right, we see a large white built-in wardrobe taking up the left wall, the corner where it meets the adjacent wall, an open door leading to a hallway, and the continuation of a distinctly red-and-white painted wall. The camera has its back to the exterior wall with the window.",
+      "levelId": "ground",
+      "roomId": "r0",
+      "location": "bedroom, looking towards the entry",
+      "caption": "The bedroom features extensive built-in wardrobes and a striking red-and-white painted accent wall.",
+      "confidence": "high",
+      "landmarks": [
+        {
+          "featureId": "C3",
+          "what": "corner between the left wall and the door wall",
+          "u": 0.35,
+          "v": 0.65
+        },
+        {
+          "featureId": "o1:b",
+          "what": "left frame of the open door",
+          "u": 0.42,
+          "v": 0.65
+        },
+        {
+          "featureId": "o1:a",
+          "what": "right frame of the open door",
+          "u": 0.55,
+          "v": 0.65
+        }
+      ],
+      "estimate": {
+        "x": 3.4,
+        "y": 1,
+        "yawDeg": 95,
+        "hfovDeg": 105,
+        "cameraHeight": 1.3
+      },
+      "look": {
+        "floor": "#dfd5c5",
+        "walls": "#ffffff"
+      }
+    },
+    "model": "gemini-3.1-pro-preview",
+    "at": "2026-11-14T13:28:16.934Z"
+  }
+}

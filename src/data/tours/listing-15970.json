@@ -1,0 +1,961 @@
+{
+  "id": "listing-15970",
+  "title": "Marousi house",
+  "mediaRoot": "fixtures/listing-15970",
+  "levels": [
+    {
+      "id": "ground",
+      "name": "Ground floor (entry level)",
+      "planId": "listing-15970-ground",
+      "elevation": 0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "upper",
+      "name": "Upper floor (main living level)",
+      "planId": "listing-15970-upper",
+      "elevation": 3,
+      "offset": [
+        -6.501666666666668,
+        -2.9466666666666654
+      ]
+    }
+  ],
+  "photos": [
+    {
+      "id": "01",
+      "src": "photos/01.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The grand formal living room features an elegant fireplace and warm wood paneling.",
+      "levelId": null,
+      "roomId": null,
+      "location": "living room",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "02",
+      "src": "photos/02.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "View from the living room looking towards the dining area, featuring a custom fireplace partition and a green accent wall.",
+      "levelId": "upper",
+      "roomId": "r11",
+      "location": "living room, looking towards the dining area",
+      "confidence": "low",
+      "pose": {
+        "x": 6,
+        "y": 14.5,
+        "yaw": 260,
+        "pitch": 0,
+        "hfov": 95,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 5,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "03",
+      "src": "photos/03.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "Elegant and spacious living room with large windows and balcony doors.",
+      "levelId": "upper",
+      "roomId": "r11",
+      "location": "living room",
+      "confidence": "high",
+      "pose": {
+        "x": 8.68,
+        "y": 11.97,
+        "yaw": 146.2,
+        "pitch": 0,
+        "hfov": 85.5,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 5,
+        "rmsDeg": 2.23
+      }
+    },
+    {
+      "id": "04",
+      "src": "photos/04.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The open-plan living and dining area features a built-in room divider and easy access to the kitchen and bathroom.",
+      "levelId": "upper",
+      "roomId": "r11",
+      "location": "living room, looking towards the dining area and bathroom",
+      "confidence": "high",
+      "pose": {
+        "x": 5.34,
+        "y": 12.43,
+        "yaw": 282.9,
+        "pitch": 0,
+        "hfov": 88.9,
+        "height": 1.35
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 5,
+        "rmsDeg": 0.8
+      }
+    },
+    {
+      "id": "05",
+      "src": "photos/05.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "Spacious open-plan living area featuring a custom room divider and elegant furnishings.",
+      "levelId": null,
+      "roomId": null,
+      "location": "living area",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "06",
+      "src": "photos/06.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A bright, fully equipped kitchen featuring orange cabinets and a small dining area.",
+      "levelId": "upper",
+      "roomId": "r1",
+      "location": "kitchen, near the dining room door",
+      "confidence": "high",
+      "pose": {
+        "x": 2.01,
+        "y": 7.11,
+        "yaw": 277.1,
+        "pitch": 0,
+        "hfov": 95,
+        "height": 1.4
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 3,
+        "rmsDeg": 0.29
+      }
+    },
+    {
+      "id": "07",
+      "src": "photos/07.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The vibrant kitchen features orange cabinetry, modern appliances, and a cozy casual dining spot.",
+      "levelId": "upper",
+      "roomId": "r1",
+      "location": "kitchen, near the dining area",
+      "confidence": "high",
+      "pose": {
+        "x": 2.64,
+        "y": 5.37,
+        "yaw": 238,
+        "pitch": 0,
+        "hfov": 95.4,
+        "height": 1.35
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 4,
+        "rmsDeg": 0.36
+      }
+    },
+    {
+      "id": "08",
+      "src": "photos/08.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A bright kitchen with orange cabinets and a pass-through to the dining area.",
+      "levelId": "upper",
+      "roomId": "r1",
+      "location": "kitchen, near the center",
+      "confidence": "low",
+      "pose": {
+        "x": 2.5,
+        "y": 5.5,
+        "yaw": 150,
+        "pitch": 0,
+        "hfov": 110,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 5,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "09",
+      "src": "photos/09.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A bright hallway with built-in closets and warm wooden flooring.",
+      "levelId": "upper",
+      "roomId": "r7",
+      "location": "hallway, looking towards the dining room",
+      "confidence": "low",
+      "pose": {
+        "x": 13.6,
+        "y": 8.3,
+        "yaw": 180,
+        "pitch": 0,
+        "hfov": 90,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 6,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "10",
+      "src": "photos/10.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A spacious, warmly colored primary bedroom featuring ample built-in wardrobe space and a vanity desk.",
+      "levelId": "upper",
+      "roomId": "r9",
+      "location": "Primary Bedroom",
+      "confidence": "low",
+      "pose": {
+        "x": 17.5,
+        "y": 7.5,
+        "yaw": 165,
+        "pitch": 0,
+        "hfov": 105,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 3,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "11",
+      "src": "photos/11.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A bright and spacious primary bedroom featuring an en-suite bathroom, balcony access, and rich wooden ceilings.",
+      "levelId": "upper",
+      "roomId": "r9",
+      "location": "primary bedroom, near the entry",
+      "confidence": "high",
+      "pose": {
+        "x": 18.8,
+        "y": 7.16,
+        "yaw": 246.2,
+        "pitch": 0,
+        "hfov": 67.3,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 4,
+        "rmsDeg": 1.04
+      }
+    },
+    {
+      "id": "12",
+      "src": "photos/12.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A colorful bedroom with a balcony door and a dedicated study area.",
+      "levelId": "ground",
+      "roomId": "r0",
+      "location": "bedroom, near the door",
+      "confidence": "low",
+      "pose": {
+        "x": 3,
+        "y": 3.5,
+        "yaw": 250,
+        "pitch": 0,
+        "hfov": 95,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 3,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "13",
+      "src": "photos/13.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A bright bedroom set up with a workspace, featuring a desk, bed, and ample built-in storage.",
+      "levelId": "ground",
+      "roomId": "r1",
+      "location": "office/bedroom, facing the entry door",
+      "confidence": "low",
+      "pose": {
+        "x": 6,
+        "y": 1.5,
+        "yaw": 120,
+        "pitch": 0,
+        "hfov": 95,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 3,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "14",
+      "src": "photos/14.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A bedroom with a pink carpet, peach walls, and a large window.",
+      "levelId": "upper",
+      "roomId": "r3",
+      "location": "bedroom, by the door",
+      "confidence": "low",
+      "pose": {
+        "x": 8.2,
+        "y": 7,
+        "yaw": 250,
+        "pitch": 0,
+        "hfov": 95,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 4,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "15",
+      "src": "photos/15.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A spacious bedroom featuring a large vintage credenza and wide window.",
+      "levelId": "ground",
+      "roomId": "r1",
+      "location": "bedroom (labeled office), behind the bed",
+      "confidence": "high",
+      "pose": {
+        "x": 4.21,
+        "y": 3.33,
+        "yaw": 16.3,
+        "pitch": 0,
+        "hfov": 80.2,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 4,
+        "rmsDeg": 0.38
+      }
+    },
+    {
+      "id": "16",
+      "src": "photos/16.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A bedroom featuring two-tone walls, a built-in wardrobe, and pink carpeting.",
+      "levelId": null,
+      "roomId": null,
+      "location": "bedroom in second unit",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "17",
+      "src": "photos/17.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A bright and spacious office with a large desk and glass doors leading outside.",
+      "levelId": "ground",
+      "roomId": "r1",
+      "location": "office, near the entry door",
+      "confidence": "low",
+      "pose": {
+        "x": 4.5,
+        "y": 4.2,
+        "yaw": 292,
+        "pitch": 0,
+        "hfov": 90,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 3,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "18",
+      "src": "photos/18.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "This office space is equipped with a large desk and has an adjacent bathroom.",
+      "levelId": null,
+      "roomId": null,
+      "location": "office, second unit",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "19",
+      "src": "photos/19.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A spacious bathroom featuring a bathtub, double sink vanity, and a large mirror.",
+      "levelId": "upper",
+      "roomId": "r2",
+      "location": "bathroom",
+      "confidence": "high",
+      "pose": {
+        "x": 5.14,
+        "y": 6.75,
+        "yaw": 274.2,
+        "pitch": 0,
+        "hfov": 92.2,
+        "height": 1.25
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 4,
+        "rmsDeg": 0.83
+      }
+    },
+    {
+      "id": "20",
+      "src": "photos/20.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "Enjoy outdoor dining on the balcony.",
+      "levelId": null,
+      "roomId": null,
+      "location": "balcony",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "21",
+      "src": "photos/21.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A sunny balcony featuring a dining set and beautiful wooden double doors.",
+      "levelId": "upper",
+      "roomId": null,
+      "location": "balcony, outside the living room",
+      "confidence": "high",
+      "pose": {
+        "x": 7.28,
+        "y": 19.5,
+        "yaw": 263.2,
+        "pitch": 0,
+        "hfov": 97.5,
+        "height": 1.06
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 4,
+        "rmsDeg": 0.6
+      }
+    },
+    {
+      "id": "22",
+      "src": "photos/22.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A spacious outdoor patio features a built-in BBQ and dining area under a shaded pergola.",
+      "levelId": null,
+      "roomId": null,
+      "location": "outdoor patio",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "23",
+      "src": "photos/23.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The spacious covered terrace features direct double-door access into the kitchen.",
+      "levelId": null,
+      "roomId": null,
+      "location": "terrace, second unit",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "24",
+      "src": "photos/24.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The garden-level unit's living room features a blue accent wall and direct access to the outdoor patio.",
+      "levelId": null,
+      "roomId": null,
+      "location": "second unit living room",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "25",
+      "src": "photos/25.jpg",
+      "width": 3744,
+      "height": 2492,
+      "caption": "A spacious living area with an open archway leading into the dining room.",
+      "levelId": "upper",
+      "roomId": "r11",
+      "location": "living room, looking towards the dining room",
+      "confidence": "high",
+      "pose": {
+        "x": 6.44,
+        "y": 15.69,
+        "yaw": 290.2,
+        "pitch": 0,
+        "hfov": 100.9,
+        "height": 1.41
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 5,
+        "rmsDeg": 1.57
+      }
+    },
+    {
+      "id": "26",
+      "src": "photos/26.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The ground-level living space features tiled floors and large sliding doors that open directly to the garden.",
+      "levelId": null,
+      "roomId": null,
+      "location": "living room, garden level",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "27",
+      "src": "photos/27.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "An unfurnished office space with a blue accent wall and glass doors opening to a patio.",
+      "levelId": "ground",
+      "roomId": "r1",
+      "location": "office",
+      "confidence": "high",
+      "pose": {
+        "x": 3.87,
+        "y": 4.18,
+        "yaw": 275,
+        "pitch": 0,
+        "hfov": 89.6,
+        "height": 1.02
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 5,
+        "rmsDeg": 2.17
+      }
+    },
+    {
+      "id": "28",
+      "src": "photos/28.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "Bedroom featuring a striking blue accent wall and built-in wardrobes.",
+      "levelId": null,
+      "roomId": null,
+      "location": "bedroom, second unit",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "29",
+      "src": "photos/29.jpg",
+      "width": 3744,
+      "height": 2492,
+      "caption": "This well-equipped kitchen features warm wooden cabinetry, a tiled backsplash, and stainless steel appliances.",
+      "levelId": null,
+      "roomId": null,
+      "location": "kitchen, garden level",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "30",
+      "src": "photos/30.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The kitchen in the garden-level unit features built-in cabinetry and opens directly to a covered patio.",
+      "levelId": null,
+      "roomId": null,
+      "location": "second unit kitchen, facing the patio",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "31",
+      "src": "photos/31.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "Looking from the entry hallway towards the bedroom and office.",
+      "levelId": "ground",
+      "roomId": "r3",
+      "location": "entry hallway, looking at the bedroom and office",
+      "confidence": "low",
+      "pose": {
+        "x": 3.9,
+        "y": 5.5,
+        "yaw": 270,
+        "pitch": 0,
+        "hfov": 85,
+        "height": 1.4
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 7,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "32",
+      "src": "photos/32.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "Hallway connecting to a bathroom and a garden-facing room.",
+      "levelId": null,
+      "roomId": null,
+      "location": "hallway",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "33",
+      "src": "photos/33.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The bathroom features a wooden vanity, a shower, and fully tiled walls.",
+      "levelId": null,
+      "roomId": null,
+      "location": "bathroom (second unit)",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "34",
+      "src": "photos/34.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A fully tiled bathroom featuring a vanity sink, a shower area, and warm peach tones.",
+      "levelId": null,
+      "roomId": null,
+      "location": "bathroom",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "35",
+      "src": "photos/35.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A fully tiled bathroom featuring a wide vanity and a large mirror.",
+      "levelId": null,
+      "roomId": null,
+      "location": "bathroom",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "36",
+      "src": "photos/36.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The bathroom is finished in beige tiles and features a long vanity counter and an open shower area.",
+      "levelId": "ground",
+      "roomId": "r2",
+      "location": "bathroom",
+      "confidence": "high",
+      "pose": {
+        "x": 1.33,
+        "y": 6.05,
+        "yaw": 276.8,
+        "pitch": 0,
+        "hfov": 79.2,
+        "height": 1
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 3,
+        "rmsDeg": 1.56
+      }
+    },
+    {
+      "id": "37",
+      "src": "photos/37.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The office features a bold painted lower wall and glass doors leading to the outdoor area.",
+      "levelId": "ground",
+      "roomId": "r1",
+      "location": "office",
+      "confidence": "high",
+      "pose": {
+        "x": 4.58,
+        "y": 4.3,
+        "yaw": 291.1,
+        "pitch": 0,
+        "hfov": 80.1,
+        "height": 0.97
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 5,
+        "rmsDeg": 1.94
+      }
+    },
+    {
+      "id": "38",
+      "src": "photos/38.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The bedroom features extensive built-in wardrobes and a striking red-and-white painted accent wall.",
+      "levelId": "ground",
+      "roomId": "r0",
+      "location": "bedroom, looking towards the entry",
+      "confidence": "low",
+      "pose": {
+        "x": 3.4,
+        "y": 1,
+        "yaw": 95,
+        "pitch": 0,
+        "hfov": 105,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 3,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "39",
+      "src": "photos/39.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The bathroom features a walk-in shower and neutral beige tiling.",
+      "levelId": "ground",
+      "roomId": "r2",
+      "location": "bathroom, by the door",
+      "confidence": "low",
+      "pose": {
+        "x": 2.3,
+        "y": 4.8,
+        "yaw": 235,
+        "pitch": 0,
+        "hfov": 100,
+        "height": 1.3
+      },
+      "fit": {
+        "method": "model-estimate",
+        "landmarks": 3,
+        "rmsDeg": null
+      }
+    },
+    {
+      "id": "40",
+      "src": "photos/40.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "Looking from the entry up the straight staircase with illuminated wall niches.",
+      "levelId": "ground",
+      "roomId": "r3",
+      "location": "entry, facing the stairs",
+      "confidence": "high",
+      "pose": {
+        "x": 7.3,
+        "y": 6.79,
+        "yaw": 173.4,
+        "pitch": 0,
+        "hfov": 105.7,
+        "height": 1.08
+      },
+      "fit": {
+        "method": "resection",
+        "landmarks": 4,
+        "rmsDeg": 2.31
+      }
+    },
+    {
+      "id": "41",
+      "src": "photos/41.jpg",
+      "width": 3744,
+      "height": 2492,
+      "caption": "Side patio and driveway along the house exterior.",
+      "levelId": null,
+      "roomId": null,
+      "location": "outdoor",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "42",
+      "src": "photos/42.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A wrap-around covered veranda lines the exterior of the building.",
+      "levelId": null,
+      "roomId": null,
+      "location": "veranda",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "43",
+      "src": "photos/43.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "Front yard with a paved path leading to the entrance gates.",
+      "levelId": null,
+      "roomId": null,
+      "location": "front yard",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "44",
+      "src": "photos/44.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The paved pathway leading to the main entrance of the house.",
+      "levelId": null,
+      "roomId": null,
+      "location": "Front yard",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "45",
+      "src": "photos/45.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A wide paved driveway runs alongside the front lawn and garden area.",
+      "levelId": null,
+      "roomId": null,
+      "location": "front yard and driveway",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "46",
+      "src": "photos/46.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A narrow balcony shaded by an awning, next to a lush lemon tree.",
+      "levelId": null,
+      "roomId": null,
+      "location": "balcony",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "47",
+      "src": "photos/47.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "The patio features a spiral staircase to the upper level.",
+      "levelId": null,
+      "roomId": null,
+      "location": "patio",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    },
+    {
+      "id": "48",
+      "src": "photos/48.jpg",
+      "width": 3744,
+      "height": 2491,
+      "caption": "A path leading to the entrance through a small garden area.",
+      "levelId": null,
+      "roomId": null,
+      "location": "garden, front",
+      "confidence": "high",
+      "pose": null,
+      "fit": null
+    }
+  ],
+  "looks": {
+    "upper/r11": {
+      "floor": "#d3c8ba",
+      "walls": "#f0ebe6"
+    },
+    "upper/r1": {
+      "floor": "#d8c3b0",
+      "walls": "#f5ebd9"
+    },
+    "upper/r7": {
+      "floor": "#d09c6f",
+      "walls": "#f0d5c8"
+    },
+    "upper/r9": {
+      "floor": "#c48b55",
+      "walls": "#fcece0"
+    },
+    "ground/r0": {
+      "floor": "#dfd5c5",
+      "walls": "#ffffff"
+    },
+    "ground/r1": {
+      "floor": "#dfd4c5",
+      "walls": "#c8241e"
+    },
+    "upper/r3": {
+      "floor": "#D8A0A6",
+      "walls": "#FDE1D3"
+    },
+    "upper/r2": {
+      "floor": "#D4C5B0",
+      "walls": "#E3D5C1"
+    },
+    "ground/r3": {
+      "floor": "#e6e6e6",
+      "walls": "#ffffff"
+    },
+    "ground/r2": {
+      "floor": "#d0c6b6",
+      "walls": "#dacdbd"
+    }
+  },
+  "builtAt": "2026-11-14T13:28:17.388Z",
+  "model": "gemini-3.1-pro-preview"
+}

@@ -69,15 +69,19 @@ export function wallFrame(wall: Wall) {
 
 const safeId = (s: string) => s.replace(/[^A-Za-z0-9_]/g, "_");
 
-/** Room polygon as a horizontal slab at height y, facing up (floor) or down (ceiling). */
-function slabGeometry(polygon: [number, number][], y: number, facing: "up" | "down") {
-  // Plan (x, y) → world (x, 0, y). Negating y before rotating by -90° about X gives an
-  // upward normal; the un-negated shape rotated by +90° gives a downward one.
-  const sign = facing === "up" ? -1 : 1;
-  const shape = new THREE.Shape(polygon.map(([x, py]) => new THREE.Vector2(x, sign * py)));
-  const geo = new THREE.ShapeGeometry(shape);
-  geo.rotateX(facing === "up" ? -Math.PI / 2 : Math.PI / 2);
-  geo.translate(0, y, 0);
+export const FLOOR_THICKNESS = 0.1;
+export const CEILING_THICKNESS = 0.2;
+
+/**
+ * Room polygon extruded into a closed slab spanning [bottom, bottom + depth] in world Y.
+ * Slabs, not planes: Lumen traces mesh distance fields, and zero-thickness surfaces leak light.
+ */
+function slabGeometry(polygon: [number, number][], bottom: number, depth: number) {
+  // Plan (x, y) → world (x, 0, y): negate y, then rotate -90° about X, so extrusion (+z) points up.
+  const shape = new THREE.Shape(polygon.map(([x, py]) => new THREE.Vector2(x, -py)));
+  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+  geo.rotateX(-Math.PI / 2);
+  geo.translate(0, bottom, 0);
   return geo;
 }
 
@@ -129,14 +133,14 @@ export function buildDollhouseScene(plan: FloorPlan, opts: BuildOptions = {}): T
     const meta = { kind: "floor", roomId: room.id, roomName: room.name, roomType: room.type, areaM2: +polygonArea(room.polygon).toFixed(2) };
     add(
       `floor__${room.type}__${safeId(room.id)}`,
-      slabGeometry(room.polygon, isBalcony ? -BALCONY_DROP : 0, "up"),
+      slabGeometry(room.polygon, (isBalcony ? -BALCONY_DROP : 0) - FLOOR_THICKNESS, FLOOR_THICKNESS),
       material(`M_floor_${room.type}`, { color: ROOM_COLORS[room.type], roughness: 0.95 }),
       meta,
     );
     if (opts.ceilings && !isBalcony) {
       add(
         `ceiling__${safeId(room.id)}`,
-        slabGeometry(room.polygon, plan.ceilingHeight, "down"),
+        slabGeometry(room.polygon, plan.ceilingHeight, CEILING_THICKNESS),
         material("M_ceiling", { color: CEILING_COLOR, roughness: 0.95 }),
         { ...meta, kind: "ceiling" },
       );

@@ -49,7 +49,7 @@ if (values["from-raw"]) {
   });
   console.log(
     `Done in ${((Date.now() - started) / 1000).toFixed(1)}s · ${result.model} · ` +
-      `${result.usage.input_tokens} in / ${result.usage.output_tokens} out tokens`,
+      `${result.usage.input} in / ${result.usage.output} out tokens`,
   );
   raw = { parsed: result.parsed, model: result.model, parsedAt: new Date().toISOString() };
   fs.writeFileSync(rawPath, JSON.stringify(raw, null, 2) + "\n");

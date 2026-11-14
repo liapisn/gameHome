@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "parse:plan": "tsx --env-file=.env.local scripts/parse-floorplan.mts"
+    "parse:plan": "tsx --env-file=.env.local scripts/parse-floorplan.mts",
+    "export:glb": "tsx --disable-warning=THREE_CJS_DEPRECATED scripts/export-glb.mts",
+    "render:unreal": "scripts/render-unreal.sh",
+    "build:tour": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-tour.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
@@ -22,6 +25,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
     "three": "^0.187.0",
     "zod": "^4.6.7"
   },
