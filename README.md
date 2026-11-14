@@ -23,7 +23,16 @@ npm run dev
 
 ## Model credentials
 
-Vision calls go through `src/lib/ai/structured.ts`: Gemini when `GEMINI_API_KEY` is set (`GEMINI_MODEL` overrides `gemini-pro-latest`), otherwise Claude via `ANTHROPIC_API_KEY` or Vercel AI Gateway (`AI_GATEWAY_API_KEY`, or `VERCEL_OIDC_TOKEN` from `vercel env pull`). Put keys in `.env.local`.
+Vision calls go through `src/lib/ai/structured.ts`: Gemini when `GEMINI_API_KEY` is set (`GEMINI_MODEL` overrides `gemini-4-carbon`; the object workers use `GEMINI_MODEL_OBJECT`, default `gemini-4-hydrogen`), otherwise Claude via `ANTHROPIC_API_KEY` or Vercel AI Gateway (`AI_GATEWAY_API_KEY`, or `VERCEL_OIDC_TOKEN` from `vercel env pull`). Put keys in `.env.local`.
+
+## Blender runs on boxd
+
+Every Blender run (room builds, renders, model jobs) happens on a [boxd](https://boxd.sh) machine, never on this computer (`src/lib/boxd/runner.ts`). Needs `BOXD_API_KEY` in `.env.local`. Machines start from the `gh-blender-5-3` snapshot (Blender 5.3.0, 8 vCPU / 32 GB); `BOXD_MACHINES` caps how many run at once (default 30). `BLENDER_RUNNER=local` uses a local Blender 5.x (`BLENDER_PATH`) for the fixed scripts only.
+
+```bash
+npm run boxd:snapshot -- --replace   # rebuild the snapshot from scratch (new version, same name)
+npm run boxd:snapshot -- --clean     # delete pool machines a crashed run left behind
+```
 
 ## Admin: generating tours from uploads
 
