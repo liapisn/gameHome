@@ -7,14 +7,13 @@
  *   npm run build:models -- --property <uuid>      # a tour built in the app: download, build, upload
  *     (needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY, e.g. --env-file=.env.production.local)
  *
- * Needs Blender 5.x (BLENDER_PATH) and GEMINI_API_KEY + FAL_KEY in .env.local. Reads the room
- * scenes from src/data/scenes/<tour>/ (npm run build:scene). Output: exports/<tour>/models/.
- * Every paid call is cached there: a rerun only pays for what isn't done.
+ * Needs GEMINI_API_KEY and BOXD_API_KEY in .env.local (Blender runs on boxd, never here). Reads
+ * the room scenes from src/data/scenes/<tour>/ (npm run build:scene). Output: exports/<tour>/models/.
+ * Every model call and Blender run is cached there: a rerun only repeats what isn't done.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { spendTotal } from "../src/lib/fal/client";
 import { briefForItem, itemViews, loadDetections } from "../src/lib/models3d/briefs";
 import { runHouseWorker } from "../src/lib/models3d/house-worker";
 import { runObjectWorker } from "../src/lib/models3d/object-worker";
@@ -38,7 +37,6 @@ if (!values.tour && !values.property) {
   process.exit(1);
 }
 const log = (m: string) => console.log(`${new Date().toISOString().slice(11, 19)} ${m}`);
-const spent0 = spendTotal();
 const t0 = Date.now();
 
 if (values.property) {
@@ -62,7 +60,7 @@ if (values.property) {
   }
   const index = await uploadModels(app.folder, rooms);
   log(`uploaded ${index.rooms.length} room model(s) beside the tour (${app.folder}models.json)`);
-  log(`spent about $${(spendTotal() - spent0).toFixed(2)} in ${((Date.now() - t0) / 60000).toFixed(1)} min`);
+  log(`done in ${((Date.now() - t0) / 60000).toFixed(1)} min`);
   await closePool();
   process.exit(0);
 }
@@ -89,5 +87,5 @@ if (values.item) {
   const r = await runHouseWorker({ tour, outRoot, log });
   log(`house: ${r.summary}`);
 }
-log(`spent about $${(spendTotal() - spent0).toFixed(2)} in ${((Date.now() - t0) / 60000).toFixed(1)} min`);
+log(`done in ${((Date.now() - t0) / 60000).toFixed(1)} min`);
 await closePool();

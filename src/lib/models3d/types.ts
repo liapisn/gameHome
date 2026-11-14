@@ -1,6 +1,6 @@
 /**
  * Contracts between the workers that turn a furnished room's items into generated 3D models.
- * See docs/agent-tree-plan.md.
+ * See docs/agent-tree-plan.md and docs/boxd-models-plan.md.
  */
 import type { Box2D, SceneKind, SceneMaterial } from "@/lib/scene/types";
 
@@ -18,21 +18,19 @@ export interface ObjectBrief {
   assetId: string;
   label: string;
   kind: SceneKind;
-  /** Views of this object (of one of its copies). Empty: no photo shows it; the reference is drawn from the label. */
+  /** Views of this object (of one of its copies). Empty: no photo shows it; it is designed from the label. */
   views: ObjectView[];
   /** Target size in metres: w along the front, d front to back, h height. */
   size: { w: number; d: number; h: number };
   color?: string;
   material?: SceneMaterial;
-  /** Extra words for the reference, e.g. "the dining chairs around this table, one chair only". */
+  /** Extra words for the design, e.g. "the dining chairs around this table, one chair only". */
   note?: string;
   /** Built to the exact size of a wall run (fitted kitchens, wardrobes). */
   fit?: "exact";
   wall?: { length: number; cornerAt?: "left" | "right"; notes?: string };
   workDir: string;
 }
-
-export type Generator = "tripo-h31" | "meshy";
 
 /** Object worker → room worker. */
 export interface ObjectResult {
@@ -42,13 +40,10 @@ export interface ObjectResult {
   glb?: string;
   /** As built, metres. */
   size?: { w: number; d: number; h: number };
-  generator?: Generator;
-  /** The clean product image the model was made from. */
-  reference?: string;
-  /** Same-light render of the picked model. */
+  /** Studio render of the chosen model, from the front. */
   preview?: string;
   attempts: number;
-  /** Why this one was picked, or why it failed. */
+  /** The critic's summary of the chosen run, or why it failed. */
   reason: string;
   /** No photo showed it: drawn from its label. */
   invented?: boolean;

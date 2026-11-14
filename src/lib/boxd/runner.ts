@@ -236,7 +236,7 @@ export async function runOnMachine(
 
   // Outputs: files under the project folder written during the run. Paths come from the machine,
   // so each one is checked to be a plain path inside the project before it is written locally.
-  const found = await exec(lease, `find ${sh(ROOT)} -type f -newer ${stamp} -print`);
+  const found = await exec(lease, `find ${sh(ROOT)} -type f -newer ${stamp} -not -path '*/__pycache__/*' -print`);
   const files = found.stdout.split("\n").map((s) => s.trim()).filter(Boolean);
   await inParallel(files, 6, async (remote) => {
     const local = path.resolve(remote);

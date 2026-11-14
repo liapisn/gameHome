@@ -261,7 +261,8 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
       const photoCrop = await cropOf(path.resolve(tour.mediaRoot, photo.src), path.join(odir, "photo.jpg"));
       const renderCrops = await Promise.all(turns.map((t) => cropOf(renders[t][view.photoId], path.join(odir, `turn-${t}.jpg`))));
       const v = await cachedJson(path.join(odir, "verdict.json"), () => pickTurn(p.label, photoCrop, renderCrops));
-      p.turn = v.turn ?? 0;
+      // "Wrong model" means the crop showed something else (often a neighbour): its turn means nothing.
+      p.turn = v.wrongModel ? 0 : (v.turn ?? 0);
       say(`turn ${p.id}: ${v.turn ?? "unclear, kept"}°${v.wrongModel ? " (looks like the wrong model)" : ""} — ${v.reason}`);
     });
     // Copies of a group that no photo judged keep the turn of their judged sibling.

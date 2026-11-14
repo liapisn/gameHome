@@ -15,8 +15,6 @@ export async function cachedJson<T>(file: string, make: () => Promise<T>): Promi
 /** The line each script in blender/ prints when it finished. */
 const MARKER: Record<string, string> = {
   "build_scene.py": "BUILD_SCENE_OK",
-  "prep_prop.py": "PREP_OK",
-  "render_compare.py": "COMPARE_DONE",
   "join_house.py": "JOIN_HOUSE_OK",
   "web_copy.py": "WEB_COPY_OK",
   "test_gh_parts.py": "GH_PARTS_OK",
