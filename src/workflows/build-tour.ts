@@ -11,7 +11,7 @@
  */
 import path from "node:path";
 import { FatalError } from "workflow";
-import { adminClient, claimJob, exportProperty, finishJob, storeScenes, storeTour, writeJobProgress } from "@/lib/admin/jobs";
+import { adminClient, claimJob, exportProperty, finishJob, saveNewPlans, storeScenes, storeTour, writeJobProgress } from "@/lib/admin/jobs";
 import { removeWorkdir, workdir } from "@/lib/admin/workdir";
 import type { FloorPlan } from "@/lib/floorplan";
 import { buildRoomScene, scenePhotos, sceneRooms } from "@/lib/engine/build-scene";
@@ -97,11 +97,14 @@ async function readPlans(jobId: string, propertyId: string): Promise<{ plans: Fl
   const dir = workdir();
   try {
     const property = await exportProperty(supabase, propertyId, dir, { photos: [] });
+    // Floors whose plan was read on upload reuse it; the rest are read now and stored.
     const plans = await buildPlans(dir, {
       id: property.id,
       title: property.title,
+      plansDir: property.plansDir,
       onProgress: (p) => void writeJobProgress(supabase, jobId, p),
     });
+    await saveNewPlans(supabase, property, plans);
     return { plans, files: property.manifest.photos.map((p) => p.file), title: property.title };
   } finally {
     removeWorkdir(dir);

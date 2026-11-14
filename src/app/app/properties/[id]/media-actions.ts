@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { defaultLevelName } from "@/lib/admin/data";
-import { ROOM_TYPES, type RoomType } from "@/lib/floorplan";
+import { type FloorPlan, ROOM_TYPES, type RoomType } from "@/lib/floorplan";
+import { planJson, readLevelPlan } from "@/lib/admin/plan-read";
 import {
   MAX_PHOTOS_PER_PROPERTY,
   MEDIA_BUCKET,
@@ -24,7 +25,7 @@ const Dimensions = z.object({
 async function accessibleProperty(propertyId: string) {
   Uuid.parse(propertyId);
   const supabase = await createClient();
-  const { data, error } = await supabase.from("properties").select("id, org_id").eq("id", propertyId).maybeSingle();
+  const { data, error } = await supabase.from("properties").select("id, org_id, title").eq("id", propertyId).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Property not found");
   return { supabase, property: data };
@@ -139,7 +140,7 @@ async function accessibleLevel(propertyId: string, levelId: string) {
   const ctx = await accessibleProperty(propertyId);
   const { data: level, error } = await ctx.supabase
     .from("levels")
-    .select("id, floorplan_path")
+    .select("id, name, floorplan_path, plan")
     .eq("id", levelId)
     .eq("property_id", propertyId)
     .maybeSingle();
@@ -172,7 +173,8 @@ export async function setFloorplan(propertyId: string, levelId: string, file: z.
   });
   if (mediaError) throw new Error(mediaError.message);
 
-  const { error } = await supabase.from("levels").update({ floorplan_path: path }).eq("id", levelId);
+  // A new drawing invalidates the rooms read from the old one.
+  const { error } = await supabase.from("levels").update({ floorplan_path: path, plan: null }).eq("id", levelId);
   if (error) throw new Error(error.message);
   refresh(propertyId);
 }
@@ -180,7 +182,44 @@ export async function setFloorplan(propertyId: string, levelId: string, file: z.
 export async function removeFloorplan(propertyId: string, levelId: string) {
   const { supabase, level } = await accessibleLevel(propertyId, levelId);
   await removeFloorplanFiles(supabase, levelId, level.floorplan_path);
-  const { error } = await supabase.from("levels").update({ floorplan_path: null }).eq("id", levelId);
+  const { error } = await supabase.from("levels").update({ floorplan_path: null, plan: null }).eq("id", levelId);
+  if (error) throw new Error(error.message);
+  refresh(propertyId);
+}
+
+/** Read the floor's plan drawing into rooms (one model call, up to a minute or two) and store it. */
+export async function readFloorplan(propertyId: string, levelId: string) {
+  const { supabase, property, level } = await accessibleLevel(propertyId, levelId);
+  if (!level.floorplan_path) throw new Error("Upload a floor plan for this floor first.");
+  const plan = await readLevelPlan(supabase, {
+    propertyId,
+    propertyTitle: property.title,
+    levelId,
+    levelName: level.name,
+    floorplanPath: level.floorplan_path,
+  });
+  // Only store it if the drawing hasn't been replaced while it was being read.
+  const { error } = await supabase
+    .from("levels")
+    .update({ plan: planJson(plan) })
+    .eq("id", levelId)
+    .eq("floorplan_path", level.floorplan_path);
+  if (error) throw new Error(error.message);
+  refresh(propertyId);
+}
+
+/** Correct a room the engine read: its name and kind of room. */
+export async function updatePlanRoom(propertyId: string, levelId: string, roomId: string, patch: { name?: string; type?: RoomType }) {
+  const update = z
+    .object({ name: z.string().trim().min(1).max(60).optional(), type: z.enum(ROOM_TYPES).optional() })
+    .parse(patch);
+  const { supabase, level } = await accessibleLevel(propertyId, levelId);
+  const plan = level.plan as unknown as FloorPlan | null;
+  const room = plan?.rooms.find((r) => r.id === roomId);
+  if (!plan || !room) throw new Error("Room not found. Read the floor plan again.");
+  if (update.name) room.name = update.name;
+  if (update.type) room.type = update.type;
+  const { error } = await supabase.from("levels").update({ plan: planJson(plan) }).eq("id", levelId);
   if (error) throw new Error(error.message);
   refresh(propertyId);
 }

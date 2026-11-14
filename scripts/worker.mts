@@ -12,7 +12,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { type JobRow, adminClient, exportProperty, finishJob, storeScenes, storeTour, writeJobProgress } from "../src/lib/admin/jobs";
+import { type JobRow, adminClient, exportProperty, finishJob, saveNewPlans, storeScenes, storeTour, writeJobProgress } from "../src/lib/admin/jobs";
 import { activeProvider } from "../src/lib/ai/structured";
 import { type BuildProgress, buildTour } from "../src/lib/engine/build-tour";
 import { buildTourScenes } from "../src/lib/engine/build-scene";
@@ -67,10 +67,12 @@ async function processJob(job: Job) {
     const result = await buildTour(dir, {
       id: property.id,
       title: property.title,
+      plansDir: property.plansDir,
       onProgress: (p) => void writeProgress(p),
       log: (m) => log(`  ${m.trim()}`),
     });
     if (pending) await writeProgress(pending, true);
+    await saveNewPlans(supabase, property, result.plans);
 
     // Store: tours/org/<org>/property/<id>/v<n>/{tour.json, plan-<level>.json[, scenes.json]}
     const { version, folder } = await storeTour(supabase, { property, jobId: job.id, tour: result.tour, plans: result.plans });
