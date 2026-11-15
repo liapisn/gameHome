@@ -38,11 +38,12 @@ room estimates (keep `"medium"`) and the house review (`gemini-4-carbon`, low).
    not needed (no Anthropic key), but keep it consistent: `"low"` there too.
 3. Add `export const geminiRoomModel = () => process.env.GEMINI_MODEL_ROOM ?? "gemini-4-carbon";`
    beside `geminiObjectModel`.
-4. Add `"gemini-4-argon": 65536` to `MAX_OUTPUT` only if the models API says so; otherwise leave
-   the 32768 fallback.
+4. `MAX_OUTPUT` already has `gemini-4-hydrogen: 65536`; nothing to add.
 5. Timeout: `CALL_TIMEOUT_MS` default from 12 minutes to **90 s**, retries from 4 attempts to
-   **3**. The model build sets `GEMINI_CALL_TIMEOUT_MS=360000` itself (add `process.env.GEMINI_CALL_TIMEOUT_MS ??= "360000"` at the top of `scripts/build-scene.mts` and `scripts/build-models.mts`), since a
-   room agent call with many images can take minutes and runs with no time limit.
+   **3**. The local runs set `GEMINI_CALL_TIMEOUT_MS=360000` as an environment variable in their npm
+   scripts (`build:scene`, `build:models`, `build:tour`, `worker`), since a room agent call with many
+   images can take minutes and runs with no time limit. (Not in the script body: `structured.ts`
+   reads the variable when it is imported, before any top-level code of the script runs.)
 6. Remove explicit `effort: "high"` where a call should now be low:
    - `src/lib/tour/place-photo.ts:124` → delete the line (defaults to low).
    - `src/lib/models3d/critic.ts:104` (house review) → `model: geminiRoomModel(), effort: "low"`.
@@ -69,16 +70,18 @@ In the floor-items branch (around line 335, where `pts` is filtered with `nearRo
 1. **Outside the room:** filter with `nearRoom(p, room, 0.15)` instead of `0.5`. If the detection had
    2 or more floor points and fewer than half survive, return
    `{ candidate: null, …, reason: "floor points outside the room" }`.
-2. **Span too long:** after the filter, if the longest distance between two kept points is over
-   **4 m** (over **6 m** for `kind === "kitchen"`, the only legitimate long run), return
+2. **Span too long:** after the filter, if the long side of the kept points' bounding rectangle is
+   over **4 m** (over **6 m** for `kitchen` and `rug`, the legitimate long runs; the long side, not
+   the diagonal, so a 3 × 4 m rug passes), return
    `{ candidate: null, …, reason: "floor points span too far" }`.
 3. The check loop needs no change: its corrections go back through `liftDetection`, so a
    correction that fails the guard is rejected like any other bad lift and the round is not kept.
-4. Name both thresholds as constants beside `NEAR_CONTACT` (`MAX_SPAN = 4`, `MAX_SPAN_KITCHEN = 6`,
+4. Name both thresholds as constants beside `NEAR_CONTACT` (`MAX_SPAN = 4`, `MAX_SPAN_LONG = 6` for kitchen and rug,
    `FLOOR_TOLERANCE = 0.15`).
 
 **Test:** two cases in `scripts/selftest-lift.mts`: a sofa whose two floor points lift 5 m apart is
-dropped; a kitchen whose points span 5 m is kept.
+dropped; a kitchen whose points span 5 m is kept; a 3 × 4 m rug (corners 5 m apart diagonally) is
+kept.
 
 ## Part 4: the library index (`scripts/build-library.mts`, new; run once, output committed)
 
@@ -171,7 +174,7 @@ rooms and tours. A model is prepared once, ever.
      item matches "stool". No candidates → `null` (the item stays a box, as today).
    - Score: `|ln((m.w/m.h) / (i.w/i.h))| + |ln((m.d/m.h) / (i.d/i.h))|`; for flat items
      (`fitFor(size) === "flat"`) use `|ln((m.w/m.d) / (i.w/i.d))|` only.
-   - Take the best 5 and choose among them with the item's `seed` (so the same room always gets the
+   - Take the best 5 and choose among them with a hash of the tour id and item id (items have no `seed` field; so the same room always gets the
      same models, but two different rooms don't all get the identical sofa).
 2. **`room-worker.ts`, step 2:** when `MODEL_STYLE` is `library` (the default on this branch), replace
    the `pool(..., runObjectWorker)` block with: for each brief, `pickModel` (use the lead item of the
@@ -181,15 +184,20 @@ rooms and tours. A model is prepared once, ever.
    today's code worker.
 3. **Built-to-measure kitchens and wardrobes** (`BUILT_TO_MEASURE` in `briefs.ts`): no library pick;
    they stay boxes sized to their wall run.
-4. **Scale on all three axes:** in the placement loop, for library results set
-   `scale: [i.w / r.size.w, i.d / r.size.d, i.h / r.size.h]` (an array). In `blender/build_scene.py`
+4. **Scale on all three axes, after the turn:** Blender scales on the model's own axes before
+   rotating, so a 90° or 270° turn swaps which model axis lies along the item's width. Store the
+   per-axis factors as `[i.w / r.size.w, i.d / r.size.d, i.h / r.size.h]` at placement, and when the
+   turn is known (orientation step, and in each `turnAll` render job) swap x and y for 90° and 270°:
+   `[i.d / r.size.w, i.w / r.size.d, i.h / r.size.h]`. `Placement.scale` becomes
+   `number | [number, number, number]` (fix the uses in `room-worker.ts`, e.g. the rounding in the
+   report). In `blender/build_scene.py`
    (line ~171, `s = it.get("scale", 1)`), accept a number or a 3-array:
    `obj.scale = tuple(s) if isinstance(s, list) else (s, s, s)`. Skip the `MAX_PROPORTION_OFF`
    stand-in check for library results (log the stretch instead): the measured size is what counts.
 5. **Facing:** keep the existing orientation step (`pickTurn`, 4 renders per room) unchanged.
 6. **Credits:** `room.json` gets `library: [{ itemId, modelId }]`. On the model page
    (`src/app/app/properties/[id]/model/page.tsx`), when any room used an ABO model, show one line:
-   "3D models from the Amazon Berkeley Objects dataset, provided by Amazon.com (CC BY 4.0)." (The
+   "3D models from the Amazon Berkeley Objects dataset, provided by Amazon.com, simplified and resized (CC BY 4.0)." (The
    licence requires this credit.)
 
 ## Testing (only this)
