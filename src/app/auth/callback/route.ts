@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(`${origin}${next}`);
+  } else if (next.startsWith("/invite/")) {
+    // Invite emails use the implicit flow: the session is in the URL fragment, which the browser
+    // keeps across this redirect. The invite page stores it (src/app/invite/[token]/invite-client.tsx).
+    return NextResponse.redirect(`${origin}${next}`);
   }
 
   return NextResponse.redirect(`${origin}/login?error=link`);

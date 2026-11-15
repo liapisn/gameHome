@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireSession } from "@/lib/admin/data";
+import { WorkspaceSwitcher } from "@/components/admin/workspace-switcher";
 import { signOut } from "./actions";
 
 export const metadata: Metadata = { title: "Properties · gameHome", robots: { index: false } };
@@ -19,6 +20,9 @@ export default function AdminLayout({ children }: LayoutProps<"/app">) {
               <Link href="/app" className="text-neutral-600 hover:text-neutral-900">
                 Properties
               </Link>
+              <Link href="/app/settings" className="ml-4 text-neutral-600 hover:text-neutral-900">
+                Members
+              </Link>
             </nav>
           </div>
           <Suspense fallback={<div className="h-8" />}>
@@ -32,12 +36,10 @@ export default function AdminLayout({ children }: LayoutProps<"/app">) {
 }
 
 async function AccountMenu() {
-  const { user, org } = await requireSession();
+  const { user, org, role, workspaces } = await requireSession();
   return (
     <div className="flex items-center gap-3 text-sm">
-      <span className="hidden text-neutral-500 sm:inline" title={user.email ?? undefined}>
-        {org.name}
-      </span>
+      <WorkspaceSwitcher current={{ ...org, role }} workspaces={workspaces} email={user.email} />
       <form action={signOut}>
         <button type="submit" className="rounded-lg border border-black/15 px-3 py-1.5 hover:bg-black/5">
           Sign out
