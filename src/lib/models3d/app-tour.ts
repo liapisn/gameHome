@@ -41,7 +41,7 @@ async function readJson<T>(supabase: Admin, p: string): Promise<T> {
 }
 
 /** The property's current tour, its plans and scenes, and the photos the scenes use, under `dir`. */
-export async function downloadAppTour(propertyId: string, dir: string): Promise<AppTour> {
+export async function downloadAppTour(propertyId: string, dir: string, opts: { allPhotos?: boolean } = {}): Promise<AppTour> {
   const supabase = adminClient();
   const { data: row, error } = await supabase
     .from("tours")
@@ -59,7 +59,12 @@ export async function downloadAppTour(propertyId: string, dir: string): Promise<
   const scenes = JSON.parse(await blob.text()) as RoomScene[];
 
   // Photos of the furnished rooms, at the paths the tour names them (photos/<media id>.webp).
-  const wanted = new Set(scenes.flatMap((s) => s.photos.filter((g) => g.gate === "pass").map((g) => g.id)));
+  // With allPhotos (--rescene), every posed photo of those rooms: the scene build gates them again.
+  const wanted = new Set(
+    opts.allPhotos
+      ? tour.photos.filter((p) => p.pose && scenes.some((s) => s.levelId === p.levelId && s.roomId === p.roomId)).map((p) => p.id)
+      : scenes.flatMap((s) => s.photos.filter((g) => g.gate === "pass").map((g) => g.id)),
+  );
   const photos = tour.photos.filter((p) => wanted.has(p.id));
   const ids = photos.map((p) => photoMediaId(p.src)).filter((x): x is string => !!x);
   const { data: media } = await supabase.from("media").select("id, storage_path").eq("property_id", propertyId).in("id", ids);
@@ -89,9 +94,16 @@ export async function uploadModels(folder: string, rooms: { levelId: string; roo
     const { error } = await supabase.storage.from(TOURS_BUCKET).upload(p, body, { contentType: "model/gltf-binary", upsert: true });
     if (error) throw new Error(`Upload ${p}: ${error.message}`);
     index.rooms.push({ levelId: r.levelId, roomId: r.roomId, path: p, bytes: body.length });
-    // room.json beside room.glb lists the library models the room used (CC BY 4.0: credit required).
+    // room.json beside room.glb lists the library models the room used: each source's credit once
+    // (ABO is CC BY 4.0 and needs one; the CC0 packs need none).
     const report = path.join(path.dirname(r.glb), "room.json");
-    if (!index.credits && fs.existsSync(report) && (JSON.parse(fs.readFileSync(report, "utf8")) as { library?: unknown[] }).library?.length) index.credits = [LIBRARY_CREDIT];
+    if (fs.existsSync(report)) {
+      const used = (JSON.parse(fs.readFileSync(report, "utf8")) as { library?: { source?: string; credit?: string | null }[] }).library ?? [];
+      for (const u of used) {
+        const line = u.credit ?? ((u.source ?? "abo") === "abo" ? LIBRARY_CREDIT : "");
+        if (line && !index.credits?.includes(line)) index.credits = [...(index.credits ?? []), line];
+      }
+    }
   }
   if (houseGlb) {
     const p = `${folder}models/house.glb`;

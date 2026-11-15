@@ -2,6 +2,19 @@
 Prepare one library model (Amazon Berkeley Objects .glb) for placing: docs/library-small-plan.md, Part 5.
 Runs on boxd (src/lib/blender/run-blender.ts), downloading the model there.
 
+Pack mode (docs/library-full-plan.md, Part E), when the job has "pack": every model file of a CC0
+pack (Kenney, Quaternius) in one run:
+job: {
+  "pack": "kenney",
+  "files": ["<abs path of each model file>", ...],   # .glb .gltf .fbx .obj
+  "extra": ["<textures, .mtl, .bin the models need>", ...],
+  "models": "<dir for <pack>-<name>.glb>",
+  "thumbs": "<dir for <pack>-<name>.png>",
+  "packJson": "<file>"
+}
+Writes each model (metres, origin at the footprint centre on the floor), a 256 px thumbnail, and
+packJson: [{ file, name, dims: [w, d, h], tris, thumb, error? }]. Prints PREP_LIBRARY_DONE.
+
 job: {
   "url": "<ABO .glb>",
   "out": "<dir>",
@@ -23,6 +36,13 @@ import bpy
 from mathutils import Vector
 
 job = json.load(open(sys.argv[sys.argv.index("--") + 1]))
+if "pack" in job:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import prep_pack  # noqa: E402  (blender/ is uploaded whole)
+
+    prep_pack.run(job)
+    print("PREP_LIBRARY_DONE", "pack")
+    sys.exit(0)
 OUT = job["out"]
 os.makedirs(OUT, exist_ok=True)
 MAX_TRIS = int(job.get("maxTris", 60000))

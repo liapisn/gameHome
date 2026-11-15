@@ -183,6 +183,8 @@ async function furnishRoom(propertyId: string, tour: Tour, plans: FloorPlan[], r
       workDir: path.join(dir, "work"),
       // One check round keeps a room well inside a function invocation.
       rounds: 1,
+      // One detect call per photo here too; `build:models -- --rescene` votes three (docs/library-full-plan.md, Part C).
+      votes: 1,
     });
     return scene.items.some((i) => i.source === "photos") ? scene : null;
   } finally {

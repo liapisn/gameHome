@@ -5,6 +5,8 @@
  *   npm run build:models -- --tour listing-8218 --room main/r2        # one room
  *   npm run build:models -- --tour listing-8218 --room main/r2 --item sofa-1   # one object only
  *   npm run build:models -- --property <uuid>      # a tour built in the app: download, build, upload
+ *   npm run build:models -- --property <uuid> --rescene   # … rebuilding its room scenes first (3 check
+ *     rounds, DETECT_VOTES detect calls per photo) and uploading them with the models
  *     (needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY, e.g. --env-file=.env.production.local)
  *
  * Needs GEMINI_API_KEY and BOXD_API_KEY in .env.local (Blender runs on boxd, never here). Reads
@@ -20,6 +22,8 @@ import { runObjectWorker } from "../src/lib/models3d/object-worker";
 import { downloadAppTour, uploadModels } from "../src/lib/models3d/app-tour";
 import { runRoomWorker } from "../src/lib/models3d/room-worker";
 import { closePool } from "../src/lib/boxd/runner";
+import { adminClient, storeScenes } from "../src/lib/admin/jobs";
+import { buildRoomScene } from "../src/lib/engine/build-scene";
 import { blenderJob, slug } from "../src/lib/models3d/util";
 import type { RoomScene } from "../src/lib/scene/types";
 import type { Tour } from "../src/lib/tour/types";
@@ -30,10 +34,12 @@ const { values } = parseArgs({
     property: { type: "string" },
     room: { type: "string" },
     item: { type: "string" },
+    rescene: { type: "boolean", default: false },
+    rounds: { type: "string", default: "3" },
   },
 });
 if (!values.tour && !values.property) {
-  console.error("Usage: build-models.mts (--tour <id> [--room <level>/<room> [--item <id>]] | --property <uuid>)");
+  console.error("Usage: build-models.mts (--tour <id> [--room <level>/<room> [--item <id>]] | --property <uuid> [--rescene [--rounds 3]])");
   process.exit(1);
 }
 const log = (m: string) => console.log(`${new Date().toISOString().slice(11, 19)} ${m}`);
@@ -42,10 +48,45 @@ const t0 = Date.now();
 if (values.property) {
   // A tour built in the app: its current version from Storage, models back beside it.
   const dir = path.resolve("exports", `app-${values.property}`);
-  const app = await downloadAppTour(values.property, dir);
+  const app = await downloadAppTour(values.property, dir, { allPhotos: values.rescene });
   log(`app tour v${app.version}: ${app.scenes.length} furnished room(s), photos in ${path.relative(process.cwd(), dir)}`);
   const outRoot = path.join(dir, "models");
-  const r = await runHouseWorker({ tour: app.tour, outRoot, log, scenes: app.scenes, plans: app.plans });
+  const sceneRoot = path.join(dir, "scenes");
+  if (values.rescene) {
+    // The app built these scenes on Vercel with one check round and one detect call per photo:
+    // rebuild them here with the time Vercel doesn't have, rooms in parallel.
+    const rebuilt = await Promise.all(
+      app.scenes.map(async (old) => {
+        const key = `${old.levelId}/${old.roomId}`;
+        const plan = app.plans.find((p) => p.id === app.tour.levels.find((l) => l.id === old.levelId)?.planId);
+        if (!plan) return old;
+        try {
+          const { scene } = await buildRoomScene({
+            tour: app.tour,
+            plan,
+            levelId: old.levelId,
+            roomId: old.roomId,
+            workDir: path.join(sceneRoot, `${old.levelId}-${old.roomId}`),
+            rounds: Number(values.rounds),
+            log: (m) => log(`[${key}] ${m.trim()}`),
+          });
+          if (!scene.items.some((i) => i.source === "photos")) {
+            log(`[${key}] rescene found nothing from photos; keeping the app's scene`);
+            return old;
+          }
+          log(`[${key}] rescene: score ${old.score} → ${scene.score}, ${scene.items.length} item(s)`);
+          return scene;
+        } catch (err) {
+          log(`[${key}] rescene failed, keeping the app's scene — ${(err as Error).message.slice(0, 200)}`);
+          return old;
+        }
+      }),
+    );
+    app.scenes = rebuilt;
+    await storeScenes(adminClient(), app.folder, rebuilt);
+    log(`rescene: ${rebuilt.length} scene(s) stored beside the tour (${app.folder}scenes.json)`);
+  }
+  const r = await runHouseWorker({ tour: app.tour, outRoot, log, scenes: app.scenes, plans: app.plans, sceneRoot: values.rescene ? sceneRoot : undefined });
   log(`house: ${r.summary}`);
   const house = JSON.parse(fs.readFileSync(r.house, "utf8")) as { rooms: { room: string; error: string | null }[] };
   const rooms: { levelId: string; roomId: string; glb: string }[] = [];

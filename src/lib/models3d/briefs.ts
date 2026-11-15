@@ -30,8 +30,9 @@ export function itemViews(item: SceneItem, detections: PhotoDetection[] | null):
   });
 }
 
-export function loadDetections(tourId: string, levelId: string, roomId: string): PhotoDetection[] | null {
-  const f = path.resolve("exports", tourId, `${levelId}-${roomId}`, "detections.json");
+/** The scene build's detections; `sceneDir` defaults to where `npm run build:scene` puts them. */
+export function loadDetections(tourId: string, levelId: string, roomId: string, sceneDir = path.resolve("exports", tourId, `${levelId}-${roomId}`)): PhotoDetection[] | null {
+  const f = path.join(sceneDir, "detections.json");
   return fs.existsSync(f) ? (JSON.parse(fs.readFileSync(f, "utf8")) as PhotoDetection[]) : null;
 }
 

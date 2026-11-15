@@ -24,7 +24,7 @@ import type { RoomScene, SceneItem } from "@/lib/scene/types";
 import type { Tour } from "@/lib/tour/types";
 import { BUILT_TO_MEASURE, PICTURE, briefForItem, builtToMeasure, chairBrief, chairPlacements, itemViews, loadDetections } from "./briefs";
 import { pickTurn, sameModels } from "./critic";
-import { libraryObject, modelStyle } from "./library";
+import { candidates, type LibraryModel, libraryObject, modelStyle, type PickResult, pickModels, sourceOf } from "./library";
 import { fitFor, runObjectWorker } from "./object-worker";
 import { cropViews } from "./crops";
 import type { ObjectBrief, ObjectResult } from "./types";
@@ -47,6 +47,8 @@ export interface RoomRun {
   /** The room's scene and plan when they don't come from src/data (a tour downloaded from the app). */
   scene?: RoomScene;
   plan?: FloorPlan;
+  /** The scene build's work dir (detections, overlays); default exports/<tour>/<level>-<room>. */
+  sceneDir?: string;
 }
 
 interface Placement {
@@ -86,7 +88,9 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
   const plan: FloorPlan = run.plan ?? JSON.parse(fs.readFileSync(path.resolve("src/data/plans", `${level.planId}.json`), "utf8"));
   const room = plan.rooms.find((r) => r.id === roomId)!;
   const ceiling = level.ceilingHeight ?? plan.ceilingHeight;
-  const detections = loadDetections(tour.id, levelId, roomId);
+  const sceneDir = run.sceneDir ?? path.resolve("exports", tour.id, key);
+  const detections = loadDetections(tour.id, levelId, roomId, sceneDir);
+  copyOverlays(sceneDir, path.join(dir, "overlays"));
   const gated = new Set(scene.photos.filter((g) => g.gate === "pass").map((g) => g.id));
   const photos = tour.photos.filter((p) => p.levelId === levelId && p.roomId === roomId && p.pose && gated.has(p.id));
   const items = scene.items.map((i) => ({ ...i, views: itemViews(i, detections).filter((v) => gated.has(v.photoId)) }));
@@ -119,6 +123,8 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
 
   const briefs = new Map<string, ObjectBrief>();
   const assetFor = new Map<string, string>();
+  /** assetId → the photo crop the library pick looks at. */
+  const cropFor = new Map<string, string | null>();
   for (const i of generated) {
     const group = groupOf.get(i.id) ?? [i.id];
     const lead = group.map((id) => generated.find((x) => x.id === id)!).sort((a, b) => b.views.length - a.views.length)[0];
@@ -128,6 +134,7 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
       // Every copy's views help: they all show the same product.
       const views = group.flatMap((id) => generated.find((x) => x.id === id)!.views);
       briefs.set(assetId, briefForItem(tour, lead, views, objectsDir, assetId));
+      cropFor.set(assetId, firstCrops.get(lead.id) ?? null);
     }
   }
   const tables = generated.filter((i) => i.kind === "diningTable" && (i.chairs ?? 0) > 0);
@@ -136,29 +143,43 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     b.assetId = `${key}-${slug(t.id)}-chair`;
     b.workDir = path.join(objectsDir, b.assetId);
     briefs.set(b.assetId, b);
+    // The chairs are seen around the table: the table's crop.
+    cropFor.set(b.assetId, firstCrops.get(t.id) ?? null);
   }
   say(`${items.length} item(s): ${briefs.size} model(s) to make for ${generated.length} item(s)${tables.length ? ` + chairs` : ""}, ${items.filter((i) => PICTURE.has(i.kind)).length} picture(s), ${items.filter((i) => i.source !== "photos" && !PICTURE.has(i.kind)).length} rule-added box(es)`);
 
   // ------------------------------------------------------------------ 2. object workers, all at once
   const results = new Map<string, ObjectResult>();
-  /** assetId → library model id, for the credits. */
-  const libraryIds = new Map<string, string>();
+  /** assetId → library model, for the credits. */
+  const libraryIds = new Map<string, LibraryModel>();
+  const picks = new Map<string, PickResult>();
   const library = modelStyle() === "library";
+  // Fitted kitchens and wardrobes have no library match: LIBRARY_FITTED=box (default) keeps them boxes
+  // sized to their wall run, `code` builds them with the code worker.
+  const fitted = (b: ObjectBrief) => b.fit === "exact" || BUILT_TO_MEASURE.has(b.kind);
+  const fittedMode = process.env.LIBRARY_FITTED === "code" ? "code" : "box";
+  if (library) {
+    const reqs = [...briefs.values()]
+      .filter((b) => !fitted(b))
+      .map((b) => ({ assetId: b.assetId, label: b.label, size: b.size, crop: cropFor.get(b.assetId) ?? null, cands: candidates(b), seed: `${tour.id}/${b.assetId}` }));
+    for (const [k, v] of await pickModels(reqs, path.join(dir, "library-pick.json"), say)) picks.set(k, v);
+  }
   await pool([...briefs.values()], OBJECT_CONCURRENCY, async (b) => {
-    if (library) {
-      // Fitted kitchens and wardrobes have no library match: they stay boxes sized to their wall run.
-      if (b.fit === "exact" || BUILT_TO_MEASURE.has(b.kind)) return;
-      const picked = await libraryObject(b.assetId, b, `${tour.id}/${b.assetId}`).catch((err) => {
+    if (library && !(fitted(b) && fittedMode === "code")) {
+      if (fitted(b)) return;
+      const pick = picks.get(b.assetId);
+      if (!pick?.model) {
+        say(`model ${b.assetId}: no library model for ${b.kind} "${b.label}" (${pick?.why ?? "not picked"}), keeping the box`);
+        return;
+      }
+      const r = await libraryObject(b.assetId, pick.model).catch((err) => {
         say(`model ${b.assetId}: library failed, keeping the box — ${(err as Error).message.slice(0, 200)}`);
         return undefined;
       });
-      if (!picked) {
-        if (picked === null) say(`model ${b.assetId}: no library model for ${b.kind} "${b.label}", keeping the box`);
-        return;
-      }
-      results.set(b.assetId, picked.result);
-      libraryIds.set(b.assetId, picked.model.id);
-      say(`model ${b.assetId}: ${picked.result.reason}`);
+      if (!r) return;
+      results.set(b.assetId, r);
+      libraryIds.set(b.assetId, pick.model);
+      say(`model ${b.assetId}: ${r.reason}`);
       return;
     }
     const r = await runObjectWorker(b, log).catch((err): ObjectResult => ({ assetId: b.assetId, status: "failed", attempts: 0, reason: (err as Error).message }));
@@ -177,7 +198,7 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     if (libraryIds.has(r.assetId)) {
       // The measured box is what counts: stretch the library model to it on every axis.
       const stretch = { item: { w: i.w, d: i.d, h: i.h }, model: r.size };
-      say(`library ${i.id}: ${libraryIds.get(r.assetId)} stretched ${(scaleFor({ scale: 1, stretch }, 0) as number[]).map((v) => v.toFixed(2)).join(" × ")}`);
+      say(`library ${i.id}: ${libraryIds.get(r.assetId)!.id} stretched ${(scaleFor({ scale: 1, stretch }, 0) as number[]).map((v) => v.toFixed(2)).join(" × ")}`);
       placements.push({ id: i.id, label: i.label, kind: String(i.kind), assetId: r.assetId, x: i.x, y: i.y, z: b.z0, rot: i.rot, scale: 1, stretch, floor: b.z0 < 0.02, turn: 0, views: i.views });
       continue;
     }
@@ -328,9 +349,15 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     tour: tour.id,
     room: `${levelId}/${roomId}`,
     builtAt: new Date().toISOString(),
+    sceneScore: scene.score ?? null,
     models: [...results.values()],
     placements: placements.map((p) => ({ id: p.id, assetId: p.assetId, turn: p.turn, scale: round3(scaleFor(p, p.turn)) })),
-    library: placements.filter((p) => libraryIds.has(p.assetId)).map((p) => ({ itemId: p.id, modelId: libraryIds.get(p.assetId)! })),
+    library: placements
+      .filter((p) => libraryIds.has(p.assetId))
+      .map((p) => {
+        const m = libraryIds.get(p.assetId)!;
+        return { itemId: p.id, modelId: m.id, source: sourceOf(m), credit: m.credit ?? null, picked: picks.get(p.assetId)?.picked ?? "rank", why: picks.get(p.assetId)?.why ?? null };
+      }),
     builtToMeasure: items.filter((i) => builtToMeasure(i)).map((i) => i.id),
     pictures: [...pictures.keys()],
     sizeConflicts: [...results.values()].filter((r) => r.sizeConflict).map((r) => ({ assetId: r.assetId, ...r.sizeConflict })),
@@ -346,6 +373,18 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     roomGlb: path.join(dir, "room.glb"),
     report: reportFile,
   };
+}
+
+/** The scene build's last-round box overlays and top-down view, next to this room's photo | render pairs. */
+function copyOverlays(sceneDir: string, out: string) {
+  if (!fs.existsSync(sceneDir)) return;
+  const files = fs.readdirSync(sceneDir);
+  const rounds = files.map((f) => /^boxes-r(\d+)-/.exec(f)?.[1]).filter((x): x is string => !!x).map(Number);
+  if (!rounds.length) return;
+  const last = `boxes-r${Math.max(...rounds)}-`;
+  fs.rmSync(out, { recursive: true, force: true });
+  fs.mkdirSync(out, { recursive: true });
+  for (const f of files) if (f.startsWith(last) || f === "topdown.png") fs.copyFileSync(path.join(sceneDir, f), path.join(out, f));
 }
 
 const round3 = (s: number | number[]) => (Array.isArray(s) ? s.map((v) => Math.round(v * 1000) / 1000) : Math.round(s * 1000) / 1000);

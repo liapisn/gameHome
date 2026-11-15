@@ -11,7 +11,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { type FloorPlan, ownerRoomIds, type Room, type RoomType } from "@/lib/floorplan";
 import { applyCheck, checkPhoto, scoreScene, type CheckAnswer } from "@/lib/scene/check";
-import { detectPhoto, roomKindConflict } from "@/lib/scene/detect";
+import { detectPhoto, detectVotes, roomKindConflict, voteDetections } from "@/lib/scene/detect";
 import { gatePhoto, type GateAnswer } from "@/lib/scene/gate";
 import { fillFromRules, liftDetection, mergeCandidates, NEAR_CONTACT, screenItems, type Candidate } from "@/lib/scene/lift";
 import { boxesOverlay, topDown } from "@/lib/scene/overlay";
@@ -30,6 +30,8 @@ export interface BuildSceneOptions {
   rounds?: number;
   /** Ignore cached model answers. */
   fresh?: boolean;
+  /** Parallel detect calls per photo, voted into one answer (default DETECT_VOTES, else 3; 1 = one call). */
+  votes?: number;
   /** Ask the model to check each photo's placement (opt-in: see scripts/eval-gate.mts for how it scores). */
   modelGate?: boolean;
   /** Photo ids whose owner-assigned level differs from this one (fail at the gate), on top of `photo.owner`. */
@@ -114,6 +116,7 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
   const log = opts.log ?? (() => {});
   const { tour, plan, levelId, roomId, workDir } = opts;
   const fresh = !!opts.fresh;
+  const votes = Math.max(1, opts.votes ?? detectVotes());
   fs.mkdirSync(workDir, { recursive: true });
   const level = tour.levels.find((l) => l.id === levelId);
   const room = plan.rooms.find((r) => r.id === roomId);
@@ -181,12 +184,29 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
   const wrongKind = new Set<string>();
   await Promise.all(
     passed.map(async (c) => {
-      const d = await cached(path.join(workDir, `detect-${c.photo.id}.v2.json`), fresh, async () => {
-        calls++;
-        const r = await detectPhoto({ photoJpeg: c.jpeg, room, levelName: level.name });
-        model = r.model;
-        return { cameraRoom: r.cameraRoom, items: r.items };
-      });
+      const d =
+        votes > 1
+          ? voteDetections(
+              (
+                await cached(path.join(workDir, `detect-${c.photo.id}.v3-${votes}.json`), fresh, async () => {
+                  const rs = await Promise.all(
+                    Array.from({ length: votes }, async () => {
+                      calls++;
+                      const r = await detectPhoto({ photoJpeg: c.jpeg, room, levelName: level.name });
+                      model = r.model;
+                      return { cameraRoom: r.cameraRoom, items: r.items };
+                    }),
+                  );
+                  return { cameraRoom: rs[0].cameraRoom, runs: rs };
+                })
+              ).runs,
+            )
+          : await cached(path.join(workDir, `detect-${c.photo.id}.v2.json`), fresh, async () => {
+              calls++;
+              const r = await detectPhoto({ photoJpeg: c.jpeg, room, levelName: level.name });
+              model = r.model;
+              return { cameraRoom: r.cameraRoom, items: r.items };
+            });
       // Gate, free with detection: the photo clearly shows another kind of room.
       if (roomKindConflict(room.type, d.cameraRoom)) {
         const g = gates.find((x) => x.id === c.photo.id)!;

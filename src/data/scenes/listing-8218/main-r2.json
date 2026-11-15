@@ -9,17 +9,64 @@
   },
   "items": [
     {
+      "id": "coffeeTable-1",
+      "kind": "coffeeTable",
+      "label": "black square coffee table",
+      "x": 4.156,
+      "y": 3.982,
+      "rot": 0,
+      "w": 0.777,
+      "d": 0.776,
+      "h": 0.302,
+      "seed": 242804661,
+      "color": "#222426",
+      "material": "wood",
+      "builtIn": false,
+      "source": "photos",
+      "seenIn": [
+        "02",
+        "01"
+      ],
+      "detections": [
+        "02:3",
+        "01:1"
+      ],
+      "views": [
+        {
+          "photoId": "02",
+          "detectionId": "02:3",
+          "box": [
+            703,
+            365,
+            1000,
+            634
+          ]
+        },
+        {
+          "photoId": "01",
+          "detectionId": "01:1",
+          "box": [
+            657,
+            326,
+            998,
+            581
+          ]
+        }
+      ],
+      "confidence": 0.75
+    },
+    {
       "id": "pendant-1",
       "kind": "pendant",
-      "label": "crystal chandelier pendant",
+      "label": "chandelier pendant light",
       "x": 4.071,
       "y": 3.801,
       "rot": 0,
       "w": 0.4,
       "d": 0.4,
       "h": 0.82,
-      "seed": 4047651908,
-      "color": "#3a352c",
+      "seed": 1557241374,
+      "color": "#3a3228",
       "material": "metal",
       "builtIn": false,
       "source": "photos",
@@ -28,13 +75,13 @@
         "02"
       ],
       "detections": [
-        "01:4",
+        "01:5",
         "02:0"
       ],
       "views": [
         {
           "photoId": "01",
-          "detectionId": "01:4",
+          "detectionId": "01:5",
           "box": [
             0,
             486,
@@ -49,7 +96,7 @@
             0,
             453,
             273,
-            595
+            594
           ]
         }
       ],
@@ -57,63 +104,16 @@
       "ceiling": 2.68
     },
     {
-      "id": "coffeeTable-1",
-      "kind": "coffeeTable",
-      "label": "dark wood coffee table",
-      "x": 3.631,
-      "y": 4.083,
-      "rot": 1.571,
-      "w": 0.858,
-      "d": 0.819,
-      "h": 0.465,
-      "seed": 4069508482,
-      "color": "#2a2b2d",
-      "material": "wood",
-      "builtIn": false,
-      "source": "photos",
-      "seenIn": [
-        "01",
-        "02"
-      ],
-      "detections": [
-        "01:1",
-        "02:6"
-      ],
-      "views": [
-        {
-          "photoId": "01",
-          "detectionId": "01:1",
-          "box": [
-            657,
-            326,
-            999,
-            581
-          ]
-        },
-        {
-          "photoId": "02",
-          "detectionId": "02:6",
-          "box": [
-            703,
-            365,
-            1000,
-            634
-          ]
-        }
-      ],
-      "confidence": 0.75
-    },
-    {
       "id": "sofa-1",
       "kind": "sofa",
-      "label": "white modern sofa",
-      "x": 3.652,
-      "y": 2.75,
+      "label": "white sofa",
+      "x": 3.696,
+      "y": 2.675,
       "rot": 0,
-      "w": 2.239,
-      "d": 0.9,
+      "w": 2.216,
+      "d": 0.75,
       "h": 0.6,
-      "seed": 3083634431,
+      "seed": 1114359332,
       "color": "#e8e3d9",
       "material": "fabric",
       "builtIn": false,
@@ -129,32 +129,32 @@
           "photoId": "01",
           "detectionId": "01:0",
           "box": [
-            549,
+            551,
             526,
-            864,
+            868,
             896
           ]
         }
       ],
       "confidence": 0.47,
       "measured": {
-        "w": 2.239,
-        "d": 0.9,
-        "h": 0.464
+        "w": 2.216,
+        "d": 0.54,
+        "h": 0.571
       }
     },
     {
       "id": "generic-1",
       "kind": "generic",
-      "label": "cream cube ottoman",
-      "x": 2.352,
-      "y": 5.276,
-      "rot": 3.142,
+      "label": "cream ottoman",
+      "x": 2.349,
+      "y": 5.08,
+      "rot": 0,
       "w": 0.5,
-      "d": 0.668,
-      "h": 0.394,
-      "seed": 3691881529,
-      "color": "#d5cbb8",
+      "d": 0.278,
+      "h": 0.35,
+      "seed": 1119119624,
+      "color": "#dcd4c6",
       "material": "leather",
       "builtIn": false,
       "source": "photos",
@@ -169,9 +169,9 @@
           "photoId": "01",
           "detectionId": "01:3",
           "box": [
-            676,
-            171,
-            822,
+            675,
+            169,
+            821,
             238
           ]
         }
@@ -182,14 +182,14 @@
       "id": "art-1",
       "kind": "art",
       "label": "framed picture",
-      "x": 3.808,
+      "x": 3.824,
       "y": 2.32,
       "rot": 0,
-      "w": 0.513,
+      "w": 0.546,
       "d": 0.04,
-      "h": 0.556,
+      "h": 0.539,
       "seed": 3337999305,
-      "color": "#8c6d3b",
+      "color": "#8c6d3f",
       "material": "glass",
       "builtIn": false,
       "source": "photos",
@@ -197,22 +197,22 @@
         "01"
       ],
       "detections": [
-        "01:5"
+        "01:6"
       ],
       "views": [
         {
           "photoId": "01",
-          "detectionId": "01:5",
+          "detectionId": "01:6",
           "box": [
-            268,
+            269,
             642,
-            403,
+            402,
             715
           ]
         }
       ],
       "confidence": 0.47,
-      "elevation": 1.952
+      "elevation": 1.945
     },
     {
       "id": "generic-2",
@@ -225,7 +225,7 @@
       "d": 0.35,
       "h": 0.45,
       "seed": 4196806747,
-      "color": "#e5e2dc",
+      "color": "#e5e1d8",
       "material": "metal",
       "builtIn": true,
       "source": "photos",
@@ -233,12 +233,12 @@
         "01"
       ],
       "detections": [
-        "01:6"
+        "01:7"
       ],
       "views": [
         {
           "photoId": "01",
-          "detectionId": "01:6",
+          "detectionId": "01:7",
           "box": [
             507,
             543,
@@ -259,9 +259,9 @@
       "rot": 1.571,
       "w": 1.686,
       "d": 0.04,
-      "h": 1.063,
+      "h": 1.058,
       "seed": 809896418,
-      "color": "#8c2419",
+      "color": "#8c3b2b",
       "material": "wood",
       "builtIn": false,
       "source": "photos",
@@ -278,13 +278,13 @@
           "box": [
             312,
             134,
-            541,
+            542,
             365
           ]
         }
       ],
       "confidence": 0.47,
-      "elevation": 1.496
+      "elevation": 1.472
     },
     {
       "id": "r2-plant-1",
@@ -309,7 +309,7 @@
       "gate": "pass",
       "reason": "geometric checks only",
       "contacts": {
-        "inside": 7,
+        "inside": 8,
         "outside": 0
       }
     },
@@ -328,21 +328,21 @@
       "reason": "photo shows a bedroom, not a living"
     }
   ],
-  "score": 0.569,
+  "score": 0.63,
   "rounds": [
     {
       "round": 0,
-      "score": 0.569,
+      "score": 0.63,
       "kept": true,
       "changes": 0
     },
     {
       "round": 1,
-      "score": 0.488,
+      "score": 0.552,
       "kept": false,
-      "changes": 11
+      "changes": 8
     }
   ],
   "model": "gemini-4-hydrogen",
-  "builtAt": "2026-11-15T11:00:19.014Z"
+  "builtAt": "2026-11-15T12:06:31.408Z"
 }

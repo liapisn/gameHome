@@ -21,8 +21,11 @@ export async function runHouseWorker(o: {
   /** Scenes and plans when they don't come from src/data (a tour downloaded from the app). */
   scenes?: RoomScene[];
   plans?: FloorPlan[];
+  /** Folder of the scene builds' work dirs (<level>-<room>), when not exports/<tour>/. */
+  sceneRoot?: string;
 }) {
   const { tour, outRoot, log } = o;
+  const startedAt = new Date().toISOString();
   // Furnished rooms: those with a scene (npm run build:scene, or the app's scenes.json).
   const rooms = (
     o.rooms ??
@@ -41,7 +44,7 @@ export async function runHouseWorker(o: {
       const [levelId, roomId] = key.split("/");
       try {
         const scene = o.scenes?.find((s) => s.levelId === levelId && s.roomId === roomId);
-        const r = await runRoomWorker({ tour, levelId, roomId, outRoot, log, scene, plan: o.plans ? planOf(levelId) : undefined });
+        const r = await runRoomWorker({ tour, levelId, roomId, outRoot, log, scene, plan: o.plans ? planOf(levelId) : undefined, sceneDir: o.sceneRoot ? path.join(o.sceneRoot, `${levelId}-${roomId}`) : undefined });
         log(`room ${key}: ${r.summary}`);
         return { key, levelId, ...r, error: null as string | null };
       } catch (err) {
@@ -83,6 +86,8 @@ export async function runHouseWorker(o: {
   const house = {
     tour: tour.id,
     builtAt: new Date().toISOString(),
+    startedAt,
+    finishedAt: new Date().toISOString(),
     glb: built.length ? houseGlb : null,
     rooms: runs.map((r) => ({ room: r.key, summary: r.summary, report: r.report, error: r.error })),
     critique,

@@ -15,7 +15,8 @@ import {
   fitSize, KIND_LIMITS, KIND_SIZE, kindFitsRoom, liftDetection, mergeCandidates, normaliseLabel, screenItems, type Candidate,
 } from "../src/lib/scene/lift";
 import { photoCamera, type V3 } from "../src/lib/scene/project";
-import { SCENE_KINDS, type PhotoDetection } from "../src/lib/scene/types";
+import { voteDetections } from "../src/lib/scene/detect";
+import { SCENE_KINDS, type Detection, type PhotoDetection } from "../src/lib/scene/types";
 import { photoCamera as threeCamera } from "../src/lib/tour/space";
 import type { PhotoPose } from "../src/lib/tour/types";
 
@@ -259,6 +260,31 @@ console.log("\nmerging and screening");
   check(!!rug?.candidate, `a 3 × 4 m rug (5 m diagonal) is kept (${rug?.reason ?? "ok"})`);
   const chair = guard({ id: "chair", kind: "armchair", mount: "floor", rect: [2.9, 3.0, 3.7, 3.8], z: [0, 0.9], wall: false });
   check(!!chair && !chair.candidate && chair.reason === "floor points outside the room", `an armchair with most points outside the room is dropped (${chair?.reason ?? "no detection"})`);
+}
+
+// ---------------------------------------------------------------- voting three detect runs
+{
+  console.log("\nvoting three detect runs (docs/library-full-plan.md, Part C)");
+  const sofa = (fp: [number, number][], box: [number, number, number, number]): Detection => ({
+    label: "sofa", kind: "sofa", mount: "floor", builtIn: false, color: "#888888", material: "fabric", box,
+    floorPoints: fp, topPoints: [{ floorIndex: 0, point: [fp[0][0] - 200, fp[0][1]] }], faceCorners: [], againstWall: true,
+  });
+  const lamp: Detection = { ...sofa([[600, 900]], [200, 850, 620, 950]), label: "lamp", kind: "floorLamp", topPoints: [] };
+  const runs = [
+    { cameraRoom: "living" as const, items: [sofa([[800, 300], [810, 600]], [500, 280, 820, 620]), lamp] },
+    { cameraRoom: "living" as const, items: [sofa([[804, 304], [806, 598]], [502, 282, 818, 618])] },
+    { cameraRoom: "bedroom" as const, items: [sofa([[800, 300], [610, 600]], [498, 279, 821, 622])] },
+  ];
+  const v = voteDetections(runs);
+  const s = v.items.find((i) => i.kind === "sofa");
+  check(v.items.length === 1 && !!s, `an item seen in one run only is dropped (${v.items.map((i) => i.label).join(", ")})`);
+  const p = s?.floorPoints[1];
+  check(!!p && Math.hypot(p[0] - 808, p[1] - 599) <= 5, `a floor point 200 units off in one run is outvoted (${JSON.stringify(p)})`);
+  check(v.cameraRoom === "living", `cameraRoom by majority (${v.cameraRoom})`);
+  check(voteDetections([runs[0]]).items.length === 2, "one run passes through unchanged");
+  const ottoman = (label: string): Detection => ({ ...sofa([[700, 100]], [550, 60, 720, 160]), kind: "generic", label, topPoints: [] });
+  const named = voteDetections([{ cameraRoom: "living", items: [ottoman("cream ottoman")] }, { cameraRoom: "living", items: [ottoman("cube ottoman")] }, { cameraRoom: "living", items: [ottoman("cream cube ottoman")] }]);
+  check(named.items.length === 1, `one generic object named differently by each run is kept (${named.items.length})`);
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");
