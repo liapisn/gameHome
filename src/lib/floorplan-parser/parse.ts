@@ -24,6 +24,12 @@ export interface ParseOptions {
   mediaType: ImageMediaType;
   /** Extra context, e.g. "upper floor of a two-storey house". */
   hint?: string;
+  /**
+   * Gemini thinking level. Medium by default: on a test plan it found the same rooms as high in
+   * 128 s instead of 328 s (high used up its output budget and had to retry), and a plan read
+   * has to fit in one Vercel function (300 s on Hobby).
+   */
+  effort?: "low" | "medium" | "high";
 }
 
 export interface ParseResult {
@@ -36,7 +42,7 @@ export async function parseFloorPlanImage(opts: ParseOptions): Promise<ParseResu
   const { data, model, usage } = await generateStructured({
     schema: ParsedPlanSchema,
     system: SYSTEM_PROMPT,
-    effort: "high",
+    effort: opts.effort ?? "medium",
     parts: [
       { type: "image", data: opts.imageBase64, mediaType: opts.mediaType },
       {

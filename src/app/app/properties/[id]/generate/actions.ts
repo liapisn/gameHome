@@ -31,6 +31,7 @@ export async function queueTourBuild(propertyId: string): Promise<{ error?: stri
     .from("jobs")
     .select("id", { count: "exact", head: true })
     .eq("property_id", propertyId)
+    .eq("type", "build_tour")
     .in("status", ["queued", "running"]);
   if (count) return { error: "A build is already queued or running." };
 

@@ -28,6 +28,7 @@ async function Generate({ params }: { params: PageProps<"/app/properties/[id]/ge
     .from("jobs")
     .select("id, status, progress, error, created_at, started_at, finished_at")
     .eq("property_id", id)
+    .eq("type", "build_tour")
     .order("created_at", { ascending: false })
     .limit(10);
 
