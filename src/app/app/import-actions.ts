@@ -7,6 +7,7 @@ import { z } from "zod";
 import { defaultLevelName, requireSession } from "@/lib/admin/data";
 import { MAX_PHOTOS_PER_PROPERTY, MEDIA_BUCKET, floorplanPath, photoPath, thumbPathFor } from "@/lib/admin/media-paths";
 import { fetchProspertyListing, prospertyListingId } from "@/lib/import/prosperty";
+import { type RawImage, removeProspertyWatermark } from "@/lib/import/prosperty-watermark";
 import { startPlanRead } from "@/lib/admin/start-plan-read";
 
 /*
@@ -45,9 +46,9 @@ async function download(url: string): Promise<Buffer> {
 }
 
 /** Same sizes and quality as the browser uploader (lib/image-resize). */
-async function encode(input: Buffer, maxSide: number, quality: number): Promise<Encoded> {
-  const { data, info } = await sharp(input)
-    .rotate()
+async function encode(input: Buffer | RawImage, maxSide: number, quality: number): Promise<Encoded> {
+  const source = Buffer.isBuffer(input) ? sharp(input).rotate() : sharp(input.data, { raw: input.info });
+  const { data, info } = await source
     .resize(maxSide, maxSide, { fit: "inside", withoutEnlargement: true })
     .webp({ quality })
     .toBuffer({ resolveWithObject: true });
@@ -134,8 +135,9 @@ export async function startProspertyImport(link: string): Promise<Result<ImportP
 }
 
 /**
- * Step 2, once per batch: copy these photos (download, encode full + thumb, upload) and record
- * them from position `startSort`, keeping listing order. Returns how many were saved.
+ * Step 2, once per batch: copy these photos (download, remove the Prosperty watermark, encode
+ * full + thumb, upload) and record them from position `startSort`, keeping listing order.
+ * Returns how many were saved.
  */
 export async function importProspertyPhotos(
   propertyId: string,
@@ -149,7 +151,8 @@ export async function importProspertyPhotos(
 
     const results = await Promise.allSettled(
       parsed.map(async (url) => {
-        const source = await download(url);
+        // Prosperty's logo sits in the middle of most photos; take it out before anything reads it.
+        const { image: source } = await removeProspertyWatermark(await download(url));
         const [full, thumb] = await Promise.all([encode(source, 2560, 85), encode(source, 480, 75)]);
         const path = photoPath(orgId, propertyId, randomUUID());
         await Promise.all([upload(supabase, path, full), upload(supabase, thumbPathFor(path), thumb)]);
