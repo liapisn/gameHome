@@ -76,8 +76,14 @@ def material(color, kind):
     m = bpy.data.materials.new(name)
     m.use_nodes = True
     bsdf = m.node_tree.nodes["Principled BSDF"]
-    h = (color or "#cccccc").lstrip("#")
-    rgb = [srgb_to_linear(int(h[i:i + 2], 16) / 255) for i in (0, 2, 4)]
+    # Model-written colours can carry spaces or be malformed (" #a0b0c0", "#abc"): fall back to grey.
+    h = (color or "").strip().lstrip("#").strip()
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    try:
+        rgb = [srgb_to_linear(int(h[i:i + 2], 16) / 255) for i in (0, 2, 4)]
+    except ValueError:
+        rgb = [srgb_to_linear(0xCC / 255)] * 3
     bsdf.inputs["Base Color"].default_value = (*rgb, 1)
     rough, metal = ROUGH.get(kind, (0.6, 0.0))
     bsdf.inputs["Roughness"].default_value = rough
