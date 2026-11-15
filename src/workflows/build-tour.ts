@@ -4,7 +4,8 @@
  * share a disk, so each exports the uploads it needs from Storage into its own temp folder and
  * passes plans and placements on as step results.
  *
- *   claim → plans → place photos (batches of 2, in parallel) → assemble + store tour
+ *   claim → plans → place photos (batches of 2, in parallel) → solve camera poses (batches of 4,
+ *   in parallel) → assemble + store tour
  *         → furnish rooms (in parallel; skip with TOUR_FURNISH=0) → store scenes → finish
  *
  * Same engine and storage layout as the local worker (scripts/worker.mts).
@@ -16,7 +17,9 @@ import { adminClient, claimJob, exportProperty, finishJob, saveNewPlans, storeSc
 import { removeWorkdir, workdir } from "@/lib/admin/workdir";
 import type { FloorPlan } from "@/lib/floorplan";
 import { buildRoomScene, scenePhotos, sceneRooms } from "@/lib/engine/build-scene";
-import { type BuildProgress, type Placements, assembleTour, buildPlans, placePhotos, prepareBuild } from "@/lib/engine/build-tour";
+import {
+  type BuildProgress, type Placements, type SolvedPose, assembleTour, buildPlans, placePhotos, prepareBuild, solvePoses,
+} from "@/lib/engine/build-tour";
 import type { RoomScene } from "@/lib/scene/types";
 import type { Tour } from "@/lib/tour/types";
 
@@ -31,6 +34,10 @@ const BATCH = 2;
  * stalled call can't push the step past Vercel's 300 s limit (docs/two-layer-plan.md, part 1).
  */
 const STEP_BUDGET_MS = Number(process.env.STEP_BUDGET_MS ?? 270_000);
+// Photos per poseBatch step. Solving one pose is CPU work of about 10 s, and the assemble step
+// used to do them all in one invocation: 44 photos (a tour import with 360° views) ran past 300 s
+// on every retry. Small batches in parallel finish in under a minute.
+const POSE_BATCH = 4;
 
 export async function buildTourWorkflow(jobId: string) {
   "use workflow";
@@ -58,7 +65,22 @@ export async function buildTourWorkflow(jobId: string) {
       throw new FatalError(`Every photo failed to place. Last error: ${results.map((r) => r.lastError).find(Boolean) ?? "unknown"}`);
     }
 
-    const stored = await assemble(jobId, job.propertyId, title, plans, placements);
+    const placedFiles = Object.keys(placements);
+    const poseBatches: string[][] = [];
+    for (let i = 0; i < placedFiles.length; i += POSE_BATCH) poseBatches.push(placedFiles.slice(i, i + POSE_BATCH));
+    let posed = 0;
+    await progress(jobId, { step: "poses", label: "Solving camera positions", done: 0, total: placedFiles.length });
+    const poseResults = await Promise.all(
+      poseBatches.map(async (b) => {
+        const r = await poseBatch(job.propertyId, plans, Object.fromEntries(b.map((f) => [f, placements[f]])), b);
+        posed += b.length;
+        await progress(jobId, { step: "poses", label: "Solving camera positions", done: posed, total: placedFiles.length });
+        return r;
+      }),
+    );
+    const poses: Record<string, SolvedPose> = Object.assign({}, ...poseResults);
+
+    const stored = await assemble(jobId, job.propertyId, title, plans, placements, poses);
 
     if (stored.furnish && stored.rooms.length) {
       let furnished = 0;
@@ -144,7 +166,22 @@ async function placeBatch(propertyId: string, title: string, plans: FloorPlan[],
   });
 }
 
-async function assemble(jobId: string, propertyId: string, title: string, plans: FloorPlan[], placements: Placements) {
+async function poseBatch(propertyId: string, plans: FloorPlan[], placements: Placements, files: string[]): Promise<Record<string, SolvedPose>> {
+  "use step";
+  const dir = workdir();
+  const t0 = Date.now();
+  try {
+    await exportProperty(adminClient(), propertyId, dir, { photos: files });
+    const prep = await prepareBuild(dir, plans);
+    const poses = await solvePoses(dir, prep, placements, files);
+    console.log(`[poseBatch] ${files.length} photo(s) in ${((Date.now() - t0) / 1000).toFixed(1)}s, ${Object.values(poses).filter(Boolean).length} posed`);
+    return poses;
+  } finally {
+    removeWorkdir(dir);
+  }
+}
+
+async function assemble(jobId: string, propertyId: string, title: string, plans: FloorPlan[], placements: Placements, poses: Record<string, SolvedPose>) {
   "use step";
   const supabase = adminClient();
   const dir = workdir();
@@ -155,6 +192,7 @@ async function assemble(jobId: string, propertyId: string, title: string, plans:
     const result = await assembleTour(dir, prep, plans, placements, {
       id: property.id,
       title,
+      poses,
       onProgress: (p) => {
         if (Date.now() - last < 1000) return;
         last = Date.now();
