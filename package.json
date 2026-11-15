@@ -14,7 +14,7 @@
     "worker": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/worker.mts",
     "build:scene": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-scene.mts",
     "blender:scene": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/blender-scene.mts",
-    "build:models": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-models.mts",
+    "build:models": "GEMINI_CALL_TIMEOUT_MS=${GEMINI_CALL_TIMEOUT_MS:-360000} tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-models.mts",
     "boxd:snapshot": "tsx --env-file=.env.local scripts/boxd-snapshot.mts"
   },
   "dependencies": {

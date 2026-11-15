@@ -285,14 +285,53 @@ export async function placePhotos(
   return { placements, failures, lastError, usage };
 }
 
-/** Phase 3: solve camera poses for placed photos and assemble the tour. No model calls. */
+/** One placed photo's camera pose, solved against its plan; null when no pose could be fit. */
+export type SolvedPose = { pose: NonNullable<TourPhoto["pose"]>; fit: NonNullable<TourPhoto["fit"]>; precise: boolean; log: string } | null;
+
+/**
+ * Phase 3a: solve the camera pose of each of these placed photos. No model calls, but CPU-heavy
+ * (about 10 s a photo), so the Vercel workflow runs it in small batches, one step each, to stay
+ * inside a step's 300 s; locally assembleTour calls it photo by photo.
+ */
+export async function solvePoses(folder: string, { levelInputs, prepared }: Prepared, cache: Placements, files: string[]): Promise<Record<string, SolvedPose>> {
+  const out: Record<string, SolvedPose> = {};
+  for (const file of files) {
+    const pl = cache[file]?.placement;
+    const level = pl && levelInputs.find((l) => l.id === pl.levelId);
+    if (!pl || !level || !pl.estimate) {
+      out[file] = null;
+      continue;
+    }
+    const { data, info } = await sharp(path.join(folder, file)).rotate().resize(1200).grayscale().raw().toBuffer({ resolveWithObject: true });
+    const outcome = estimatePose({ data: new Uint8Array(data), width: info.width, height: info.height }, pl, level.plan, prepared.features.get(level.id)!);
+    if (!outcome) {
+      out[file] = null;
+      continue;
+    }
+    const fit = outcome.fit;
+    const detail =
+      fit.rmsDeg != null
+        ? `rms ${fit.rmsDeg}° · ${fit.landmarks} lm`
+        : fit.score != null
+          ? `score ${fit.score} · margin ${fit.margin ?? "n/a"} · ceiling ${fit.ceiling} m`
+          : "";
+    out[file] = { pose: outcome.pose, fit, precise: outcome.precise, log: `  ${file.padEnd(14)} ${fit.method.padEnd(14)} ${detail}` };
+  }
+  return out;
+}
+
+/**
+ * Phase 3b: assemble the tour from the placed photos. Poses come from `opts.poses` (solved
+ * elsewhere, see solvePoses) or are solved here. No model calls.
+ */
 export async function assembleTour(
   folder: string,
-  { manifest, levelInputs, prepared }: Prepared,
+  prep: Prepared,
   plans: FloorPlan[],
   cache: Placements,
-  opts: PhaseOptions,
+  opts: PhaseOptions & { poses?: Record<string, SolvedPose> },
 ): Promise<Omit<BuildTourResult, "usage">> {
+  const { manifest, levelInputs } = prep;
   const progress = opts.onProgress ?? (() => {});
   const idOf = (file: string) => path.parse(file).name;
   const levels = stackLevels(levelInputs);
@@ -324,24 +363,12 @@ export async function assembleTour(
     let fit: TourPhoto["fit"] = null;
     let confidence = pl.confidence;
     if (level && pl.estimate) {
-      const { data, info } = await sharp(path.join(folder, p.file)).rotate().resize(1200).grayscale().raw().toBuffer({ resolveWithObject: true });
-      const outcome = estimatePose(
-        { data: new Uint8Array(data), width: info.width, height: info.height },
-        pl,
-        level.plan,
-        prepared.features.get(level.id)!,
-      );
-      if (outcome) {
-        pose = outcome.pose;
-        fit = outcome.fit;
-        if (!outcome.precise) confidence = "low";
-        const detail =
-          fit.rmsDeg != null
-            ? `rms ${fit.rmsDeg}° · ${fit.landmarks} lm`
-            : fit.score != null
-              ? `score ${fit.score} · margin ${fit.margin ?? "n/a"} · ceiling ${fit.ceiling} m`
-              : "";
-        poseLog.push(`  ${p.file.padEnd(14)} ${fit.method.padEnd(14)} ${detail}`);
+      const solved = opts.poses && p.file in opts.poses ? opts.poses[p.file] : (await solvePoses(folder, prep, cache, [p.file]))[p.file];
+      if (solved) {
+        pose = solved.pose;
+        fit = solved.fit;
+        if (!solved.precise) confidence = "low";
+        poseLog.push(solved.log);
       }
     }
     if (level && room) {

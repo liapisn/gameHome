@@ -11,12 +11,14 @@ import type { ObjectBrief, ObjectView } from "./types";
 import { slug } from "./util";
 
 /**
- * Built to measure: fitted kitchens and wardrobes must meet their walls exactly. They get an object
- * worker like everything else, with `fit: "exact"` and the wall run's length in the brief, so the
+ * Built to measure: fitted kitchens and wardrobes must meet their walls exactly. They get a model
+ * from the room agent like everything else, with `fit: "exact"` and the wall run's length in the brief, so the
  * code builds the run to size (an L-shaped kitchen is one brief with both runs).
  */
 export const BUILT_TO_MEASURE = new Set<string>(["kitchen", "wardrobe"]);
 export const builtToMeasure = (i: { kind: string }) => BUILT_TO_MEASURE.has(i.kind);
+/** Upright things are scaled by height; flat ones (rugs, low tables wider than tall) by footprint. */
+export const fitFor = (size: ObjectBrief["size"]) => (size.h >= 0.25 * Math.max(size.w, size.d) ? "upright" : "flat");
 /** Flat on a wall: a framed plane textured with the photo crop, no 3D generation. */
 export const PICTURE = new Set<string>(["art"]);
 

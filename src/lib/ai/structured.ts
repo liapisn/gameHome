@@ -5,6 +5,7 @@
  * ANTHROPIC_API_KEY or Vercel AI Gateway. GEMINI_MODEL / CLAUDE_MODEL override the defaults;
  * a request's own `model` overrides both (Gemini only).
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
@@ -47,15 +48,40 @@ export async function generateStructured<T extends z.ZodType>(
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-const CALL_TIMEOUT_MS = Number(process.env.GEMINI_CALL_TIMEOUT_MS ?? 12 * 60_000);
+/**
+ * One call's limit, stream included. Read on every call, not at import: a script's imports run
+ * before its own code. The model build raises it (build:models sets GEMINI_CALL_TIMEOUT_MS).
+ */
+const callTimeoutMs = () => Number(process.env.GEMINI_CALL_TIMEOUT_MS ?? 90_000);
+const ATTEMPTS = 3;
 
 /** Output token limits from the models API (GET /v1beta/models/<id>). */
 const MAX_OUTPUT: Record<string, number> = { "gemini-4-carbon": 32768, "gemini-4-hydrogen": 65536 };
 
-/** Default for every Gemini call; GEMINI_MODEL overrides it. */
-export const GEMINI_DEFAULT_MODEL = "gemini-4-carbon";
-/** The object workers' model (many workers, about a dozen calls each). */
+/** Default for every Gemini call; GEMINI_MODEL overrides it (benchmark in docs/two-layer-plan.md). */
+export const GEMINI_DEFAULT_MODEL = "gemini-4-hydrogen";
+/** Item code: one call per item, all in parallel. */
 export const geminiObjectModel = () => process.env.GEMINI_MODEL_OBJECT ?? "gemini-4-hydrogen";
+/** The room agent (design sheet, room critique) and the house review. */
+export const geminiRoomModel = () => process.env.GEMINI_MODEL_ROOM ?? "gemini-4-carbon";
+
+// --------------------------------------------------------------------------- step deadline
+
+const deadline = new AsyncLocalStorage<number>();
+
+/**
+ * Run `fn` with a time budget: every model call inside it (however deep) shortens its timeout to
+ * fit, and starts no retry it can't finish. For Vercel workflow steps, which have a hard limit.
+ */
+export function withDeadline<T>(ms: number, fn: () => Promise<T>): Promise<T> {
+  return deadline.run(Date.now() + ms, fn);
+}
+
+/** Time left in the current `withDeadline` budget; Infinity outside one. */
+export function remainingMs(): number {
+  const end = deadline.getStore();
+  return end === undefined ? Infinity : end - Date.now();
+}
 
 /** JSON Schema for Gemini's responseJsonSchema: drop keys it rejects. */
 function geminiSchema(schema: z.ZodType): unknown {
@@ -88,7 +114,7 @@ async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
       // Gemini 4 accepts low, medium and high (not minimal). Thought summaries are streamed (and
       // skipped below) because without them nothing, not even headers, arrives until thinking ends:
       // past fetch's 5-minute header timeout on long calls.
-      thinkingConfig: { thinkingLevel: req.effort ?? "high", includeThoughts: true },
+      thinkingConfig: { thinkingLevel: req.effort ?? "low", includeThoughts: true },
       // The model's full output budget (thinking counts against it): the default is lower, and
       // long placements at high thinking ran out (finishReason MAX_TOKENS).
       maxOutputTokens: MAX_OUTPUT[model] ?? 32768,
@@ -96,7 +122,11 @@ async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
   };
 
   let lastError: unknown;
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+    // Inside a step's budget: keep 10 s for the step's own work, and start nothing under 20 s.
+    const left = remainingMs();
+    if (left < 20_000) throw new Error(`out of step time${lastError ? ` (last error: ${String((lastError as Error)?.message ?? lastError).slice(0, 160)})` : ""}`);
+    const timeout = Math.min(callTimeoutMs(), left - 10_000);
     const backoff = () => {
       // One line per retry, so a slow step says what is happening instead of going quiet.
       console.warn(`gemini ${model}: attempt ${attempt + 1} failed (${String((lastError as Error)?.message ?? lastError).slice(0, 160)}); retrying`);
@@ -112,7 +142,7 @@ async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
         body: JSON.stringify(body),
         // A whole call (stream included) gets at most this long, then it is retried: a stalled
         // stream would otherwise hang the build for good.
-        signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeout),
       });
     } catch (e) {
       lastError = e; // network error: retry
@@ -205,7 +235,7 @@ async function claude<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
   const stream = client.messages.stream({
     model,
     max_tokens: 32000,
-    output_config: { effort: req.effort ?? "high", format: zodOutputFormat(req.schema) },
+    output_config: { effort: req.effort ?? "low", format: zodOutputFormat(req.schema) },
     system: req.system,
     messages: [{ role: "user", content: [...shared, ...req.parts.map(toBlock)] }],
   });

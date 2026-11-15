@@ -1,10 +1,11 @@
 /**
  * Room worker: a furnished room (RoomScene) → its items as generated 3D models, placed where the
- * photos show them and turned to face the way they do. See docs/agent-tree-plan.md.
+ * photos show them and turned to face the way they do. See docs/agent-tree-plan.md; the models
+ * themselves come from the room agent (room-agent.ts, docs/two-layer-plan.md).
  *
  *   1. Group items that are copies of one product; one model per group. A dining table also gets
  *      one chair model, placed for every chair.
- *   2. Brief and run every object worker at once.
+ *   2. Brief every model and hand them all to the room agent (design, code, build, critique).
  *   3. Place each model at its item (positions stay as measured from the photos). Fitted kitchens
  *      and wardrobes stay built to measure; pictures become framed planes with their photo crop;
  *      a model that failed keeps the item's box.
@@ -22,17 +23,15 @@ import { itemBox, pointInPolygon } from "@/lib/scene/lift";
 import type { V3 } from "@/lib/scene/project";
 import type { RoomScene, SceneItem } from "@/lib/scene/types";
 import type { Tour } from "@/lib/tour/types";
-import { PICTURE, briefForItem, builtToMeasure, chairBrief, chairPlacements, itemViews, loadDetections } from "./briefs";
+import { PICTURE, briefForItem, builtToMeasure, chairBrief, chairPlacements, fitFor, itemViews, loadDetections } from "./briefs";
 import { pickTurn, sameModels } from "./critic";
-import { fitFor, runObjectWorker } from "./object-worker";
 import { cropViews } from "./crops";
+import { runRoomAgent } from "./room-agent";
 import type { ObjectBrief, ObjectResult } from "./types";
 import { blenderJob, cachedJson, pool, slug } from "./util";
 
 /** A placed model whose long side (both sides, for flat things) is more than this far off its item's stays a box. */
 const MAX_PROPORTION_OFF = 0.5;
-/** Object workers in flight at once (each builds on its own boxd machine; the pool caps machines). */
-const OBJECT_CONCURRENCY = Number(process.env.OBJECT_CONCURRENCY ?? 30);
 const RENDER_W = 1024;
 
 export interface RoomRun {
@@ -132,13 +131,14 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
   }
   say(`${items.length} item(s): ${briefs.size} model(s) to make for ${generated.length} item(s)${tables.length ? ` + chairs` : ""}, ${items.filter((i) => PICTURE.has(i.kind)).length} picture(s), ${items.filter((i) => i.source !== "photos" && !PICTURE.has(i.kind)).length} rule-added box(es)`);
 
-  // ------------------------------------------------------------------ 2. object workers, all at once
-  const results = new Map<string, ObjectResult>();
-  await pool([...briefs.values()], OBJECT_CONCURRENCY, async (b) => {
-    const r = await runObjectWorker(b, log).catch((err): ObjectResult => ({ assetId: b.assetId, status: "failed", attempts: 0, reason: (err as Error).message }));
-    results.set(b.assetId, r);
-    say(`model ${b.assetId}: ${r.status} (${r.attempts} attempt(s)) — ${r.reason}`);
+  // ------------------------------------------------------------------ 2. the room agent: every model at once
+  const results: Map<string, ObjectResult> = await runRoomAgent({
+    briefs: [...briefs.values()],
+    photos: photos.map((p) => path.resolve(tour.mediaRoot, p.src)),
+    dir,
+    log,
   });
+  for (const r of results.values()) say(`model ${r.assetId}: ${r.status}${r.flag ? ` (flagged: ${r.flag.kind})` : ""} (${r.attempts} attempt(s)) — ${r.reason}`);
 
   // ------------------------------------------------------------------ 3. placements
   const placements: Placement[] = [];
@@ -298,6 +298,8 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     builtToMeasure: items.filter((i) => builtToMeasure(i)).map((i) => i.id),
     pictures: [...pictures.keys()],
     sizeConflicts: [...results.values()].filter((r) => r.sizeConflict).map((r) => ({ assetId: r.assetId, ...r.sizeConflict })),
+    // Last try failed to build with no rounds left; the next build retries these.
+    flagged: [...results.values()].filter((r) => r.flag).map((r) => ({ assetId: r.assetId, flag: r.flag!.kind, error: r.flag!.error })),
     standIns: generated.filter((i) => !placements.some((p) => p.id === i.id)).map((i) => ({ id: i.id, reason: results.get(assetFor.get(i.id)!)?.reason ?? "no model" })),
     checks: final.checks,
     compare: final.cameras.map((c) => path.join(dir, `compare-${c.id}.jpg`)),

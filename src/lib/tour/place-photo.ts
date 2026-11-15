@@ -121,7 +121,6 @@ export async function placePhoto(prepared: PreparedLevels, photo: { name: string
     schema: PlacementSchema,
     system: SYSTEM_PROMPT,
     shared: prepared.shared,
-    effort: "high",
     parts: [
       { type: "text", text: `Photo "${photo.name}":` },
       { type: "image", data: photo.base64, mediaType: "image/jpeg" },
