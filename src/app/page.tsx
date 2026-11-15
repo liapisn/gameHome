@@ -3,31 +3,46 @@ import Link from "next/link";
 const steps = [
   {
     n: "01",
-    title: "Upload the floor plan",
-    body: "A scan, a photo of the paper plan or the architect's PDF. We detect walls, doors, windows and rooms, with real dimensions.",
+    title: "Upload, or paste a listing link",
+    body: "Add the floor plan and the photos you already have. Or paste a Prosperty listing link and we pull in its plans and photos for you.",
   },
   {
     n: "02",
-    title: "Add photos & videos",
-    body: "Phone quality is fine. Walk through each room once on video. Media is matched to rooms automatically.",
+    title: "We read the floor plan",
+    body: "Walls, doors, windows and rooms, with real dimensions and areas. Homes with more than one floor work too. You check the result before anything is built.",
   },
   {
     n: "03",
-    title: "Share a 3D tour",
-    body: "A dollhouse and walk-through tour with accurate room sizes. Share the link, embed it, or list it.",
+    title: "Photos find their rooms",
+    body: "Each photo is matched to the room it shows and pinned where it was taken. Fix anything we got wrong with drag and drop.",
+  },
+  {
+    n: "04",
+    title: "Furniture is rebuilt in 3D",
+    body: "The beds, sofas and tables in your photos are rebuilt as 3D models at the right size and put back where they stand. Walk through it or view it as a dollhouse.",
   },
 ];
 
-const tiers = [
-  { name: "Plan Tour", input: "Floor plan", out: "Accurate 3D dollhouse in seconds" },
-  { name: "Panorama Tour", input: "+ 360° photos", out: "Step through every room" },
-  { name: "Photoreal Tour", input: "+ walkthrough video", out: "Gaussian-splat reconstruction, free to explore" },
+const outputs = [
+  { name: "Floor plan as data", out: "Every room's name, size, doors and windows, not just a picture" },
+  { name: "Photo-placed tour", out: "Each photo pinned in the room and spot it was taken from" },
+  { name: "Furnished 3D model", out: "The whole home with its furniture, built from your photos" },
+  { name: "Share link", out: "Send the tour to renters, buyers or guests, or put it in your listing" },
 ];
 
 const audiences = [
-  { title: "Small owners", body: "Rent or sell faster with fewer wasted viewings. No scanning hardware or photographer needed." },
-  { title: "Property managers", body: "Bulk upload hundreds of units, use team accounts, an API and white-label embeds." },
-  { title: "Short-stay hosts", body: "Guests understand the space before they book. Put the link in your Airbnb or Booking description." },
+  {
+    title: "Owners & hosts",
+    body: "Rent, sell or get booked with fewer wasted viewings. You don't need scanning hardware or a photographer. The photos from your listing are enough.",
+  },
+  {
+    title: "Agencies & property managers",
+    body: "Keep every property in a shared workspace, invite your team, and import listings by link instead of uploading each file.",
+  },
+  {
+    title: "Renters, buyers & guests",
+    body: "Know the layout, the room sizes and where the furniture fits before you go to a viewing.",
+  },
 ];
 
 export default function Home() {
@@ -42,11 +57,14 @@ export default function Home() {
           <a href="#agents" className="hidden text-neutral-600 hover:text-neutral-900 sm:inline">
             For AI agents
           </a>
+          <Link href="/login" className="text-neutral-600 hover:text-neutral-900">
+            Sign in
+          </Link>
           <Link
-            href="/tour/demo"
+            href="/login?next=/app"
             className="rounded-full bg-neutral-900 px-4 py-2 font-medium text-white hover:bg-neutral-700"
           >
-            Try the demo
+            Get started
           </Link>
         </nav>
       </header>
@@ -55,29 +73,29 @@ export default function Home() {
         <section className="mx-auto grid w-full max-w-6xl gap-12 px-4 pt-12 pb-20 sm:px-6 md:grid-cols-[1.1fr_1fr] md:items-center md:pt-20">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-accent">
-              Floor plan → 3D tour
+              Floor plan + photos → furnished 3D home
             </p>
             <h1 className="mt-4 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
               Walk through the home before you visit.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-neutral-600">
-              Upload the floor plan, photos and videos of a house or apartment. gameHome builds a 3D
-              tour you can share to rent, sell or list it, and makes it searchable by people and AI
-              agents.
+              Upload a floor plan and the photos of a house or apartment, or paste a listing link.
+              gameHome reads the plan, places every photo in its room and rebuilds the furniture in
+              3D, so people can walk through the home before they book a viewing.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/tour/demo"
+                href="/login?next=/app"
                 className="rounded-full bg-accent px-6 py-3 text-sm font-medium text-white hover:brightness-110"
+              >
+                Get started free
+              </Link>
+              <Link
+                href="/tour/demo"
+                className="rounded-full border border-black/15 px-6 py-3 text-sm font-medium hover:bg-black/5"
               >
                 Open the 3D demo
               </Link>
-              <a
-                href="#how"
-                className="rounded-full border border-black/15 px-6 py-3 text-sm font-medium hover:bg-black/5"
-              >
-                How it works
-              </a>
             </div>
           </div>
 
@@ -86,8 +104,8 @@ export default function Home() {
 
         <section id="how" className="border-t border-black/10 bg-[#fbf9f5]">
           <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
-            <h2 className="text-3xl font-semibold tracking-tight">Three uploads. One tour.</h2>
-            <div className="mt-10 grid gap-8 md:grid-cols-3">
+            <h2 className="text-3xl font-semibold tracking-tight">From listing photos to a home you can walk through.</h2>
+            <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {steps.map((s) => (
                 <div key={s.n}>
                   <span className="font-mono text-sm text-accent">{s.n}</span>
@@ -98,16 +116,15 @@ export default function Home() {
             </div>
 
             <div className="mt-16 overflow-hidden rounded-2xl border border-black/10">
-              {tiers.map((t, i) => (
+              {outputs.map((o, i) => (
                 <div
-                  key={t.name}
-                  className={`grid gap-1 px-5 py-4 sm:grid-cols-[180px_180px_1fr] sm:items-center ${
+                  key={o.name}
+                  className={`grid gap-1 px-5 py-4 sm:grid-cols-[220px_1fr] sm:items-center ${
                     i > 0 ? "border-t border-black/10" : ""
                   }`}
                 >
-                  <span className="font-semibold">{t.name}</span>
-                  <span className="text-sm text-neutral-500">{t.input}</span>
-                  <span className="text-sm text-neutral-700">{t.out}</span>
+                  <span className="font-semibold">{o.name}</span>
+                  <span className="text-sm text-neutral-700">{o.out}</span>
                 </div>
               ))}
             </div>
@@ -115,7 +132,7 @@ export default function Home() {
         </section>
 
         <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
-          <h2 className="text-3xl font-semibold tracking-tight">For every kind of owner</h2>
+          <h2 className="text-3xl font-semibold tracking-tight">For everyone on both sides of a viewing</h2>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {audiences.map((a) => (
               <div key={a.title} className="rounded-2xl border border-black/10 bg-white/60 p-6">
@@ -130,15 +147,16 @@ export default function Home() {
           <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-20 sm:px-6 md:grid-cols-2 md:items-center">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e8936c]">
-                MCP server
+                Coming next · MCP server
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight">
                 Homes your AI assistant can actually read.
               </h2>
               <p className="mt-4 leading-relaxed text-neutral-400">
-                Every tour is backed by a structured floor plan: rooms, sizes, windows, layout.
-                Agents connect over MCP to search listings and check per-room details that listing
-                portals can&apos;t filter on, then send you straight into the 3D tour.
+                Every home on gameHome already comes with a structured floor plan: rooms, sizes,
+                windows, layout. Next, we&apos;re opening that up over MCP, so AI agents can search
+                homes by per-room details that listing portals can&apos;t filter on and send you
+                straight into the 3D tour.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5 font-mono text-[13px] leading-relaxed">
@@ -165,9 +183,14 @@ export default function Home() {
 
       <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-neutral-500 sm:px-6">
         <span>© 2026 gameHome</span>
-        <Link href="/tour/demo" className="hover:text-neutral-900">
-          Demo tour
-        </Link>
+        <div className="flex gap-5">
+          <Link href="/tour/demo" className="hover:text-neutral-900">
+            Demo tour
+          </Link>
+          <Link href="/login" className="hover:text-neutral-900">
+            Sign in
+          </Link>
+        </div>
       </footer>
     </div>
   );
