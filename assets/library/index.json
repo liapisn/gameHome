@@ -53380,32 +53380,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/77/77c6e3f3.jpg"
   },
   {
-   "id": "abo:B075X4F5T8",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam St. Cloud Modern Armless Straight Back Settee, 49\"W, Berry",
-   "size": {
-    "w": 1.242,
-    "d": 0.946,
-    "h": 0.976
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/8/B075X4F5T8.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/bf/bf129f94.jpg"
-  },
-  {
-   "id": "abo:B075X4JJNN",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam St. Cloud Modern Armless Straight Back Settee, 49\"W, Bear",
-   "size": {
-    "w": 1.242,
-    "d": 0.87,
-    "h": 1.021
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/N/B075X4JJNN.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/34/349bb88a.jpg"
-  },
-  {
    "id": "abo:B075X4JJX4",
    "kind": "sofa",
    "label": "sofa",
@@ -53534,19 +53508,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/L/B075X4PTRL.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/51/51e7bb9a.jpg"
-  },
-  {
-   "id": "abo:B075X4QFK2",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam St. Cloud Modern Armless Straight Back Settee, 49\"W, Brown",
-   "size": {
-    "w": 1.242,
-    "d": 0.87,
-    "h": 1.021
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/2/B075X4QFK2.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/53/53218055.jpg"
   },
   {
    "id": "abo:B075X4QMW7",
@@ -53755,45 +53716,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/M/B075X4WBLM.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/89/894f14a1.jpg"
-  },
-  {
-   "id": "abo:B075X54415",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam St. Cloud Modern Armless Straight Back Settee, 49\"W, Steel",
-   "size": {
-    "w": 1.242,
-    "d": 0.873,
-    "h": 1.022
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/5/B075X54415.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/1f/1f4c8af8.jpg"
-  },
-  {
-   "id": "abo:B075X54417",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam St. Cloud Modern Armless Straight Back Settee, 49\"W, Moondust",
-   "size": {
-    "w": 1.242,
-    "d": 0.87,
-    "h": 1.022
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/7/B075X54417.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/6c/6cf46048.jpg"
-  },
-  {
-   "id": "abo:B075X5441V",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam St. Cloud Modern Armless Straight Back Settee, 49\"W, Pebble",
-   "size": {
-    "w": 1.242,
-    "d": 0.862,
-    "h": 1.026
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/V/B075X5441V.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/bc/bc67f79c.jpg"
   },
   {
    "id": "abo:B075X5446R",
@@ -55772,19 +55694,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/27/270285b5.jpg"
   },
   {
-   "id": "abo:B07BW8Q198",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Rivet Edgewest Modern Right-Facing L-Shape Sectional, Leather, 116\"W, Charcoal",
-   "size": {
-    "w": 2.984,
-    "d": 1.938,
-    "h": 0.877
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/8/B07BW8Q198.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/b6/b61cc814.jpg"
-  },
-  {
    "id": "abo:B07BW8QSD3",
    "kind": "sofa",
    "label": "sofa",
@@ -55811,19 +55720,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/ac/aca67746.jpg"
   },
   {
-   "id": "abo:B07BW8QTXH",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Rivet Edgewest Modern Left-Facing U-Shape Sectional, Leather, 117\"W, Saddle",
-   "size": {
-    "w": 2.956,
-    "d": 1.939,
-    "h": 0.9
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/H/B07BW8QTXH.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/e2/e2de1181.jpg"
-  },
-  {
    "id": "abo:B07BW8QV48",
    "kind": "sofa",
    "label": "sofa",
@@ -55835,19 +55731,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/8/B07BW8QV48.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/0b/0b50be26.jpg"
-  },
-  {
-   "id": "abo:B07BW8QV4D",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Rivet Edgewest Modern Left-Facing Sofa Chaise Sectional, Leather, 115\"W, Charcoal",
-   "size": {
-    "w": 2.993,
-    "d": 1.471,
-    "h": 0.859
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/D/B07BW8QV4D.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/e7/e74c7557.jpg"
   },
   {
    "id": "abo:B07BW8VJ4H",
@@ -55913,19 +55796,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/2/B07BWJCBY2.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/e2/e2b9358d.jpg"
-  },
-  {
-   "id": "abo:B07BWJCPMV",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Rivet Edgewest Modern Right-Facing Sofa Chaise Sectional, Leather, 115\"W, Charcoal",
-   "size": {
-    "w": 2.993,
-    "d": 1.471,
-    "h": 0.859
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/V/B07BWJCPMV.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/e5/e544d589.jpg"
   },
   {
    "id": "abo:B07BWJCPNW",
@@ -56331,32 +56201,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/82/823a9799.jpg"
   },
   {
-   "id": "abo:B07BWK7JV5",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Andover Leather Left-Facing Sofa-Chaise Sectional, 126\"W, Driftwood",
-   "size": {
-    "w": 2.593,
-    "d": 3.46,
-    "h": 0.923
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/5/B07BWK7JV5.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/4c/4ccd62c9.jpg"
-  },
-  {
-   "id": "abo:B07BWK7JWZ",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Rivet Edgewest Modern Right-Facing L-Shape Sectional, Leather, 116\"W, Saddle",
-   "size": {
-    "w": 2.984,
-    "d": 1.938,
-    "h": 0.877
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Z/B07BWK7JWZ.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/24/248ccf56.jpg"
-  },
-  {
    "id": "abo:B07BWKD3BG",
    "kind": "sofa",
    "label": "sofa",
@@ -56368,19 +56212,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/G/B07BWKD3BG.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/c2/c2b9a22a.jpg"
-  },
-  {
-   "id": "abo:B07BWKFN7N",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Rivet Edgewest Modern Right-Facing Sofa Chaise Sectional, Leather, 115\"W, Saddle",
-   "size": {
-    "w": 2.993,
-    "d": 1.471,
-    "h": 0.859
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/N/B07BWKFN7N.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/2c/2cdc443f.jpg"
   },
   {
    "id": "abo:B07BWKFNCS",
@@ -56420,19 +56251,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/P/B07BWL4BTP.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/22/225f52be.jpg"
-  },
-  {
-   "id": "abo:B07BWL4C2F",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Rivet Edgewest Modern Right-Facing U-Shape Sectional, Leather, 117\"W, Saddle",
-   "size": {
-    "w": 2.956,
-    "d": 1.939,
-    "h": 0.9
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/F/B07BWL4C2F.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/45/450d1a5d.jpg"
   },
   {
    "id": "abo:B07BWL4C2Y",
@@ -56565,19 +56383,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/30/306ede9f.jpg"
   },
   {
-   "id": "abo:B07BWM2CSV",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Rivet Edgewest Modern Left-Facing Sofa Chaise Sectional, Leather, 115\"W, Saddle",
-   "size": {
-    "w": 2.993,
-    "d": 1.471,
-    "h": 0.859
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/V/B07BWM2CSV.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/ef/ef670cf0.jpg"
-  },
-  {
    "id": "abo:B07BWM2CTH",
    "kind": "sofa",
    "label": "sofa",
@@ -56589,19 +56394,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/H/B07BWM2CTH.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/c1/c1c53294.jpg"
-  },
-  {
-   "id": "abo:B07BWMQLS9",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Rivet Edgewest Modern Left-Facing U-Shape Sectional, Leather, 117\"W, Charcoal",
-   "size": {
-    "w": 2.956,
-    "d": 1.939,
-    "h": 0.9
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/9/B07BWMQLS9.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/9d/9d973499.jpg"
   },
   {
    "id": "abo:B07BWMQLWM",
@@ -56706,19 +56498,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Z/B07BWMSLVZ.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/dc/dc40e9b7.jpg"
-  },
-  {
-   "id": "abo:B07BWMSLZC",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Rivet Edgewest Modern Right-Facing U-Shape Sectional, Leather, 117\"W, Charcoal",
-   "size": {
-    "w": 2.956,
-    "d": 1.939,
-    "h": 0.9
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/C/B07BWMSLZC.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/56/56769bcf.jpg"
   },
   {
    "id": "abo:B07BWMSQ38",
@@ -57072,19 +56851,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/fc/fce27b60.jpg"
   },
   {
-   "id": "abo:B07DBDRN8S",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Ravenna Home Rai Tufted Arched Armless Loveseat Bench Settee, 52\"W, Light Grey",
-   "size": {
-    "w": 1.335,
-    "d": 0.815,
-    "h": 1.18
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/S/B07DBDRN8S.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/9f/9f523c44.jpg"
-  },
-  {
    "id": "abo:B07DBDWXM8",
    "kind": "sofa",
    "label": "sofa",
@@ -57254,19 +57020,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/e7/e7f20d16.jpg"
   },
   {
-   "id": "abo:B07DBGQD5B",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Ravenna Home Rai Tufted Arched Armless Loveseat Bench Settee, 52\"W, Cream",
-   "size": {
-    "w": 1.335,
-    "d": 0.815,
-    "h": 1.18
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/B/B07DBGQD5B.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/87/8787c510.jpg"
-  },
-  {
    "id": "abo:B07DBGXFP1",
    "kind": "sofa",
    "label": "sofa",
@@ -57291,19 +57044,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/N/B07DBHBB4N.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/e3/e3f741d0.jpg"
-  },
-  {
-   "id": "abo:B07DBHGZP8",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Ravenna Home Rai Tufted Arched Armless Loveseat Bench Settee, 52\"W, Dark Grey",
-   "size": {
-    "w": 1.335,
-    "d": 0.815,
-    "h": 1.18
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/8/B07DBHGZP8.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/3b/3b3069cb.jpg"
   },
   {
    "id": "abo:B07DBK7KBY",
@@ -58268,45 +58008,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/7c/7ceb3cb5.jpg"
   },
   {
-   "id": "abo:B07HYYF5YX",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Left Facing Sofa, Fabric, 75\"W, Linen",
-   "size": {
-    "w": 1.962,
-    "d": 1.034,
-    "h": 0.946
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/X/B07HYYF5YX.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/fe/fee16105.jpg"
-  },
-  {
-   "id": "abo:B07HZ1L353",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Armless Sofa, Fabric, 78\"W, Dove",
-   "size": {
-    "w": 2.092,
-    "d": 1.127,
-    "h": 1.036
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/3/B07HZ1L353.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/e6/e6be8343.jpg"
-  },
-  {
-   "id": "abo:B07HZ1L37B",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Armless Sofa, Fabric, 78\"W, Linen",
-   "size": {
-    "w": 1.962,
-    "d": 1.027,
-    "h": 0.973
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/B/B07HZ1L37B.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/c8/c8ee8f1d.jpg"
-  },
-  {
    "id": "abo:B07HZ1LXVC",
    "kind": "sofa",
    "label": "sofa",
@@ -58372,32 +58073,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/b2/b259037e.jpg"
   },
   {
-   "id": "abo:B07HZ1P1FX",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Left-Facing Sofa, Fabric, 75\"W, Dove",
-   "size": {
-    "w": 1.962,
-    "d": 1.034,
-    "h": 0.946
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/X/B07HZ1P1FX.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/dc/dc3fdf15.jpg"
-  },
-  {
-   "id": "abo:B07HZ1P1HR",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Right-Facing Corner Sofa, Fabric, 90\"W, Linen",
-   "size": {
-    "w": 2.317,
-    "d": 1.061,
-    "h": 0.962
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/R/B07HZ1P1HR.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/fd/fd69e182.jpg"
-  },
-  {
    "id": "abo:B07HZ4NFSL",
    "kind": "sofa",
    "label": "sofa",
@@ -58411,19 +58086,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/ee/ee039d79.jpg"
   },
   {
-   "id": "abo:B07HZ4NG1G",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Left-Facing Sofa Chaise, Fabric, 41\"W, Stone",
-   "size": {
-    "w": 2.237,
-    "d": 1.11,
-    "h": 1.033
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/G/B07HZ4NG1G.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/e1/e13c9e83.jpg"
-  },
-  {
    "id": "abo:B07HZ4XHMX",
    "kind": "sofa",
    "label": "sofa",
@@ -58435,19 +58097,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/X/B07HZ4XHMX.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/f4/f4020c27.jpg"
-  },
-  {
-   "id": "abo:B07HZ4ZQS7",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Left-Facing Corner Sofa, Fabric, 90\"W, Stone",
-   "size": {
-    "w": 2.317,
-    "d": 1.061,
-    "h": 0.962
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/7/B07HZ4ZQS7.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/90/903a1d18.jpg"
   },
   {
    "id": "abo:B07HZ57QD3",
@@ -58500,19 +58149,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/R/B07HZ58Q5R.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/1e/1e68e193.jpg"
-  },
-  {
-   "id": "abo:B07HZ58T4K",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Right-Facing Corner Sofa, Fabric, 90\"W, Dove",
-   "size": {
-    "w": 2.323,
-    "d": 1.053,
-    "h": 0.948
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/K/B07HZ58T4K.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/20/200ca8e9.jpg"
   },
   {
    "id": "abo:B07HZ5D2DC",
@@ -58645,19 +58281,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/c9/c962fa0b.jpg"
   },
   {
-   "id": "abo:B07HZ61DWG",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Right-Facing Sofa, Fabric, 75\"W, Stone",
-   "size": {
-    "w": 1.963,
-    "d": 1.034,
-    "h": 0.946
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/G/B07HZ61DWG.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/4b/4bab2a70.jpg"
-  },
-  {
    "id": "abo:B07HZ65PW3",
    "kind": "sofa",
    "label": "sofa",
@@ -58710,19 +58333,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/f3/f3f600ab.jpg"
   },
   {
-   "id": "abo:B07HZ6GDN1",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Right-Facing Sofa Chaise, Fabric, 41\"W, Stone",
-   "size": {
-    "w": 2.237,
-    "d": 1.11,
-    "h": 1.033
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/1/B07HZ6GDN1.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/59/590efd40.jpg"
-  },
-  {
    "id": "abo:B07HZ6GF42",
    "kind": "sofa",
    "label": "sofa",
@@ -58760,19 +58370,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/1/B07HZ6HH61.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/b7/b7ffbb2f.jpg"
-  },
-  {
-   "id": "abo:B07HZ6HHD6",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Right-Facing Sofa Chaise, Fabric, 41\"W, Dove",
-   "size": {
-    "w": 2.238,
-    "d": 1.11,
-    "h": 1.019
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/6/B07HZ6HHD6.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/e0/e04dc392.jpg"
   },
   {
    "id": "abo:B07HZ6LL7B",
@@ -58840,58 +58437,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/b8/b8fa49b0.jpg"
   },
   {
-   "id": "abo:B07HZ6VT4D",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Left-Facing Corner Sofa, Fabric, 90\"W, Linen",
-   "size": {
-    "w": 2.317,
-    "d": 1.061,
-    "h": 0.962
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/D/B07HZ6VT4D.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/68/6865cfb7.jpg"
-  },
-  {
-   "id": "abo:B07HZ6X7T7",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Right-Facing Corner Sofa, Fabric, 90\"W, Stone",
-   "size": {
-    "w": 2.317,
-    "d": 1.061,
-    "h": 0.962
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/7/B07HZ6X7T7.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/20/20d2494f.jpg"
-  },
-  {
-   "id": "abo:B07HZ6X7ZF",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Left-Facing Sofa Chaise, Fabric, 41\"W, Linen",
-   "size": {
-    "w": 2.237,
-    "d": 1.11,
-    "h": 1.033
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/F/B07HZ6X7ZF.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/46/4641262d.jpg"
-  },
-  {
-   "id": "abo:B07HZ6X7ZK",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Right-Facing Sofa Chaise, Fabric, 41\"W, Linen",
-   "size": {
-    "w": 2.237,
-    "d": 1.11,
-    "h": 1.033
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/K/B07HZ6X7ZK.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/f1/f1c2a56d.jpg"
-  },
-  {
    "id": "abo:B07HZ6X818",
    "kind": "sofa",
    "label": "sofa",
@@ -58903,58 +58448,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/8/B07HZ6X818.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/b0/b07ed291.jpg"
-  },
-  {
-   "id": "abo:B07HZ6YX5Q",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Left-Facing Sofa, Fabric, 75\"W, Stone",
-   "size": {
-    "w": 1.963,
-    "d": 1.034,
-    "h": 0.946
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Q/B07HZ6YX5Q.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/9a/9a13c096.jpg"
-  },
-  {
-   "id": "abo:B07HZ6ZCW7",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Left-Facing Sofa Chaise, Fabric, 41\"W, Dove",
-   "size": {
-    "w": 2.238,
-    "d": 1.11,
-    "h": 1.019
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/7/B07HZ6ZCW7.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/e0/e0302e96.jpg"
-  },
-  {
-   "id": "abo:B07HZ72KXX",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Armless Sofa, Fabric, 78\"W, Stone",
-   "size": {
-    "w": 1.962,
-    "d": 1.027,
-    "h": 0.973
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/X/B07HZ72KXX.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/da/dadba3d6.jpg"
-  },
-  {
-   "id": "abo:B07HZ72L2H",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Right-Facing Sofa, Fabric, 75\"W, Linen",
-   "size": {
-    "w": 1.963,
-    "d": 1.034,
-    "h": 0.946
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/H/B07HZ72L2H.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/83/83d9a26d.jpg"
   },
   {
    "id": "abo:B07HZ73RX2",
@@ -59152,19 +58645,6 @@
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/aa/aa38e6e8.jpg"
   },
   {
-   "id": "abo:B07HZ7TKY7",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Right-Facing Sofa, Fabric, 75\"W, Dove",
-   "size": {
-    "w": 1.963,
-    "d": 1.034,
-    "h": 0.946
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/7/B07HZ7TKY7.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/19/19a7ff4d.jpg"
-  },
-  {
    "id": "abo:B07HZ7TL5X",
    "kind": "sofa",
    "label": "sofa",
@@ -59202,19 +58682,6 @@
    },
    "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/3/B07HZ7X963.glb",
    "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/bd/bd95fd32.jpg"
-  },
-  {
-   "id": "abo:B07HZ81V76",
-   "kind": "sofa",
-   "label": "sofa",
-   "name": "Amazon Brand – Stone & Beam Bagley Sectional Component, Left-Facing Corner Sofa, Fabric, 90\"W, Dove",
-   "size": {
-    "w": 2.317,
-    "d": 1.061,
-    "h": 0.962
-   },
-   "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/6/B07HZ81V76.glb",
-   "thumb": "https://amazon-berkeley-objects.s3.amazonaws.com/images/small/47/4758625b.jpg"
   },
   {
    "id": "abo:B07HZ8J1VF",

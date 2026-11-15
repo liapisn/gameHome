@@ -61,6 +61,8 @@ export function kindOf(type: string, node: string, name: string, size: Size): So
     );
   switch (type) {
     case "SOFA":
+      // Pieces of a modular sectional ("Left L-Section", "Sectional Component") aren't a whole sofa.
+      if (has(name, ["section", "component", "l-section", "left-facing", "right-facing", "armless"])) return null;
       // Single seats sold as sofas ("1 seater", "fauteuil") are armchairs.
       if (size.w < 1.05 || has(name, ["armchair", "fauteuil", "1 seater", "chair"])) return size.w < 1.3 ? K("armchair", "armchair") : K("sofa", "sofa");
       return K("sofa", "sofa");

@@ -149,8 +149,8 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
       // Fitted kitchens and wardrobes have no library match: they stay boxes sized to their wall run.
       if (b.fit === "exact" || BUILT_TO_MEASURE.has(b.kind)) return;
       const picked = await libraryObject(b.assetId, b, `${tour.id}/${b.assetId}`).catch((err) => {
-        say(`model ${b.assetId}: library failed — ${(err as Error).message.slice(0, 200)}`);
-        return null;
+        say(`model ${b.assetId}: library failed, keeping the box — ${(err as Error).message.slice(0, 200)}`);
+        return undefined;
       });
       if (!picked) {
         if (picked === null) say(`model ${b.assetId}: no library model for ${b.kind} "${b.label}", keeping the box`);
