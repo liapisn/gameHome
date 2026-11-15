@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { FloorPlan } from "@/lib/floorplan";
+import { type FloorPlan, uniqueRoomNames } from "@/lib/floorplan";
 import type { BuildProgress, Manifest } from "@/lib/engine/build-tour";
 import type { RoomScene } from "@/lib/scene/types";
 import type { Tour } from "@/lib/tour/types";
@@ -224,6 +224,13 @@ export async function finishReadJob(supabase: Admin, jobId: string, status: "suc
 
 /** Store a floor's freshly read plan, unless its drawing was replaced meanwhile; photo room tags on the floor are cleared. */
 export async function storeReadPlan(supabase: Admin, levelId: string, floorplanPath: string, plan: FloorPlan): Promise<boolean> {
+  // Room names are unique across the whole home, not just this floor: a second floor's
+  // "Bedroom" carries on the numbering of the first.
+  const { data: level } = await supabase.from("levels").select("property_id").eq("id", levelId).maybeSingle();
+  if (level) {
+    const { data: others } = await supabase.from("levels").select("plan").eq("property_id", level.property_id).neq("id", levelId);
+    uniqueRoomNames(plan.rooms, (others ?? []).flatMap((o) => (o.plan as unknown as FloorPlan | null)?.rooms.map((r) => r.name) ?? []));
+  }
   const { data, error } = await supabase
     .from("levels")
     .update({ plan: plan as unknown as Json })

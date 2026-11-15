@@ -50,8 +50,9 @@ export function FloorplanManager({ propertyId, orgId, levels }: { propertyId: st
     <div>
       <p className="max-w-2xl text-sm text-neutral-600">
         Upload one floor plan per floor: a scan, a photo of the paper plan, or an export from the architect. Plans
-        with printed room dimensions give the most accurate 3D model. Each plan is read into rooms; check them
-        and fix any name or kind of room that came out wrong, since photos are matched to these rooms.
+        with printed room dimensions give the most accurate 3D model. Each plan is read into rooms as soon as it
+        is uploaded; check them and fix any name or kind of room that came out wrong, since photos are matched to
+        these rooms. Every room needs a name of its own (Bedroom 1, Bedroom 2, Balcony 1…).
       </p>
 
       {error && (
@@ -93,7 +94,6 @@ export function FloorplanManager({ propertyId, orgId, levels }: { propertyId: st
               });
               router.refresh();
             }}
-            readOnUpload
           />
         ))}
       </div>
@@ -120,7 +120,6 @@ function LevelCard({
   onRead,
   onRenameRoom,
   onRetype,
-  readOnUpload,
 }: {
   level: Level;
   canDelete: boolean;
@@ -131,7 +130,6 @@ function LevelCard({
   onRead: () => Promise<void>;
   onRenameRoom: (roomId: string, name: string) => void;
   onRetype: (roomId: string, type: RoomType) => void;
-  readOnUpload?: boolean;
 }) {
   const [local, setStatus] = useState<"idle" | "uploading" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -167,8 +165,9 @@ function LevelCard({
       setMessage(e instanceof Error ? e.message : "Upload failed");
       return;
     }
-    if (readOnUpload) await read();
-    else setStatus("idle");
+    // Uploading starts reading the rooms (setFloorplan): show it as reading until the page has the job.
+    setStartedFrom({ job: jobSince, plan: planAt });
+    setStatus("idle");
   };
 
   return (

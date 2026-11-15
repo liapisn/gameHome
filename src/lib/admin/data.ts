@@ -139,8 +139,12 @@ export async function getPropertyMedia(id: string) {
 
 export type PropertyMedia = NonNullable<Awaited<ReturnType<typeof getPropertyMedia>>>;
 
-export function defaultLevelName(index: number) {
-  if (index === 0) return "Ground floor";
-  const suffix = index === 1 ? "st" : index === 2 ? "nd" : index === 3 ? "rd" : "th";
-  return `${index}${suffix} floor`;
+/** Default name of the floor `floor` storeys above the ground (0 = ground floor, -1 = basement). */
+export function defaultLevelName(floor: number) {
+  if (floor === 0) return "Ground floor";
+  if (floor < 0) return floor === -1 ? "Basement" : `Basement ${-floor}`;
+  const teen = floor % 100 >= 11 && floor % 100 <= 13;
+  const last = floor % 10;
+  const suffix = teen ? "th" : last === 1 ? "st" : last === 2 ? "nd" : last === 3 ? "rd" : "th";
+  return `${floor}${suffix} floor`;
 }

@@ -1,4 +1,4 @@
-import type { FloorPlan, Opening, Point, Room, Wall } from "@/lib/floorplan";
+import { type FloorPlan, type Opening, type Point, type Room, type Wall, uniqueRoomNames } from "@/lib/floorplan";
 import type { ParsedPlan } from "./schema";
 
 const SNAP_TOLERANCE = 0.15; // m: coordinates closer than this are treated as the same wall line
@@ -153,6 +153,9 @@ export function buildFloorPlan(
           : {}),
       };
     });
+
+  // Photos are matched to rooms by name: no two rooms share one ("Bedroom 1", "Bedroom 2").
+  uniqueRoomNames(rooms);
 
   // 2. Shift so the plan starts at (0, 0).
   const minX = Math.min(...rooms.flatMap((r) => r.polygon.map((p) => p[0])));

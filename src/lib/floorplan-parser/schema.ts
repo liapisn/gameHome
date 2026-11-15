@@ -10,7 +10,7 @@ import { ROOM_TYPES } from "@/lib/floorplan";
 const PointSchema = z.object({ x: z.number(), y: z.number() });
 
 export const ParsedRoomSchema = z.object({
-  name: z.string().describe("Room label as printed, e.g. 'PRIMARY BEDROOM'. Invent a short name for unlabeled spaces."),
+  name: z.string().describe("Room label as printed, e.g. 'PRIMARY BEDROOM'. Invent a short name for unlabeled spaces. Every room gets a name of its own: number repeats, e.g. 'BEDROOM 1', 'BEDROOM 2', 'BALCONY 1', 'BALCONY 2'."),
   type: z.enum(ROOM_TYPES),
   labeledWidth: z.number().nullable().describe("First printed dimension in meters (horizontal on the drawing), or null"),
   labeledDepth: z.number().nullable().describe("Second printed dimension in meters, or null"),
