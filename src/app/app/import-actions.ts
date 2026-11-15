@@ -1,24 +1,42 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import sharp from "sharp";
+import { z } from "zod";
 import { defaultLevelName, requireSession } from "@/lib/admin/data";
 import { MAX_PHOTOS_PER_PROPERTY, MEDIA_BUCKET, floorplanPath, photoPath, thumbPathFor } from "@/lib/admin/media-paths";
 import { fetchProspertyListing, prospertyListingId } from "@/lib/import/prosperty";
-import type { FormState } from "./actions";
 
-/** Prosperty serves its images from this CDN only; anything else in the payload is not fetched. */
+/*
+ * A Prosperty import runs as a few short steps that the page calls in turn, so it can show
+ * where it is (an import of 25 photos takes a minute or two):
+ *   startProspertyImport → importProspertyPhotos (in batches) → importProspertyFloorplans
+ */
+
+/** Prosperty serves its images from this CDN only; no other URL is ever fetched. */
 const IMAGE_HOST = "d1klmnstaodrbh.cloudfront.net";
-const PARALLEL = 4;
+/** Most photos one importProspertyPhotos call takes; they're processed in parallel. */
+const PHOTO_BATCH = 4;
+
+const ImageUrl = z.url().refine((u) => {
+  const url = new URL(u);
+  return url.protocol === "https:" && url.hostname === IMAGE_HOST;
+}, "Not a Prosperty image");
 
 type Supabase = Awaited<ReturnType<typeof requireSession>>["supabase"];
 type Encoded = { data: Buffer; width: number; height: number; bytes: number };
 
+export type ImportPlan = {
+  propertyId: string;
+  title: string;
+  summary: string;
+  photoUrls: string[];
+  floorplanUrls: string[];
+};
+
 async function download(url: string): Promise<Buffer> {
-  if (new URL(url).hostname !== IMAGE_HOST) throw new Error(`Unexpected image host in ${url}`);
-  const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
+  const res = await fetch(ImageUrl.parse(url), { signal: AbortSignal.timeout(60_000) });
   if (!res.ok) throw new Error(`Image download failed (${res.status})`);
   return Buffer.from(await res.arrayBuffer());
 }
@@ -38,117 +56,165 @@ async function upload(supabase: Supabase, path: string, file: Encoded) {
   if (error) throw new Error(error.message);
 }
 
-/** Map with at most `limit` in flight, keeping order; a failed item becomes an Error. */
-async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<(R | Error)[]> {
-  const out: (R | Error)[] = new Array(items.length);
-  let next = 0;
-  await Promise.all(
-    Array.from({ length: Math.min(limit, items.length) }, async () => {
-      while (next < items.length) {
-        const i = next++;
-        out[i] = await fn(items[i]).catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))));
-      }
-    }),
-  );
-  return out;
+/** A property of the signed-in user's org (RLS decides), or throw. */
+async function ownProperty(propertyId: string) {
+  z.uuid().parse(propertyId);
+  const { supabase, org } = await requireSession();
+  const { data, error } = await supabase.from("properties").select("id").eq("id", propertyId).eq("org_id", org.id).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Property not found");
+  return { supabase, orgId: org.id };
+}
+
+type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+const fail = (e: unknown): { ok: false; error: string } => ({
+  ok: false,
+  error: e instanceof Error ? e.message : "Something went wrong.",
+});
+
+/** Step 1: read the listing and create the property with its details and floors. */
+export async function startProspertyImport(link: string): Promise<Result<ImportPlan>> {
+  const listingId = prospertyListingId(link);
+  if (!listingId) return { ok: false, error: "Paste a link like theprosperty.com/listings/16042" };
+  try {
+    const listing = await fetchProspertyListing(listingId);
+    const { supabase, org } = await requireSession();
+    const { data: property, error } = await supabase
+      .from("properties")
+      .insert({
+        org_id: org.id,
+        title: listing.title.slice(0, 120),
+        kind: listing.kind,
+        city: listing.city,
+        area: listing.area,
+        lat: listing.lat,
+        lng: listing.lng,
+        total_area_m2: listing.totalAreaM2 != null && listing.totalAreaM2 <= 10000 ? listing.totalAreaM2 : null,
+        bedrooms: listing.bedrooms,
+        bathrooms: listing.bathrooms,
+        description: listing.description,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+
+    const { error: levelsError } = await supabase
+      .from("levels")
+      .insert(
+        Array.from({ length: listing.levels }, (_, i) => ({ property_id: property.id, name: defaultLevelName(i), sort: i })),
+      );
+    if (levelsError) throw new Error(levelsError.message);
+    revalidatePath("/app");
+
+    const summary = [
+      listing.totalAreaM2 && `${listing.totalAreaM2} m²`,
+      listing.bedrooms != null && `${listing.bedrooms} bed`,
+      listing.bathrooms != null && `${listing.bathrooms} bath`,
+      [listing.area, listing.city].filter(Boolean).join(", "),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    return {
+      ok: true,
+      value: {
+        propertyId: property.id,
+        title: listing.title,
+        summary,
+        photoUrls: listing.photoUrls.slice(0, MAX_PHOTOS_PER_PROPERTY),
+        floorplanUrls: listing.floorplanUrls.slice(0, listing.levels),
+      },
+    };
+  } catch (e) {
+    return fail(e);
+  }
 }
 
 /**
- * Create a property from a Prosperty listing link: details, floors, all photos and the
- * floor plan(s), copied into our storage. Reading the plan stays a separate step.
+ * Step 2, once per batch: copy these photos (download, encode full + thumb, upload) and record
+ * them from position `startSort`, keeping listing order. Returns how many were saved.
  */
-export async function importFromProsperty(_prev: FormState, formData: FormData): Promise<FormState> {
-  const link = String(formData.get("url") ?? "");
-  const listingId = prospertyListingId(link);
-  if (!listingId) return { fieldErrors: { url: "Paste a link like theprosperty.com/listings/16042" } };
-
-  let listing;
+export async function importProspertyPhotos(
+  propertyId: string,
+  urls: string[],
+  startSort: number,
+): Promise<Result<{ saved: number; failed: number }>> {
   try {
-    listing = await fetchProspertyListing(listingId);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Could not read the listing." };
-  }
+    const parsed = z.array(ImageUrl).min(1).max(PHOTO_BATCH).parse(urls);
+    const sortFrom = z.number().int().min(0).max(MAX_PHOTOS_PER_PROPERTY).parse(startSort);
+    const { supabase, orgId } = await ownProperty(propertyId);
 
-  const { supabase, org } = await requireSession();
-  const { data: property, error } = await supabase
-    .from("properties")
-    .insert({
-      org_id: org.id,
-      title: listing.title.slice(0, 120),
-      kind: listing.kind,
-      city: listing.city,
-      area: listing.area,
-      lat: listing.lat,
-      lng: listing.lng,
-      total_area_m2: listing.totalAreaM2 != null && listing.totalAreaM2 <= 10000 ? listing.totalAreaM2 : null,
-      bedrooms: listing.bedrooms,
-      bathrooms: listing.bathrooms,
-      description: listing.description,
-    })
-    .select("id")
-    .single();
-  if (error) return { error: error.message };
-
-  const { data: levels, error: levelsError } = await supabase
-    .from("levels")
-    .insert(
-      Array.from({ length: listing.levels }, (_, i) => ({ property_id: property.id, name: defaultLevelName(i), sort: i })),
-    )
-    .select("id, sort");
-  if (levelsError) return { error: levelsError.message };
-  levels.sort((a, b) => a.sort - b.sort);
-
-  // Photos: download, encode full + thumb, upload; record the ones that made it, in listing order.
-  const photos = await mapLimited(listing.photoUrls.slice(0, MAX_PHOTOS_PER_PROPERTY), PARALLEL, async (url) => {
-    const source = await download(url);
-    const [full, thumb] = await Promise.all([encode(source, 2560, 85), encode(source, 480, 75)]);
-    const path = photoPath(org.id, property.id, randomUUID());
-    await Promise.all([upload(supabase, path, full), upload(supabase, thumbPathFor(path), thumb)]);
-    return { path, full };
-  });
-  const saved = photos.filter((p): p is Exclude<typeof p, Error> => !(p instanceof Error));
-  if (saved.length) {
-    const { error: mediaError } = await supabase.from("media").insert(
-      saved.map((p, sort) => ({
-        property_id: property.id,
-        kind: "photo" as const,
-        storage_path: p.path,
-        width: p.full.width,
-        height: p.full.height,
-        bytes: p.full.bytes,
-        sort,
-      })),
+    const results = await Promise.allSettled(
+      parsed.map(async (url) => {
+        const source = await download(url);
+        const [full, thumb] = await Promise.all([encode(source, 2560, 85), encode(source, 480, 75)]);
+        const path = photoPath(orgId, propertyId, randomUUID());
+        await Promise.all([upload(supabase, path, full), upload(supabase, thumbPathFor(path), thumb)]);
+        return { path, full };
+      }),
     );
-    if (mediaError) return { error: mediaError.message };
+    const rows = results.flatMap((r, i) =>
+      r.status === "fulfilled"
+        ? [
+            {
+              property_id: propertyId,
+              kind: "photo" as const,
+              storage_path: r.value.path,
+              width: r.value.full.width,
+              height: r.value.full.height,
+              bytes: r.value.full.bytes,
+              sort: sortFrom + i,
+            },
+          ]
+        : [],
+    );
+    if (rows.length) {
+      const { error } = await supabase.from("media").insert(rows);
+      if (error) throw new Error(error.message);
+    }
+    const failed = results.filter((r) => r.status === "rejected");
+    if (failed.length) console.error(`Prosperty import ${propertyId}: ${failed.length} photo(s) failed`, failed);
+    return { ok: true, value: { saved: rows.length, failed: failed.length } };
+  } catch (e) {
+    return fail(e);
   }
+}
 
-  // Floor plans: the n-th plan goes on the n-th floor. Plans keep more resolution for the parser.
-  const plans = await mapLimited(listing.floorplanUrls.slice(0, levels.length), PARALLEL, async (url) => {
-    const file = await encode(await download(url), 4096, 92);
-    const path = floorplanPath(org.id, property.id, randomUUID());
-    await upload(supabase, path, file);
-    return { path, file };
-  });
-  for (const [i, plan] of plans.entries()) {
-    if (plan instanceof Error) continue;
-    const levelId = levels[i].id;
-    const { error: planMediaError } = await supabase.from("media").insert({
-      property_id: property.id,
-      level_id: levelId,
-      kind: "floorplan",
-      storage_path: plan.path,
-      width: plan.file.width,
-      height: plan.file.height,
-      bytes: plan.file.bytes,
-    });
-    if (planMediaError) return { error: planMediaError.message };
-    const { error: levelError } = await supabase.from("levels").update({ floorplan_path: plan.path }).eq("id", levelId);
-    if (levelError) return { error: levelError.message };
+/** Step 3: copy the floor plans, the n-th plan onto the n-th floor. */
+export async function importProspertyFloorplans(propertyId: string, urls: string[]): Promise<Result<{ saved: number }>> {
+  try {
+    const parsed = z.array(ImageUrl).max(10).parse(urls);
+    const { supabase, orgId } = await ownProperty(propertyId);
+    const { data: levels, error } = await supabase
+      .from("levels")
+      .select("id")
+      .eq("property_id", propertyId)
+      .order("sort");
+    if (error) throw new Error(error.message);
+
+    let saved = 0;
+    for (const [i, url] of parsed.slice(0, levels.length).entries()) {
+      // Plans keep more resolution so printed dimensions stay legible for the parser.
+      const file = await encode(await download(url), 4096, 92);
+      const path = floorplanPath(orgId, propertyId, randomUUID());
+      await upload(supabase, path, file);
+      const { error: mediaError } = await supabase.from("media").insert({
+        property_id: propertyId,
+        level_id: levels[i].id,
+        kind: "floorplan",
+        storage_path: path,
+        width: file.width,
+        height: file.height,
+        bytes: file.bytes,
+      });
+      if (mediaError) throw new Error(mediaError.message);
+      const { error: levelError } = await supabase.from("levels").update({ floorplan_path: path }).eq("id", levels[i].id);
+      if (levelError) throw new Error(levelError.message);
+      saved++;
+    }
+    revalidatePath(`/app/properties/${propertyId}`, "layout");
+    return { ok: true, value: { saved } };
+  } catch (e) {
+    return fail(e);
   }
-
-  const failed = [...photos, ...plans].filter((p) => p instanceof Error);
-  if (failed.length) console.error(`Prosperty import ${listingId}: ${failed.length} image(s) failed`, failed);
-
-  revalidatePath("/app");
-  redirect(`/app/properties/${property.id}`);
 }
