@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { defaultLevelName, requireSession } from "@/lib/admin/data";
-import { MEDIA_BUCKET, thumbPathFor } from "@/lib/admin/media-paths";
 
 export type FormState = { error?: string; fieldErrors?: Record<string, string>; saved?: boolean };
 
@@ -117,24 +116,10 @@ export async function updateProperty(id: string, _prev: FormState, formData: For
   return { saved: true };
 }
 
+/** Soft delete: the property is hidden but its row, floors, media and files are kept. */
 export async function deleteProperty(id: string) {
   const supabase = await createClient();
-
-  // Storage objects aren't removed by the database cascade, so delete the files first.
-  const { data: media, error: mediaError } = await supabase
-    .from("media")
-    .select("kind, storage_path")
-    .eq("property_id", id);
-  if (mediaError) throw new Error(mediaError.message);
-  const paths = (media ?? []).flatMap((m) =>
-    m.kind === "photo" ? [m.storage_path, thumbPathFor(m.storage_path)] : [m.storage_path],
-  );
-  for (let i = 0; i < paths.length; i += 100) {
-    const { error: storageError } = await supabase.storage.from(MEDIA_BUCKET).remove(paths.slice(i, i + 100));
-    if (storageError) throw new Error(storageError.message);
-  }
-
-  const { error } = await supabase.from("properties").delete().eq("id", id);
+  const { error } = await supabase.rpc("soft_delete_property", { p_id: id });
   if (error) throw new Error(error.message);
   revalidatePath("/app");
   redirect("/app");
