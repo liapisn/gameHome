@@ -4,7 +4,7 @@
  * share a disk, so each exports the uploads it needs from Storage into its own temp folder and
  * passes plans and placements on as step results.
  *
- *   claim → plans → place photos (batches of 4, in parallel) → assemble + store tour
+ *   claim → plans → place photos (batches of 2, in parallel) → assemble + store tour
  *         → furnish rooms (in parallel; skip with TOUR_FURNISH=0) → store scenes → finish
  *
  * Same engine and storage layout as the local worker (scripts/worker.mts).
@@ -19,7 +19,12 @@ import { type BuildProgress, type Placements, assembleTour, buildPlans, placePho
 import type { RoomScene } from "@/lib/scene/types";
 import type { Tour } from "@/lib/tour/types";
 
-const BATCH = 4;
+// Photos per placeBatch step. A batch of 4 took up to 215s, and on Hobby an invocation is cut
+// off at 300s. Small batches stay well inside it.
+// Also set WORKFLOW_MAX_INLINE_STEPS=1 on Vercel. By default the SDK runs 3 new steps inside one
+// invocation, and they all share its 300s. With it set to 1, each extra batch is queued into an
+// invocation of its own; those run in parallel, so the wait is about one batch.
+const BATCH = 2;
 
 export async function buildTourWorkflow(jobId: string) {
   "use workflow";
@@ -114,10 +119,17 @@ async function readPlans(jobId: string, propertyId: string): Promise<{ plans: Fl
 async function placeBatch(propertyId: string, title: string, plans: FloorPlan[], files: string[]) {
   "use step";
   const dir = workdir();
+  const t0 = Date.now();
   try {
     await exportProperty(adminClient(), propertyId, dir, { photos: files });
     const prep = await prepareBuild(dir, plans);
+    const t1 = Date.now();
     const r = await placePhotos(dir, prep, files, { id: propertyId, title, concurrency: BATCH });
+    const t2 = Date.now();
+    console.log(
+      `[placeBatch] ${files.length} photo(s): setup ${((t1 - t0) / 1000).toFixed(1)}s, place ${((t2 - t1) / 1000).toFixed(1)}s, ` +
+        `${Object.keys(r.placements).length} placed, ${r.failures} failed`,
+    );
     return { placements: r.placements, lastError: r.lastError };
   } finally {
     removeWorkdir(dir);
