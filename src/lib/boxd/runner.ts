@@ -22,6 +22,8 @@ export const SNAPSHOT = process.env.BOXD_SNAPSHOT ?? "gh-blender-5-3";
 export const POOL_LABEL = { app: "gamehome-blender" } as const;
 
 const MAX_MACHINES = Number(process.env.BOXD_MACHINES ?? 30);
+/** Lowered at run time when boxd says the account is at its machine limit. */
+let cap = MAX_MACHINES;
 const DELETE_AFTER_S = 3600;
 const MAX_REUSE_AGE_MS = 45 * 60_000;
 const EXEC_TIMEOUT_MS = Number(process.env.BOXD_EXEC_TIMEOUT_MS ?? 10 * 60_000);
@@ -106,10 +108,18 @@ async function acquire(): Promise<Lease> {
       if (Date.now() - l.born < MAX_REUSE_AGE_MS) return l;
       void dropMachine(l);
     }
-    if (live.size + starting < MAX_MACHINES) {
+    if (live.size + starting < cap) {
       starting++;
       try {
         return await startMachine();
+      } catch (e) {
+        if (!isMachineLimit(e)) throw e;
+        // The account's machine limit (other machines count too): run with what we have.
+        const had = cap;
+        cap = Math.max(1, live.size + starting - 1);
+        if (cap < had) console.warn(`boxd: account machine limit reached; pool capped at ${cap} machine(s)`);
+        if (live.size === 0) await new Promise((r) => setTimeout(r, 10_000));
+        continue;
       } finally {
         starting--;
       }
@@ -118,9 +128,17 @@ async function acquire(): Promise<Lease> {
   }
 }
 
+/** boxd refuses a new machine because the account is at its machine limit. */
+const isMachineLimit = (e: unknown) => /can have \d+ machines|machine limit|quota/i.test(String((e as Error)?.message ?? e));
+
 function release(lease: Lease, discard: boolean) {
-  if (discard || closing) void dropMachine(lease);
-  else idle.push(lease);
+  if (discard || closing) {
+    // Wake the next job only once the machine is gone: under the account's machine limit, its
+    // slot is what lets the next one start.
+    void dropMachine(lease).finally(() => waiters.shift()?.());
+    return;
+  }
+  idle.push(lease);
   waiters.shift()?.();
 }
 

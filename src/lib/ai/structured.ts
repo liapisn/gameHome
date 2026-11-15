@@ -49,6 +49,9 @@ const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 const CALL_TIMEOUT_MS = Number(process.env.GEMINI_CALL_TIMEOUT_MS ?? 12 * 60_000);
 
+/** Output token limits from the models API (GET /v1beta/models/<id>). */
+const MAX_OUTPUT: Record<string, number> = { "gemini-4-carbon": 32768, "gemini-4-hydrogen": 65536 };
+
 /** Default for every Gemini call; GEMINI_MODEL overrides it. */
 export const GEMINI_DEFAULT_MODEL = "gemini-4-carbon";
 /** The object workers' model (many workers, about a dozen calls each). */
@@ -86,6 +89,9 @@ async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
       // skipped below) because without them nothing, not even headers, arrives until thinking ends:
       // past fetch's 5-minute header timeout on long calls.
       thinkingConfig: { thinkingLevel: req.effort ?? "high", includeThoughts: true },
+      // The model's full output budget (thinking counts against it): the default is lower, and
+      // long placements at high thinking ran out (finishReason MAX_TOKENS).
+      maxOutputTokens: MAX_OUTPUT[model] ?? 32768,
     },
   };
 
@@ -142,6 +148,13 @@ async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
       }
     } catch (e) {
       lastError = e; // stream cut off: retry
+      await backoff();
+      continue;
+    }
+    if (finishReason === "MAX_TOKENS" && body.generationConfig.thinkingConfig.thinkingLevel !== "low") {
+      // Thinking used up the output budget: once more with less thinking.
+      lastError = new Error("Gemini did not finish: MAX_TOKENS");
+      body.generationConfig.thinkingConfig.thinkingLevel = body.generationConfig.thinkingConfig.thinkingLevel === "high" ? "medium" : "low";
       await backoff();
       continue;
     }

@@ -249,6 +249,7 @@ export async function runCodeObjectWorker(brief: ObjectBrief, log: (m: string) =
 
     // Build and render on boxd (cached as result.json).
     const resultFile = path.join(dir, "result.json");
+    let infraError: string | null = null;
     if (!fs.existsSync(resultFile)) {
       const job = { code: codeFile, size: brief.size, free: brief.kind === "plant" ? ["w", "d"] : [], outDir: dir, res: 640, samples: 24 };
       // A Blender that doesn't finish is retried once on a fresh machine (machines occasionally
@@ -259,9 +260,18 @@ export async function runCodeObjectWorker(brief: ObjectBrief, log: (m: string) =
         } catch (err) {
           const msg = (err as Error).message.split("\n").slice(-8).join("\n");
           if (attempt === 1) say(`run ${n}: Blender did not finish, retrying (${msg.split("\n")[0]})`);
-          else fs.writeFileSync(resultFile, JSON.stringify({ ok: false, error: `Blender did not finish: ${msg}`, renders: {} }, null, 2));
+          // Not written to disk: a machine problem is not the code's fault, and a rerun should try again.
+          else infraError = `Blender did not finish: ${msg}`;
         }
       }
+    }
+    if (infraError) {
+      // Machines are failing (account limit, pool shutting down, stalls): stop this object here
+      // rather than spend revision runs on it; it stays uncached, so the next build retries it.
+      say(`run ${n}: ${infraError.split("\n")[0]}; stopping this object`);
+      runs.pop();
+      fs.rmSync(dir, { recursive: true, force: true });
+      break;
     }
     run.result = JSON.parse(fs.readFileSync(resultFile, "utf8")) as RunResult;
     if (!run.result.ok) {

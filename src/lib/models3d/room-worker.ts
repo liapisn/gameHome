@@ -85,8 +85,10 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
   const items = scene.items.map((i) => ({ ...i, views: itemViews(i, detections).filter((v) => gated.has(v.photoId)) }));
 
   // ------------------------------------------------------------------ 1. what gets a model
-  // Every item gets a model (fitted units built to measure, see briefs.ts) except pictures.
-  const generated = items.filter((i) => !PICTURE.has(i.kind));
+  // Items seen in the photos get a model (fitted units built to measure, see briefs.ts), except
+  // pictures. Items added by rules (a room the photos show empty) stay boxes: a convincing model
+  // would show furniture the home doesn't have.
+  const generated = items.filter((i) => !PICTURE.has(i.kind) && i.source === "photos");
   const firstCrops = new Map<string, string | null>();
   for (const i of generated) {
     if (!i.views.length) {
@@ -260,7 +262,11 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
       fs.mkdirSync(odir, { recursive: true });
       const photoCrop = await cropOf(path.resolve(tour.mediaRoot, photo.src), path.join(odir, "photo.jpg"));
       const renderCrops = await Promise.all(turns.map((t) => cropOf(renders[t][view.photoId], path.join(odir, `turn-${t}.jpg`))));
-      const v = await cachedJson(path.join(odir, "verdict.json"), () => pickTurn(p.label, photoCrop, renderCrops));
+      // One item's failed check must not sink the room: it keeps its turn.
+      const v = await cachedJson(path.join(odir, "verdict.json"), () => pickTurn(p.label, photoCrop, renderCrops)).catch((err) => {
+        say(`turn ${p.id}: check failed (${(err as Error).message.slice(0, 80)}), kept`);
+        return { turn: null, wrongModel: false, reason: "check failed" };
+      });
       // "Wrong model" means the crop showed something else (often a neighbour): its turn means nothing.
       p.turn = v.wrongModel ? 0 : (v.turn ?? 0);
       say(`turn ${p.id}: ${v.turn ?? "unclear, kept"}°${v.wrongModel ? " (looks like the wrong model)" : ""} — ${v.reason}`);
