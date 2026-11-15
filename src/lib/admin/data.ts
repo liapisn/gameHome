@@ -88,6 +88,8 @@ export async function getProperty(id: string) {
 }
 
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
+/** A background job still "running" after this long has died without saying so. */
+const STALE_JOB_MS = 45 * 60_000;
 
 /** Property + floors + photos with short-lived signed URLs for display. */
 export async function getPropertyMedia(id: string) {
@@ -104,13 +106,25 @@ export async function getPropertyMedia(id: string) {
   if (!property) return null;
 
   // Each floor's latest plan read (src/workflows/read-plan.ts): shown while it runs, or if it failed.
-  const { data: reads } = await supabase
+  const { data: jobs } = await supabase
     .from("jobs")
-    .select("status, error, progress, created_at")
+    .select("type, status, error, progress, created_at")
     .eq("property_id", id)
-    .eq("type", "read_plan")
+    .in("type", ["read_plan", "estimate_rooms"])
     .order("created_at", { ascending: false })
     .limit(50);
+  const reads = jobs?.filter((j) => j.type === "read_plan");
+
+  // Rooms estimated in the background after an import's plan reads (src/workflows/read-plan.ts):
+  // "waiting" while those reads run, then "estimating" with progress.
+  const active = (j: { status: string; created_at: string }) =>
+    (j.status === "queued" || j.status === "running") && Date.now() - Date.parse(j.created_at) < STALE_JOB_MS;
+  const estimateJob = jobs?.find((j) => j.type === "estimate_rooms" && active(j));
+  const autoEstimate = estimateJob
+    ? { status: "estimating" as const, ...(estimateJob.progress as { done: number; total: number }) }
+    : reads?.some((j) => active(j) && (j.progress as { estimatePhotos?: boolean }).estimatePhotos)
+      ? { status: "waiting" as const, done: 0, total: 0 }
+      : null;
   const readOf = (levelId: string, path: string | null) => {
     const j = reads?.find((r) => (r.progress as { levelId?: string }).levelId === levelId);
     if (!j || (j.progress as { floorplanPath?: string }).floorplanPath !== path) return null;
@@ -145,6 +159,7 @@ export async function getPropertyMedia(id: string) {
       plan: (l.plan as unknown as FloorPlan | null) ?? null,
       read: readOf(l.id, l.floorplan_path),
     })),
+    autoEstimate,
     photos: photos.map((p) => ({
       id: p.id,
       levelId: p.level_id,
