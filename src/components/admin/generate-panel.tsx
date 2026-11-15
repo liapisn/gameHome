@@ -49,7 +49,7 @@ export function GeneratePanel({
         { event: "*", schema: "public", table: "jobs", filter: `property_id=eq.${propertyId}` },
         (payload) => {
           const row = payload.new as JobRow;
-          if (!row?.id) return;
+          if (!row?.id || (payload.new as { type?: string }).type !== "build_tour") return; // plan reads are shown on the floor plans page
           setJobs((prev) => {
             const rest = prev.filter((j) => j.id !== row.id);
             return [row, ...rest].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 10);

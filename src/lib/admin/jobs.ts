@@ -201,3 +201,38 @@ export async function uploadTourFile(supabase: Admin, folder: string, name: stri
 
 /** Furniture from photos, stored beside tour.json (the Tour page loads it if present). */
 export const storeScenes = (supabase: Admin, folder: string, scenes: RoomScene[]) => uploadTourFile(supabase, folder, "scenes.json", scenes);
+
+// ---------------------------------------------------------------------------- plan reads
+
+/** Job type of a floor plan read (src/workflows/read-plan.ts); tour builds are "build_tour". */
+export const READ_PLAN = "read_plan";
+
+/** What a read_plan job keeps in `progress`: which floor and drawing it reads. */
+export interface ReadPlanProgress {
+  levelId: string;
+  floorplanPath: string;
+  label: string;
+}
+
+/** Finish a plan read. Unlike a tour build, it leaves the property's status alone. */
+export async function finishReadJob(supabase: Admin, jobId: string, status: "succeeded" | "failed", error?: string) {
+  await supabase
+    .from("jobs")
+    .update({ status, error: error?.slice(0, 1000) ?? null, finished_at: new Date().toISOString() })
+    .eq("id", jobId);
+}
+
+/** Store a floor's freshly read plan, unless its drawing was replaced meanwhile; photo room tags on the floor are cleared. */
+export async function storeReadPlan(supabase: Admin, levelId: string, floorplanPath: string, plan: FloorPlan): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("levels")
+    .update({ plan: plan as unknown as Json })
+    .eq("id", levelId)
+    .eq("floorplan_path", floorplanPath)
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!data?.length) return false;
+  const { error: tagError } = await supabase.from("media").update({ room_id: null }).eq("level_id", levelId).not("room_id", "is", null);
+  if (tagError) throw new Error(tagError.message);
+  return true;
+}

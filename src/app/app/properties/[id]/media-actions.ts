@@ -5,7 +5,11 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { defaultLevelName } from "@/lib/admin/data";
 import { type FloorPlan, ROOM_TYPES, type RoomType } from "@/lib/floorplan";
-import { planJson, readLevelPlan } from "@/lib/admin/plan-read";
+import { start } from "workflow/api";
+import { planJson } from "@/lib/admin/plan-read";
+import { READ_PLAN, type ReadPlanProgress } from "@/lib/admin/jobs";
+import type { Json } from "@/lib/supabase/database.types";
+import { readPlanWorkflow } from "@/workflows/read-plan";
 import { estimatePhotoRooms } from "@/lib/admin/room-estimates";
 import type { RoomEstimate } from "@/lib/tour/estimate-room";
 import {
@@ -229,25 +233,30 @@ async function clearRoomTags(supabase: Awaited<ReturnType<typeof createClient>>,
   if (error) throw new Error(error.message);
 }
 
-/** Read the floor's plan drawing into rooms (one model call, up to a minute or two) and store it. */
+/**
+ * Read the floor's plan drawing into rooms in the background (src/workflows/read-plan.ts): the
+ * model call can outlast a function. Queues a `read_plan` job; the page shows it until it ends.
+ * With TOUR_BUILDER=worker the job is only queued, for a local `npm run worker`.
+ */
 export async function readFloorplan(propertyId: string, levelId: string) {
-  const { supabase, property, level } = await accessibleLevel(propertyId, levelId);
+  const { supabase, level } = await accessibleLevel(propertyId, levelId);
   if (!level.floorplan_path) throw new Error("Upload a floor plan for this floor first.");
-  const plan = await readLevelPlan(supabase, {
-    propertyId,
-    propertyTitle: property.title,
-    levelId,
-    levelName: level.name,
-    floorplanPath: level.floorplan_path,
-  });
-  // Only store it if the drawing hasn't been replaced while it was being read.
-  const { error } = await supabase
-    .from("levels")
-    .update({ plan: planJson(plan) })
-    .eq("id", levelId)
-    .eq("floorplan_path", level.floorplan_path);
-  if (error) throw new Error(error.message);
-  await clearRoomTags(supabase, levelId);
+  const { data: running } = await supabase
+    .from("jobs")
+    .select("id, progress")
+    .eq("property_id", propertyId)
+    .eq("type", READ_PLAN)
+    .in("status", ["queued", "running"]);
+  if (running?.some((j) => (j.progress as unknown as ReadPlanProgress).levelId === levelId)) return;
+
+  const progress: ReadPlanProgress = { levelId, floorplanPath: level.floorplan_path, label: "Reading rooms" };
+  const { data: job, error } = await supabase
+    .from("jobs")
+    .insert({ property_id: propertyId, type: READ_PLAN, progress: progress as unknown as NonNullable<Json> })
+    .select("id")
+    .single();
+  if (error || !job) throw new Error(error?.message ?? "Could not start reading the plan.");
+  if (process.env.TOUR_BUILDER !== "worker") await start(readPlanWorkflow, [job.id]);
   refresh(propertyId);
 }
 

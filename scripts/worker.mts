@@ -1,5 +1,5 @@
 /**
- * Tour build worker: claims queued `build_tour` jobs, runs the engine on the property's uploads,
+ * Tour build worker: claims queued `build_tour` jobs (and `read_plan` floor plan reads), runs the engine on the property's uploads,
  * and stores the result. Runs on a developer machine for now (`npm run worker`).
  *
  * Needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (vercel env pull) and the engine's model key
@@ -12,7 +12,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { type JobRow, adminClient, exportProperty, finishJob, saveNewPlans, storeScenes, storeTour, writeJobProgress } from "../src/lib/admin/jobs";
+import { type JobRow, READ_PLAN, type ReadPlanProgress, adminClient, exportProperty, finishJob, finishReadJob, saveNewPlans, storeReadPlan, storeScenes, storeTour, writeJobProgress } from "../src/lib/admin/jobs";
+import { readLevelPlan } from "../src/lib/admin/plan-read";
 import { activeProvider } from "../src/lib/ai/structured";
 import { type BuildProgress, buildTour } from "../src/lib/engine/build-tour";
 import { buildTourScenes } from "../src/lib/engine/build-scene";
@@ -47,7 +48,31 @@ async function recoverStaleJobs() {
   }
 }
 
+/** A floor plan read (normally run by src/workflows/read-plan.ts on Vercel): here in one go. */
+async function processReadJob(job: Job) {
+  const { levelId, floorplanPath } = job.progress as unknown as ReadPlanProgress;
+  log(`plan read ${job.id.slice(0, 8)} for floor ${levelId.slice(0, 8)}`);
+  try {
+    const { data: level } = await supabase.from("levels").select("name, properties ( title )").eq("id", levelId).single();
+    if (!level) throw new Error("This floor no longer exists.");
+    const plan = await readLevelPlan(supabase, {
+      propertyId: job.property_id,
+      propertyTitle: level.properties?.title ?? "",
+      levelId,
+      levelName: level.name,
+      floorplanPath,
+    });
+    const stored = await storeReadPlan(supabase, levelId, floorplanPath, plan);
+    await finishReadJob(supabase, job.id, stored ? "succeeded" : "failed", stored ? undefined : "The floor plan was replaced while it was being read.");
+    log(`  ${stored ? `${plan.rooms.length} rooms stored` : "drawing replaced meanwhile; not stored"}`);
+  } catch (err) {
+    log(`  failed: ${(err as Error).message}`);
+    await finishReadJob(supabase, job.id, "failed", (err as Error).message);
+  }
+}
+
 async function processJob(job: Job) {
+  if (job.type === READ_PLAN) return processReadJob(job);
   log(`job ${job.id.slice(0, 8)} for property ${job.property_id.slice(0, 8)} (attempt ${job.attempts})`);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gamehome-"));
   let lastWrite = 0;

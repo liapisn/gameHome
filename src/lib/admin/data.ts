@@ -82,6 +82,22 @@ export async function getPropertyMedia(id: string) {
   if (error) throw error;
   if (!property) return null;
 
+  // Each floor's latest plan read (src/workflows/read-plan.ts): shown while it runs, or if it failed.
+  const { data: reads } = await supabase
+    .from("jobs")
+    .select("status, error, progress, created_at")
+    .eq("property_id", id)
+    .eq("type", "read_plan")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  const readOf = (levelId: string, path: string | null) => {
+    const j = reads?.find((r) => (r.progress as { levelId?: string }).levelId === levelId);
+    if (!j || (j.progress as { floorplanPath?: string }).floorplanPath !== path) return null;
+    if (j.status === "queued" || j.status === "running") return { status: "reading" as const, since: j.created_at, error: null };
+    if (j.status === "failed") return { status: "failed" as const, since: j.created_at, error: j.error ?? "Reading the plan failed." };
+    return null;
+  };
+
   const photos = property.media.filter((m) => m.kind === "photo");
   const paths = [
     ...photos.flatMap((p) => [p.storage_path, thumbPathFor(p.storage_path)]),
@@ -106,6 +122,7 @@ export async function getPropertyMedia(id: string) {
       name: l.name,
       floorplanUrl: l.floorplan_path ? (urls.get(l.floorplan_path) ?? null) : null,
       plan: (l.plan as unknown as FloorPlan | null) ?? null,
+      read: readOf(l.id, l.floorplan_path),
     })),
     photos: photos.map((p) => ({
       id: p.id,

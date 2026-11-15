@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { prepareFloorplan } from "@/lib/image-resize";
@@ -25,6 +25,14 @@ export function FloorplanManager({ propertyId, orgId, levels }: { propertyId: st
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // Plans are read in the background: refresh while any floor is being read.
+  const reading = levels.some((l) => l.read?.status === "reading");
+  useEffect(() => {
+    if (!reading) return;
+    const t = setInterval(() => router.refresh(), 5000);
+    return () => clearInterval(t);
+  }, [reading, router]);
 
   const run = (fn: () => Promise<void>) => {
     setError(null);
@@ -125,16 +133,25 @@ function LevelCard({
   onRetype: (roomId: string, type: RoomType) => void;
   readOnUpload?: boolean;
 }) {
-  const [status, setStatus] = useState<"idle" | "uploading" | "reading" | "error">("idle");
+  const [local, setStatus] = useState<"idle" | "uploading" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  // A read started here counts as "starting" until the page shows its job (or the new plan): the
+  // refreshed page may still show no job, or the previous one, for a moment.
+  const [startedFrom, setStartedFrom] = useState<{ job: string | null; plan: string | null } | null>(null);
+  const jobSince = level.read?.since ?? null;
+  const planAt = level.plan?.source?.parsedAt ?? null;
+  const starting = !!startedFrom && planAt === startedFrom.plan && (jobSince === null || jobSince === startedFrom.job);
+  const status = starting || (local !== "uploading" && level.read?.status === "reading") ? "reading" : local;
+  const failed = local !== "error" && !starting && level.read?.status === "failed" ? level.read.error : null;
 
   const read = async () => {
-    setStatus("reading");
+    setStartedFrom({ job: jobSince, plan: planAt });
+    setStatus("idle");
     setMessage(null);
     try {
       await onRead();
-      setStatus("idle");
     } catch (e) {
+      setStartedFrom(null);
       setStatus("error");
       setMessage(e instanceof Error ? e.message : "Could not read the floor plan");
     }
@@ -209,7 +226,7 @@ function LevelCard({
             className="aspect-[4/3]"
           />
         )}
-        {message && <p className="mt-2 text-xs text-red-700">{message}</p>}
+        {(message ?? failed) && <p className="mt-2 text-xs text-red-700">{message ?? `Reading the rooms failed: ${failed}`}</p>}
       </div>
 
       {level.floorplanUrl && status !== "uploading" && (
@@ -238,7 +255,9 @@ function LevelCard({
             </button>
           </div>
           {status === "reading" ? (
-            <p className="text-xs text-neutral-500">This takes a minute or two.</p>
+            <p className="text-xs text-neutral-500">
+              This can take several minutes. It carries on in the background: you can leave this page and come back.
+            </p>
           ) : level.plan ? (
             <PlanRooms plan={level.plan} onRename={onRenameRoom} onRetype={onRetype} />
           ) : (
