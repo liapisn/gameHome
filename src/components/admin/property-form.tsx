@@ -55,7 +55,7 @@ export function PropertyForm({
         "Shown to viewers, e.g. “Sunny 2-bedroom in Koukaki”",
       )}
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className={`grid gap-5 ${showFloors ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
         {field(
           "kind",
           "Type",
@@ -74,6 +74,21 @@ export function PropertyForm({
             <input id="floors" name="floors" type="number" min={1} max={10} defaultValue={1} className={inputClass} />,
             "You'll upload one floor plan per floor",
           )}
+        {field(
+          "start_floor",
+          "Starting floor",
+          <input
+            id="start_floor"
+            name="start_floor"
+            type="number"
+            min={-5}
+            max={200}
+            step={1}
+            defaultValue={value(property?.start_floor ?? 0)}
+            className={inputClass}
+          />,
+          "0 = ground floor, 3 for a flat on the 3rd floor",
+        )}
       </div>
 
       {field("address", "Street address", <input id="address" name="address" defaultValue={value(property?.address)} className={inputClass} />, "Kept private until you publish")}

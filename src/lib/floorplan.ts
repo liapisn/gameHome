@@ -65,6 +65,50 @@ export interface FloorPlan {
   rooms: Room[];
 }
 
+const nameKey = (name: string) => name.trim().replace(/\s+/g, " ").toLowerCase();
+
+/** Is `name` already used by one of `taken` (case and spacing ignored)? */
+export function roomNameTaken(name: string, taken: Iterable<string>): boolean {
+  const key = nameKey(name);
+  for (const t of taken) if (nameKey(t) === key) return true;
+  return false;
+}
+
+/**
+ * Give every room a name of its own, in place: photos are matched to rooms by name, so two
+ * "Bedroom"s (or "Balcony"s) are numbered "Bedroom 1", "Bedroom 2". Names in `taken` (the
+ * property's other floors) count as used, so numbering carries on across floors. Rooms whose
+ * name is already unique keep it.
+ */
+export function uniqueRoomNames<T extends { name: string }>(rooms: T[], taken: Iterable<string> = []): T[] {
+  const split = (name: string) => {
+    const clean = name.trim().replace(/\s+/g, " ");
+    const m = /^(.*\S)\s+\d+$/.exec(clean);
+    return { base: m ? m[1] : clean, numbered: !!m };
+  };
+  const takenNames = [...taken];
+  const used = new Set(takenNames.map(nameKey));
+  const count = (keys: string[]) => keys.reduce((m, k) => m.set(k, (m.get(k) ?? 0) + 1), new Map<string, number>());
+  const exact = count(rooms.map((r) => nameKey(r.name)));
+  const bases = count([...rooms.map((r) => r.name), ...takenNames].map((n) => nameKey(split(n).base)));
+  // A room keeps its name if no other room has it, and it can't be mistaken for a numbered
+  // sibling: a lone "Balcony" next to "Balcony 1" becomes "Balcony 2".
+  const keeps = (r: T) => {
+    const { base, numbered } = split(r.name);
+    return exact.get(nameKey(r.name)) === 1 && !used.has(nameKey(r.name)) && (numbered || bases.get(nameKey(base)) === 1);
+  };
+  const rename = rooms.filter((r) => !keeps(r));
+  for (const r of rooms) if (!rename.includes(r)) used.add(nameKey(r.name));
+  for (const r of rename) {
+    const { base } = split(r.name);
+    let n = 1;
+    while (used.has(nameKey(`${base} ${n}`))) n++;
+    r.name = `${base} ${n}`;
+    used.add(nameKey(r.name));
+  }
+  return rooms;
+}
+
 /** Shoelace formula. */
 export function polygonArea(poly: Point[]): number {
   let sum = 0;

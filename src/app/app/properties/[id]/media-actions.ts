@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { defaultLevelName } from "@/lib/admin/data";
-import { type FloorPlan, ROOM_TYPES, type RoomType } from "@/lib/floorplan";
+import { type FloorPlan, ROOM_TYPES, type RoomType, roomNameTaken } from "@/lib/floorplan";
 import { start } from "workflow/api";
 import { planJson } from "@/lib/admin/plan-read";
 import { READ_PLAN, type ReadPlanProgress } from "@/lib/admin/jobs";
@@ -215,6 +215,9 @@ export async function setFloorplan(propertyId: string, levelId: string, file: z.
   const { error } = await supabase.from("levels").update({ floorplan_path: path, plan: null }).eq("id", levelId);
   if (error) throw new Error(error.message);
   await clearRoomTags(supabase, levelId);
+  // Read the new drawing into rooms straight away, in the background: the owner doesn't have to
+  // ask, and it carries on if they leave the page.
+  await startPlanRead(supabase, propertyId, levelId, path);
   refresh(propertyId);
 }
 
@@ -241,15 +244,27 @@ async function clearRoomTags(supabase: Awaited<ReturnType<typeof createClient>>,
 export async function readFloorplan(propertyId: string, levelId: string) {
   const { supabase, level } = await accessibleLevel(propertyId, levelId);
   if (!level.floorplan_path) throw new Error("Upload a floor plan for this floor first.");
+  await startPlanRead(supabase, propertyId, levelId, level.floorplan_path);
+  refresh(propertyId);
+}
+
+/** Queue a read of this drawing, unless one is already under way (a read of an older drawing doesn't count). */
+async function startPlanRead(supabase: Awaited<ReturnType<typeof createClient>>, propertyId: string, levelId: string, floorplanPath: string) {
   const { data: running } = await supabase
     .from("jobs")
     .select("id, progress")
     .eq("property_id", propertyId)
     .eq("type", READ_PLAN)
     .in("status", ["queued", "running"]);
-  if (running?.some((j) => (j.progress as unknown as ReadPlanProgress).levelId === levelId)) return;
+  if (
+    running?.some((j) => {
+      const p = j.progress as unknown as ReadPlanProgress;
+      return p.levelId === levelId && p.floorplanPath === floorplanPath;
+    })
+  )
+    return;
 
-  const progress: ReadPlanProgress = { levelId, floorplanPath: level.floorplan_path, label: "Reading rooms" };
+  const progress: ReadPlanProgress = { levelId, floorplanPath, label: "Reading rooms" };
   const { data: job, error } = await supabase
     .from("jobs")
     .insert({ property_id: propertyId, type: READ_PLAN, progress: progress as unknown as NonNullable<Json> })
@@ -257,7 +272,6 @@ export async function readFloorplan(propertyId: string, levelId: string) {
     .single();
   if (error || !job) throw new Error(error?.message ?? "Could not start reading the plan.");
   if (process.env.TOUR_BUILDER !== "worker") await start(readPlanWorkflow, [job.id]);
-  refresh(propertyId);
 }
 
 /** Correct a room the engine read: its name and kind of room. */
@@ -269,7 +283,16 @@ export async function updatePlanRoom(propertyId: string, levelId: string, roomId
   const plan = level.plan as unknown as FloorPlan | null;
   const room = plan?.rooms.find((r) => r.id === roomId);
   if (!plan || !room) throw new Error("Room not found. Read the floor plan again.");
-  if (update.name) room.name = update.name;
+  if (update.name) {
+    const { data: levels } = await supabase.from("levels").select("id, plan").eq("property_id", propertyId);
+    const others = [
+      ...plan.rooms.filter((r) => r.id !== roomId).map((r) => r.name),
+      ...(levels ?? []).filter((l) => l.id !== levelId).flatMap((l) => (l.plan as unknown as FloorPlan | null)?.rooms.map((r) => r.name) ?? []),
+    ];
+    if (roomNameTaken(update.name, others))
+      throw new Error(`Another room is already called “${update.name}”. Give each room its own name (e.g. “${update.name} 2”) so photos land in the right one.`);
+    room.name = update.name;
+  }
   if (update.type) room.type = update.type;
   const { error } = await supabase.from("levels").update({ plan: planJson(plan) }).eq("id", levelId);
   if (error) throw new Error(error.message);
@@ -282,9 +305,10 @@ export async function addLevel(propertyId: string) {
   const count = levels?.length ?? 0;
   if (count >= 10) throw new Error("A property can have at most 10 floors.");
   const sort = Math.max(-1, ...(levels ?? []).map((l) => l.sort)) + 1;
+  const { data: property } = await supabase.from("properties").select("start_floor").eq("id", propertyId).single();
   const { error } = await supabase
     .from("levels")
-    .insert({ property_id: propertyId, name: defaultLevelName(count), sort });
+    .insert({ property_id: propertyId, name: defaultLevelName((property?.start_floor ?? 0) + count), sort });
   if (error) throw new Error(error.message);
   refresh(propertyId);
 }

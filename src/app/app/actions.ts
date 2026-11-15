@@ -37,12 +37,24 @@ const PropertySchema = z.object({
   total_area_m2: optionalNumber(10000),
   bedrooms: optionalNumber(50, true),
   bathrooms: optionalNumber(50, true),
+  start_floor: z
+    .string()
+    .trim()
+    .transform((v, ctx) => {
+      if (v === "") return 0;
+      const n = Number(v);
+      if (!Number.isInteger(n) || n < -5 || n > 200) {
+        ctx.addIssue({ code: "custom", message: "Whole number from -5 (basement) to 200" });
+        return z.NEVER;
+      }
+      return n;
+    }),
   description: optionalText,
 });
 
 function readForm(formData: FormData) {
   const raw = Object.fromEntries(
-    ["title", "kind", "address", "city", "area", "total_area_m2", "bedrooms", "bathrooms", "description"].map(
+    ["title", "kind", "address", "city", "area", "total_area_m2", "bedrooms", "bathrooms", "start_floor", "description"].map(
       (k) => [k, String(formData.get(k) ?? "")],
     ),
   );
@@ -72,7 +84,7 @@ export async function createProperty(_prev: FormState, formData: FormData): Prom
   if (error) return { error: error.message };
 
   const { error: levelsError } = await supabase.from("levels").insert(
-    Array.from({ length: floors }, (_, i) => ({ property_id: property.id, name: defaultLevelName(i), sort: i })),
+    Array.from({ length: floors }, (_, i) => ({ property_id: property.id, name: defaultLevelName(parsed.data.start_floor + i), sort: i })),
   );
   if (levelsError) return { error: levelsError.message };
 
@@ -85,8 +97,20 @@ export async function updateProperty(id: string, _prev: FormState, formData: For
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
 
   const supabase = await createClient();
+  const { data: before } = await supabase.from("properties").select("start_floor").eq("id", id).maybeSingle();
   const { error } = await supabase.from("properties").update(parsed.data).eq("id", id);
   if (error) return { error: error.message };
+
+  // A new starting floor renumbers the floors that still carry their default name.
+  if (before && before.start_floor !== parsed.data.start_floor) {
+    const { data: levels } = await supabase.from("levels").select("id, name").eq("property_id", id).order("sort");
+    const renamed = (levels ?? []).flatMap((l, i) =>
+      l.name === defaultLevelName(before.start_floor + i) ? [{ id: l.id, name: defaultLevelName(parsed.data.start_floor + i) }] : [],
+    );
+    const results = await Promise.all(renamed.map((l) => supabase.from("levels").update({ name: l.name }).eq("id", l.id)));
+    const failed = results.find((r) => r.error);
+    if (failed?.error) return { error: failed.error.message };
+  }
 
   revalidatePath("/app");
   revalidatePath(`/app/properties/${id}`);

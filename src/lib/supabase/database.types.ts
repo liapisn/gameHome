@@ -107,14 +107,14 @@ isOneToOne: false
                   ]
                 },"properties": {
                   Row: {
-                    "address": string | null,"area": string | null,"bathrooms": number | null,"bedrooms": number | null,"city": string | null,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"kind": Database["public"]['Enums']["property_kind"],"lat": number | null,"lng": number | null,"org_id": string,"status": Database["public"]['Enums']["property_status"],"title": string,"total_area_m2": number | null,"updated_at": string
+                    "address": string | null,"area": string | null,"bathrooms": number | null,"bedrooms": number | null,"city": string | null,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"kind": Database["public"]['Enums']["property_kind"],"lat": number | null,"lng": number | null,"org_id": string,"start_floor": number,"status": Database["public"]['Enums']["property_status"],"title": string,"total_area_m2": number | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "address"?: string | null,"area"?: string | null,"bathrooms"?: number | null,"bedrooms"?: number | null,"city"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["property_kind"],"lat"?: number | null,"lng"?: number | null,"org_id": string,"status"?: Database["public"]['Enums']["property_status"],"title": string,"total_area_m2"?: number | null,"updated_at"?: string
+                    "address"?: string | null,"area"?: string | null,"bathrooms"?: number | null,"bedrooms"?: number | null,"city"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["property_kind"],"lat"?: number | null,"lng"?: number | null,"org_id": string,"start_floor"?: number,"status"?: Database["public"]['Enums']["property_status"],"title": string,"total_area_m2"?: number | null,"updated_at"?: string
                   }
                   Update: {
-                    "address"?: string | null,"area"?: string | null,"bathrooms"?: number | null,"bedrooms"?: number | null,"city"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["property_kind"],"lat"?: number | null,"lng"?: number | null,"org_id"?: string,"status"?: Database["public"]['Enums']["property_status"],"title"?: string,"total_area_m2"?: number | null,"updated_at"?: string
+                    "address"?: string | null,"area"?: string | null,"bathrooms"?: number | null,"bedrooms"?: number | null,"city"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["property_kind"],"lat"?: number | null,"lng"?: number | null,"org_id"?: string,"start_floor"?: number,"status"?: Database["public"]['Enums']["property_status"],"title"?: string,"total_area_m2"?: number | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
