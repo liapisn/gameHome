@@ -249,7 +249,15 @@ export async function startEstimatesAfterRead(
     .in("status", ["queued", "running"])
     .neq("id", readJob.id);
   if (others?.some((o) => (o.progress as unknown as ReadPlanProgress).estimatePhotos)) return null;
+  return startEstimateJob(supabase, propertyId);
+}
 
+/**
+ * Start an estimate_rooms job (status running, so the local worker never claims it) for the
+ * photos without a room the owner picked, if some floor has rooms. Null if there's nothing to do.
+ * Used after the import's plan reads, and by a Matterport import, whose plans need no read.
+ */
+export async function startEstimateJob(supabase: Admin, propertyId: string): Promise<{ jobId: string; mediaIds: string[] } | null> {
   const { data: planned } = await supabase.from("levels").select("id").eq("property_id", propertyId).not("plan", "is", null).limit(1);
   if (!planned?.length) return null;
   const { data: photos, error } = await supabase

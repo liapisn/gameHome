@@ -5,15 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   type ImportPlan,
+  importMatterportPhotos,
+  importMatterportPlans,
   importProspertyFloorplans,
   importProspertyPhotos,
   startProspertyImport,
+  startTourEstimates,
 } from "@/app/app/import-actions";
 
 /** Photos per server call; matches the cap in importProspertyPhotos. */
 const PHOTO_BATCH = 4;
 
-type StepKey = "listing" | "photos" | "floorplan" | "open";
+type StepKey = "listing" | "photos" | "floorplan" | "tourPhotos" | "open";
 type StepState = "waiting" | "active" | "done" | "skipped";
 
 type Progress = {
@@ -21,13 +24,19 @@ type Progress = {
   steps: Record<StepKey, StepState>;
   photosDone: number;
   photosFailed: number;
+  tourRooms: number;
+  tourDone: number;
+  tourFailed: number;
   error?: string;
 };
 
 const INITIAL: Progress = {
-  steps: { listing: "waiting", photos: "waiting", floorplan: "waiting", open: "waiting" },
+  steps: { listing: "waiting", photos: "waiting", floorplan: "waiting", tourPhotos: "waiting", open: "waiting" },
   photosDone: 0,
   photosFailed: 0,
+  tourRooms: 0,
+  tourDone: 0,
+  tourFailed: 0,
 };
 
 /** Paste a Prosperty listing link to create the property with its details, photos and floor plan. */
@@ -77,12 +86,34 @@ export function ProspertyImport() {
       step("photos", "done");
     } else step("photos", "skipped");
 
-    if (plan.floorplanUrls.length) {
+    if (plan.tour) {
+      const { modelId, photoCount } = plan.tour;
       step("floorplan", "active");
-      const plans = await importProspertyFloorplans(plan.propertyId, plan.floorplanUrls);
+      const plans = await importMatterportPlans(plan.propertyId, modelId);
       if (!plans.ok) return set({ error: plans.error });
+      set({ tourRooms: plans.value.rooms });
       step("floorplan", "done");
-    } else step("floorplan", "skipped");
+
+      if (photoCount) {
+        step("tourPhotos", "active");
+        for (let i = 0; i < photoCount; i += PHOTO_BATCH) {
+          const batch = await importMatterportPhotos(plan.propertyId, modelId, i, plan.photoUrls.length + i);
+          if (!batch.ok) return set({ error: batch.error });
+          set((cur) => ({ tourDone: cur.tourDone + batch.value.saved, tourFailed: cur.tourFailed + batch.value.failed }));
+        }
+        step("tourPhotos", "done");
+      } else step("tourPhotos", "skipped");
+      // Only the listing's own photos need their rooms guessing; a failure here leaves them to the photos page.
+      if (plan.photoUrls.length) await startTourEstimates(plan.propertyId);
+    } else {
+      step("tourPhotos", "skipped");
+      if (plan.floorplanUrls.length) {
+        step("floorplan", "active");
+        const plans = await importProspertyFloorplans(plan.propertyId, plan.floorplanUrls);
+        if (!plans.ok) return set({ error: plans.error });
+        step("floorplan", "done");
+      } else step("floorplan", "skipped");
+    }
 
     step("open", "active");
     router.push(`/app/properties/${plan.propertyId}`);
@@ -119,13 +150,14 @@ export function ProspertyImport() {
         </div>
         <p className="text-xs text-neutral-500">
           Fills in the details, copies all photos and the floor plan, then reads the plan&apos;s rooms and matches
-          each photo to its room.
+          each photo to its room. A listing with a 3D tour gets its measured rooms and 360° photos from the tour.
         </p>
       </form>
     );
   }
 
-  const { plan, steps, photosDone, photosFailed, error } = progress;
+  const { plan, steps, photosDone, photosFailed, tourRooms, tourDone, tourFailed, error } = progress;
+  const tourTotal = plan?.tour?.photoCount ?? 0;
   const photoTotal = plan?.photoUrls.length ?? 0;
   const photosHandled = photosDone + photosFailed;
 
@@ -151,11 +183,28 @@ export function ProspertyImport() {
         >
           {steps.photos === "active" && photoTotal > 0 && <Bar value={photosHandled / photoTotal} />}
         </Step>
-        <Step
-          state={steps.floorplan}
-          label={steps.floorplan === "skipped" ? "No floor plan on the listing" : "Copying the floor plan"}
-          doneLabel={`Floor plan${(plan?.floorplanUrls.length ?? 0) > 1 ? "s" : ""} copied · reading rooms, then matching each photo to its room, in the background`}
-        />
+        {plan?.tour ? (
+          <>
+            <Step
+              state={steps.floorplan}
+              label="Reading the 3D tour"
+              doneLabel={`${tourRooms} measured room${tourRooms === 1 ? "" : "s"} from the 3D tour`}
+            />
+            <Step
+              state={steps.tourPhotos}
+              label={steps.tourPhotos === "skipped" ? "No panoramas in the tour" : `Copying 360° views · ${tourDone + tourFailed} of ${tourTotal}`}
+              doneLabel={`${tourDone} view${tourDone === 1 ? "" : "s"} copied, each filed under its room${tourFailed ? ` · ${tourFailed} failed` : ""}${photosDone ? " · matching the listing photos to rooms in the background" : ""}`}
+            >
+              {steps.tourPhotos === "active" && tourTotal > 0 && <Bar value={(tourDone + tourFailed) / tourTotal} />}
+            </Step>
+          </>
+        ) : (
+          <Step
+            state={steps.floorplan}
+            label={steps.floorplan === "skipped" ? "No floor plan on the listing" : "Copying the floor plan"}
+            doneLabel={`Floor plan${(plan?.floorplanUrls.length ?? 0) > 1 ? "s" : ""} copied · reading rooms, then matching each photo to its room, in the background`}
+          />
+        )}
         <Step state={steps.open} label="Opening the property" doneLabel="Opening the property" />
       </ol>
 

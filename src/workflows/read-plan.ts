@@ -15,6 +15,7 @@ import {
   adminClient,
   claimJob,
   finishReadJob,
+  startEstimateJob,
   startEstimatesAfterRead,
   storeReadPlan,
   writeEstimateProgress,
@@ -42,10 +43,24 @@ export async function readPlanWorkflow(jobId: string) {
   return result;
 }
 
+/**
+ * Estimate the photos' rooms of a property whose plans are already stored without a read (a
+ * Matterport import): the same estimate steps as after the import's last read.
+ */
+export async function estimatePhotosWorkflow(propertyId: string) {
+  "use workflow";
+
+  await runEstimates(() => startEstimatesFor(propertyId));
+}
+
 async function estimateAfterRead(jobId: string) {
+  await runEstimates(() => startEstimates(jobId));
+}
+
+async function runEstimates(begin: () => Promise<{ jobId: string; mediaIds: string[] } | null>) {
   let estimate: { jobId: string; mediaIds: string[] } | null = null;
   try {
-    estimate = await startEstimates(jobId);
+    estimate = await begin();
     if (!estimate) return;
     const { mediaIds } = estimate;
     let failed = 0;
@@ -113,6 +128,11 @@ async function startEstimates(readJobId: string) {
   const supabase = adminClient();
   const { data: job } = await supabase.from("jobs").select("id, property_id, progress").eq("id", readJobId).single();
   return job ? startEstimatesAfterRead(supabase, job) : null;
+}
+
+async function startEstimatesFor(propertyId: string) {
+  "use step";
+  return startEstimateJob(adminClient(), propertyId);
 }
 
 async function estimateBatch(estimateJobId: string, mediaIds: string[], doneBefore: number, total: number) {

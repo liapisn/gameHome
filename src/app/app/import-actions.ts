@@ -3,8 +3,15 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import sharp from "sharp";
+import { start } from "workflow/api";
 import { z } from "zod";
 import { defaultLevelName, requireSession } from "@/lib/admin/data";
+import { planIdFor } from "@/lib/admin/plan-read";
+import { type FloorPlan, uniqueRoomNames } from "@/lib/floorplan";
+import { buildFloorPlan } from "@/lib/floorplan-parser/build";
+import type { Json } from "@/lib/supabase/database.types";
+import { fetchMatterportModel, isMatterportAsset, matterportModelId } from "@/lib/import/matterport";
+import { estimatePhotosWorkflow } from "@/workflows/read-plan";
 import { MAX_PHOTOS_PER_PROPERTY, MEDIA_BUCKET, floorplanPath, photoPath, thumbPathFor } from "@/lib/admin/media-paths";
 import { fetchProspertyListing, prospertyListingId } from "@/lib/import/prosperty";
 import { type RawImage, removeProspertyWatermark } from "@/lib/import/prosperty-watermark";
@@ -16,6 +23,12 @@ import { startPlanRead } from "@/lib/admin/start-plan-read";
  *   startProspertyImport → importProspertyPhotos (in batches) → importProspertyFloorplans
  * The last step also starts reading the plans into rooms in the background; once every floor
  * is read, the photos' rooms are estimated from them (src/workflows/read-plan.ts).
+ *
+ * A listing with a Matterport 3D tour (lib/import/matterport) takes its floors from the tour instead:
+ *   startProspertyImport → importProspertyPhotos (in batches) → importMatterportPlans
+ *     → importMatterportPhotos (in batches) → startTourEstimates
+ * The tour's measured rooms become the plans directly (no read), its panoramas become photos
+ * already filed under their room, and only the listing's own photos have their rooms estimated.
  */
 
 /** Prosperty serves its images from this CDN only; no other URL is ever fetched. */
@@ -27,6 +40,7 @@ const ImageUrl = z.url().refine((u) => {
   const url = new URL(u);
   return url.protocol === "https:" && url.hostname === IMAGE_HOST;
 }, "Not a Prosperty image");
+const ModelId = z.string().regex(/^[A-Za-z0-9]{8,16}$/);
 
 type Supabase = Awaited<ReturnType<typeof requireSession>>["supabase"];
 type Encoded = { data: Buffer; width: number; height: number; bytes: number };
@@ -37,10 +51,14 @@ export type ImportPlan = {
   summary: string;
   photoUrls: string[];
   floorplanUrls: string[];
+  /** The listing's Matterport tour, when it has one that could be read; its floors replace `floorplanUrls`. */
+  tour: { modelId: string; floors: number; photoCount: number } | null;
 };
 
-async function download(url: string): Promise<Buffer> {
-  const res = await fetch(ImageUrl.parse(url), { signal: AbortSignal.timeout(60_000) });
+/** Fetch an image from Prosperty's CDN, or (`matterport`) from Matterport's. */
+async function download(url: string, from: "prosperty" | "matterport" = "prosperty"): Promise<Buffer> {
+  if (from === "matterport" && !isMatterportAsset(url)) throw new Error("Not a Matterport file");
+  const res = await fetch(from === "matterport" ? url : ImageUrl.parse(url), { signal: AbortSignal.timeout(60_000) });
   if (!res.ok) throw new Error(`Image download failed (${res.status})`);
   return Buffer.from(await res.arrayBuffer());
 }
@@ -82,6 +100,17 @@ export async function startProspertyImport(link: string): Promise<Result<ImportP
   if (!listingId) return { ok: false, error: "Paste a link like theprosperty.com/listings/16042" };
   try {
     const listing = await fetchProspertyListing(listingId);
+    const modelId = matterportModelId(listing.extras.tourUrl);
+    // The tour is a bonus: if it can't be read, import the listing's own floor plans as before.
+    const tour = modelId
+      ? await fetchMatterportModel(modelId).catch((e) => {
+          console.error(`Prosperty import ${listingId}: Matterport tour ${modelId} unreadable`, e);
+          return null;
+        })
+      : null;
+    const useTour = modelId && tour?.length ? { modelId, floors: tour } : null;
+    const levelCount = useTour ? Math.min(10, useTour.floors.length) : listing.levels;
+    const photoUrls = listing.photoUrls.slice(0, MAX_PHOTOS_PER_PROPERTY);
     const { supabase, org } = await requireSession();
     const { data: property, error } = await supabase
       .from("properties")
@@ -105,7 +134,7 @@ export async function startProspertyImport(link: string): Promise<Result<ImportP
     const { error: levelsError } = await supabase
       .from("levels")
       .insert(
-        Array.from({ length: listing.levels }, (_, i) => ({ property_id: property.id, name: defaultLevelName(i), sort: i })),
+        Array.from({ length: levelCount }, (_, i) => ({ property_id: property.id, name: defaultLevelName(i), sort: i })),
       );
     if (levelsError) throw new Error(levelsError.message);
     revalidatePath("/app");
@@ -125,8 +154,16 @@ export async function startProspertyImport(link: string): Promise<Result<ImportP
         propertyId: property.id,
         title: listing.title,
         summary,
-        photoUrls: listing.photoUrls.slice(0, MAX_PHOTOS_PER_PROPERTY),
-        floorplanUrls: listing.floorplanUrls.slice(0, listing.levels),
+        photoUrls,
+        floorplanUrls: useTour ? [] : listing.floorplanUrls.slice(0, listing.levels),
+        tour: useTour && {
+          modelId: useTour.modelId,
+          floors: levelCount,
+          photoCount: Math.min(
+            useTour.floors.slice(0, levelCount).reduce((n, f) => n + f.photos.length, 0),
+            MAX_PHOTOS_PER_PROPERTY - photoUrls.length,
+          ),
+        },
       },
     };
   } catch (e) {
@@ -224,6 +261,147 @@ export async function importProspertyFloorplans(propertyId: string, urls: string
     for (const { levelId, path } of copied) await startPlanRead(supabase, propertyId, levelId, path, { estimatePhotos: true });
     revalidatePath(`/app/properties/${propertyId}`, "layout");
     return { ok: true, value: { saved: copied.length } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * Tour step 1: each floor of the tour onto the floor at the same position. Its measured rooms,
+ * doors and windows are stored as the floor's plan right away, and Matterport's rendered plan
+ * (with room names and measurements) as its drawing.
+ */
+export async function importMatterportPlans(propertyId: string, modelId: string): Promise<Result<{ rooms: number }>> {
+  try {
+    const id = ModelId.parse(modelId);
+    const { supabase, orgId } = await ownProperty(propertyId);
+    const [floors, { data: property, error }] = await Promise.all([
+      fetchMatterportModel(id),
+      supabase.from("properties").select("title, levels ( id, name, sort )").eq("id", propertyId).single(),
+    ]);
+    if (error) throw new Error(error.message);
+    const levels = [...property.levels].sort((a, b) => a.sort - b.sort);
+
+    let rooms = 0;
+    const taken: string[] = [];
+    for (const [i, floor] of floors.slice(0, levels.length).entries()) {
+      const level = levels[i];
+      let drawingPath: string | null = null;
+      if (floor.drawingUrl) {
+        const file = await encode(await download(floor.drawingUrl, "matterport"), 4096, 92);
+        drawingPath = floorplanPath(orgId, propertyId, randomUUID());
+        await upload(supabase, drawingPath, file);
+        const { error: mediaError } = await supabase.from("media").insert({
+          property_id: propertyId,
+          level_id: level.id,
+          kind: "floorplan",
+          storage_path: drawingPath,
+          width: file.width,
+          height: file.height,
+          bytes: file.bytes,
+        });
+        if (mediaError) throw new Error(mediaError.message);
+      }
+      const { plan } = buildFloorPlan(floor.parsed, {
+        id: planIdFor(propertyId, level.id),
+        title: `${property.title} · ${level.name}`,
+        ceilingHeight: floor.ceilingHeight,
+        source: { kind: "parsed", image: drawingPath?.split("/").pop(), model: `matterport:${id}`, parsedAt: new Date().toISOString() },
+      });
+      // Room names are unique across the home: a second floor's "Bedroom" carries on the numbering.
+      uniqueRoomNames(plan.rooms, taken);
+      taken.push(...plan.rooms.map((r) => r.name));
+      const { error: levelError } = await supabase
+        .from("levels")
+        .update({ plan: plan as unknown as Json, ...(drawingPath && { floorplan_path: drawingPath }) })
+        .eq("id", level.id);
+      if (levelError) throw new Error(levelError.message);
+      rooms += plan.rooms.length;
+    }
+    revalidatePath(`/app/properties/${propertyId}`, "layout");
+    return { ok: true, value: { rooms } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * Tour step 2, once per batch: the tour's photos from `start` (the side faces of each room's
+ * panoramas, in tour order), filed under their floor and room, recorded from position `startSort`.
+ */
+export async function importMatterportPhotos(
+  propertyId: string,
+  modelId: string,
+  start: number,
+  startSort: number,
+): Promise<Result<{ saved: number; failed: number }>> {
+  try {
+    const id = ModelId.parse(modelId);
+    const from = z.number().int().min(0).max(MAX_PHOTOS_PER_PROPERTY).parse(start);
+    const sortFrom = z.number().int().min(0).max(MAX_PHOTOS_PER_PROPERTY * 2).parse(startSort);
+    const { supabase, orgId } = await ownProperty(propertyId);
+    const [floors, { data: levels, error }] = await Promise.all([
+      fetchMatterportModel(id),
+      supabase.from("levels").select("id, sort, plan").eq("property_id", propertyId).order("sort"),
+    ]);
+    if (error) throw new Error(error.message);
+    // The download links are signed and short-lived, so they're read afresh for every batch.
+    const batch = floors
+      .slice(0, levels.length)
+      .flatMap((f, i) => f.photos.map((p) => ({ ...p, level: levels[i] })))
+      .slice(from, from + PHOTO_BATCH);
+
+    const results = await Promise.allSettled(
+      batch.map(async ({ url, roomIndex, level }) => {
+        const source = await download(url, "matterport");
+        const [full, thumb] = await Promise.all([encode(source, 2560, 85), encode(source, 480, 75)]);
+        const path = photoPath(orgId, propertyId, randomUUID());
+        await Promise.all([upload(supabase, path, full), upload(supabase, thumbPathFor(path), thumb)]);
+        const room = (level.plan as unknown as FloorPlan | null)?.rooms.find((r) => r.id === `r${roomIndex}`);
+        return { path, full, levelId: level.id, room };
+      }),
+    );
+    const rows = results.flatMap((r, i) =>
+      r.status === "fulfilled"
+        ? [
+            {
+              property_id: propertyId,
+              kind: "photo" as const,
+              storage_path: r.value.path,
+              width: r.value.full.width,
+              height: r.value.full.height,
+              bytes: r.value.full.bytes,
+              sort: sortFrom + i,
+              level_id: r.value.levelId,
+              room_id: r.value.room?.id ?? null,
+              room_type: r.value.room?.type ?? null,
+            },
+          ]
+        : [],
+    );
+    if (rows.length) {
+      const { error: insertError } = await supabase.from("media").insert(rows);
+      if (insertError) throw new Error(insertError.message);
+    }
+    const failed = results.filter((r) => r.status === "rejected");
+    if (failed.length) console.error(`Matterport import ${propertyId}: ${failed.length} photo(s) failed`, failed);
+    return { ok: true, value: { saved: rows.length, failed: failed.length } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * Tour step 3: estimate the rooms of the listing's own photos from the tour's plans, in the
+ * background. Not with TOUR_BUILDER=worker (the local worker has no such job); the photos page
+ * can still estimate them.
+ */
+export async function startTourEstimates(propertyId: string): Promise<Result<{ started: boolean }>> {
+  try {
+    await ownProperty(propertyId);
+    if (process.env.TOUR_BUILDER === "worker") return { ok: true, value: { started: false } };
+    await start(estimatePhotosWorkflow, [propertyId]);
+    return { ok: true, value: { started: true } };
   } catch (e) {
     return fail(e);
   }
