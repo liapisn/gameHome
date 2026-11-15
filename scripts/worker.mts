@@ -12,8 +12,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { type JobRow, READ_PLAN, type ReadPlanProgress, adminClient, exportProperty, finishJob, finishReadJob, saveNewPlans, storeReadPlan, storeScenes, storeTour, writeJobProgress } from "../src/lib/admin/jobs";
+import { ESTIMATE_BATCH, type JobRow, READ_PLAN, type ReadPlanProgress, adminClient, exportProperty, finishJob, finishReadJob, saveNewPlans, startEstimatesAfterRead, storeReadPlan, storeScenes, storeTour, writeEstimateProgress, writeJobProgress } from "../src/lib/admin/jobs";
 import { readLevelPlan } from "../src/lib/admin/plan-read";
+import { estimatePhotoRooms } from "../src/lib/admin/room-estimates";
 import { activeProvider } from "../src/lib/ai/structured";
 import { type BuildProgress, buildTour } from "../src/lib/engine/build-tour";
 import { buildTourScenes } from "../src/lib/engine/build-scene";
@@ -68,6 +69,33 @@ async function processReadJob(job: Job) {
   } catch (err) {
     log(`  failed: ${(err as Error).message}`);
     await finishReadJob(supabase, job.id, "failed", (err as Error).message);
+  }
+  await estimateAfterRead(job);
+}
+
+/** After the import's last plan read: estimate the photos' rooms (src/workflows/read-plan.ts does the same). */
+async function estimateAfterRead(job: Job) {
+  let estimate: Awaited<ReturnType<typeof startEstimatesAfterRead>> = null;
+  try {
+    estimate = await startEstimatesAfterRead(supabase, job);
+    if (!estimate) return;
+    const { jobId, mediaIds } = estimate;
+    log(`  estimating rooms of ${mediaIds.length} photo(s)`);
+    let failed = 0;
+    for (let i = 0; i < mediaIds.length; i += ESTIMATE_BATCH) {
+      const batch = mediaIds.slice(i, i + ESTIMATE_BATCH);
+      try {
+        await estimatePhotoRooms(supabase, job.property_id, batch);
+      } catch (err) {
+        failed += batch.length;
+        log(`  estimate batch failed: ${(err as Error).message}`);
+      }
+      await writeEstimateProgress(supabase, jobId, i + batch.length, mediaIds.length);
+    }
+    await finishReadJob(supabase, jobId, failed ? "failed" : "succeeded", failed ? `${failed} photo(s) could not be estimated.` : undefined);
+  } catch (err) {
+    log(`  estimating rooms failed: ${(err as Error).message}`);
+    if (estimate) await finishReadJob(supabase, estimate.jobId, "failed", (err as Error).message);
   }
 }
 

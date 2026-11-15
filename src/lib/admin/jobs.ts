@@ -212,6 +212,76 @@ export interface ReadPlanProgress {
   levelId: string;
   floorplanPath: string;
   label: string;
+  /** Estimate the photos' rooms once this and the property's other such reads are done (Prosperty import). */
+  estimatePhotos?: boolean;
+}
+
+// ---------------------------------------------------------------------------- room estimates
+
+/** Job type of estimating the photos' rooms after the import's plan reads. Runs inside the last read. */
+export const ESTIMATE_ROOMS = "estimate_rooms";
+
+/** Photos one estimate step handles (in parallel), as on the photos page. */
+export const ESTIMATE_BATCH = 6;
+
+export interface EstimateRoomsProgress {
+  label: string;
+  done: number;
+  total: number;
+}
+
+/**
+ * After a read that asked to estimate photos (`estimatePhotos`): if it was the property's last
+ * such read still under way, and some floor now has rooms, start an estimate_rooms job for the
+ * photos without a room the owner picked. Returns the job and the photos, or null if not (yet).
+ */
+export async function startEstimatesAfterRead(
+  supabase: Admin,
+  readJob: Pick<JobRow, "id" | "property_id" | "progress">,
+): Promise<{ jobId: string; mediaIds: string[] } | null> {
+  if (!(readJob.progress as unknown as ReadPlanProgress).estimatePhotos) return null;
+  const propertyId = readJob.property_id;
+  const { data: others } = await supabase
+    .from("jobs")
+    .select("progress")
+    .eq("property_id", propertyId)
+    .eq("type", READ_PLAN)
+    .in("status", ["queued", "running"])
+    .neq("id", readJob.id);
+  if (others?.some((o) => (o.progress as unknown as ReadPlanProgress).estimatePhotos)) return null;
+
+  const { data: planned } = await supabase.from("levels").select("id").eq("property_id", propertyId).not("plan", "is", null).limit(1);
+  if (!planned?.length) return null;
+  const { data: photos, error } = await supabase
+    .from("media")
+    .select("id")
+    .eq("property_id", propertyId)
+    .eq("kind", "photo")
+    .is("room_id", null)
+    .is("room_type", null)
+    .order("sort");
+  if (error) throw new Error(error.message);
+  if (!photos.length) return null;
+
+  const progress: EstimateRoomsProgress = { label: "Estimating rooms", done: 0, total: photos.length };
+  const { data: job, error: jobError } = await supabase
+    .from("jobs")
+    .insert({
+      property_id: propertyId,
+      type: ESTIMATE_ROOMS,
+      status: "running",
+      started_at: new Date().toISOString(),
+      progress: progress as unknown as NonNullable<Json>,
+    })
+    .select("id")
+    .single();
+  if (jobError || !job) throw new Error(jobError?.message ?? "Could not start estimating rooms.");
+  return { jobId: job.id, mediaIds: photos.map((p) => p.id) };
+}
+
+export async function writeEstimateProgress(supabase: Admin, jobId: string, done: number, total: number) {
+  const progress: EstimateRoomsProgress = { label: "Estimating rooms", done, total };
+  await supabase.from("jobs").update({ progress: progress as unknown as NonNullable<Json> }).eq("id", jobId);
 }
 
 /** Finish a plan read. Unlike a tour build, it leaves the property's status alone. */

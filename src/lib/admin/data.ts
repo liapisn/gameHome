@@ -1,10 +1,13 @@
 import "server-only";
+import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
 import type { FloorPlan } from "@/lib/floorplan";
 import type { RoomEstimate } from "@/lib/tour/estimate-room";
 import { MEDIA_BUCKET, thumbPathFor } from "./media-paths";
+import { ACTIVE_WORKSPACE_COOKIE } from "./workspace-cookie";
 
 export type Property = Database["public"]["Tables"]["properties"]["Row"];
 export type Level = Database["public"]["Tables"]["levels"]["Row"];
@@ -20,24 +23,42 @@ export const PROPERTY_KINDS: { value: PropertyKind; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
-/** Signed-in user + their organization. Redirects to /login when signed out. */
-export async function requireSession() {
+export type MemberRole = Database["public"]["Enums"]["member_role"];
+export type Workspace = { id: string; name: string; role: MemberRole };
+
+/** Signed-in user, the workspace they're working in, and every workspace they belong to. Redirects to /login when signed out. */
+export const requireSession = cache(async () => {
   const user = await getUser();
   if (!user) redirect("/login");
 
   const supabase = await createClient();
-  const { data: membership } = await supabase
+  const { data: memberships, error } = await supabase
     .from("memberships")
     .select("role, organizations ( id, name )")
     .eq("user_id", user.id)
-    .order("created_at")
-    .limit(1)
-    .single();
+    .order("created_at");
+  if (error) throw error;
 
-  if (!membership?.organizations) {
-    throw new Error("Signed-in user has no organization. The signup trigger should have created one.");
+  const joined: Workspace[] = (memberships ?? []).flatMap((m) =>
+    m.organizations ? [{ id: m.organizations.id, name: m.organizations.name, role: m.role }] : [],
+  );
+  if (joined.length === 0) {
+    throw new Error("Signed-in user has no workspace. The signup trigger should have created one.");
   }
-  return { supabase, user, org: membership.organizations, role: membership.role };
+
+  // The active workspace is the one picked in the switcher; the oldest membership otherwise.
+  const picked = (await cookies()).get(ACTIVE_WORKSPACE_COOKIE)?.value;
+  const active = joined.find((w) => w.id === picked) ?? joined[0];
+  const workspaces = [...joined].sort((a, b) => a.name.localeCompare(b.name));
+
+  return { supabase, user, org: { id: active.id, name: active.name }, role: active.role, workspaces };
+});
+
+/** Like requireSession, but only for owners of the active workspace. */
+export async function requireOwner() {
+  const session = await requireSession();
+  if (session.role !== "owner") throw new Error("Only owners of this workspace can do that.");
+  return session;
 }
 
 export async function listProperties() {
@@ -67,6 +88,8 @@ export async function getProperty(id: string) {
 }
 
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
+/** A background job still "running" after this long has died without saying so. */
+const STALE_JOB_MS = 45 * 60_000;
 
 /** Property + floors + photos with short-lived signed URLs for display. */
 export async function getPropertyMedia(id: string) {
@@ -83,13 +106,25 @@ export async function getPropertyMedia(id: string) {
   if (!property) return null;
 
   // Each floor's latest plan read (src/workflows/read-plan.ts): shown while it runs, or if it failed.
-  const { data: reads } = await supabase
+  const { data: jobs } = await supabase
     .from("jobs")
-    .select("status, error, progress, created_at")
+    .select("type, status, error, progress, created_at")
     .eq("property_id", id)
-    .eq("type", "read_plan")
+    .in("type", ["read_plan", "estimate_rooms"])
     .order("created_at", { ascending: false })
     .limit(50);
+  const reads = jobs?.filter((j) => j.type === "read_plan");
+
+  // Rooms estimated in the background after an import's plan reads (src/workflows/read-plan.ts):
+  // "waiting" while those reads run, then "estimating" with progress.
+  const active = (j: { status: string; created_at: string }) =>
+    (j.status === "queued" || j.status === "running") && Date.now() - Date.parse(j.created_at) < STALE_JOB_MS;
+  const estimateJob = jobs?.find((j) => j.type === "estimate_rooms" && active(j));
+  const autoEstimate = estimateJob
+    ? { status: "estimating" as const, ...(estimateJob.progress as { done: number; total: number }) }
+    : reads?.some((j) => active(j) && (j.progress as { estimatePhotos?: boolean }).estimatePhotos)
+      ? { status: "waiting" as const, done: 0, total: 0 }
+      : null;
   const readOf = (levelId: string, path: string | null) => {
     const j = reads?.find((r) => (r.progress as { levelId?: string }).levelId === levelId);
     if (!j || (j.progress as { floorplanPath?: string }).floorplanPath !== path) return null;
@@ -124,6 +159,7 @@ export async function getPropertyMedia(id: string) {
       plan: (l.plan as unknown as FloorPlan | null) ?? null,
       read: readOf(l.id, l.floorplan_path),
     })),
+    autoEstimate,
     photos: photos.map((p) => ({
       id: p.id,
       levelId: p.level_id,

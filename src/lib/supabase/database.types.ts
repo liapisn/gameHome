@@ -5,6 +5,27 @@ export type Database = {
   
   "public": {
           Tables: {
+            "invitations": {
+                  Row: {
+                    "accepted_at": string | null,"accepted_by": string | null,"created_at": string,"email": string,"expires_at": string,"id": string,"invited_by": string | null,"org_id": string,"role": Database["public"]['Enums']["member_role"],"token": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "accepted_at"?: string | null,"accepted_by"?: string | null,"created_at"?: string,"email": string,"expires_at"?: string,"id"?: string,"invited_by"?: string | null,"org_id": string,"role"?: Database["public"]['Enums']["member_role"],"token"?: string
+                  }
+                  Update: {
+                    "accepted_at"?: string | null,"accepted_by"?: string | null,"created_at"?: string,"email"?: string,"expires_at"?: string,"id"?: string,"invited_by"?: string | null,"org_id"?: string,"role"?: Database["public"]['Enums']["member_role"],"token"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "invitations_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },
             "jobs": {
                   Row: {
                     "attempts": number,"created_at": string,"error": string | null,"finished_at": string | null,"id": string,"progress": NonNullable<Json>,"property_id": string,"requested_by": string | null,"started_at": string | null,"status": Database["public"]['Enums']["job_status"],"type": string,"worker_id": string | null
@@ -107,14 +128,14 @@ isOneToOne: false
                   ]
                 },"properties": {
                   Row: {
-                    "address": string | null,"area": string | null,"bathrooms": number | null,"bedrooms": number | null,"city": string | null,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"kind": Database["public"]['Enums']["property_kind"],"lat": number | null,"lng": number | null,"org_id": string,"start_floor": number,"status": Database["public"]['Enums']["property_status"],"title": string,"total_area_m2": number | null,"updated_at": string
+                    "address": string | null,"area": string | null,"bathrooms": number | null,"bedrooms": number | null,"city": string | null,"created_at": string,"created_by": string | null,"deleted_at": string | null,"description": string | null,"id": string,"kind": Database["public"]['Enums']["property_kind"],"lat": number | null,"lng": number | null,"org_id": string,"start_floor": number,"status": Database["public"]['Enums']["property_status"],"title": string,"total_area_m2": number | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "address"?: string | null,"area"?: string | null,"bathrooms"?: number | null,"bedrooms"?: number | null,"city"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["property_kind"],"lat"?: number | null,"lng"?: number | null,"org_id": string,"start_floor"?: number,"status"?: Database["public"]['Enums']["property_status"],"title": string,"total_area_m2"?: number | null,"updated_at"?: string
+                    "address"?: string | null,"area"?: string | null,"bathrooms"?: number | null,"bedrooms"?: number | null,"city"?: string | null,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"description"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["property_kind"],"lat"?: number | null,"lng"?: number | null,"org_id": string,"start_floor"?: number,"status"?: Database["public"]['Enums']["property_status"],"title": string,"total_area_m2"?: number | null,"updated_at"?: string
                   }
                   Update: {
-                    "address"?: string | null,"area"?: string | null,"bathrooms"?: number | null,"bedrooms"?: number | null,"city"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["property_kind"],"lat"?: number | null,"lng"?: number | null,"org_id"?: string,"start_floor"?: number,"status"?: Database["public"]['Enums']["property_status"],"title"?: string,"total_area_m2"?: number | null,"updated_at"?: string
+                    "address"?: string | null,"area"?: string | null,"bathrooms"?: number | null,"bedrooms"?: number | null,"city"?: string | null,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"description"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["property_kind"],"lat"?: number | null,"lng"?: number | null,"org_id"?: string,"start_floor"?: number,"status"?: Database["public"]['Enums']["property_status"],"title"?: string,"total_area_m2"?: number | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -157,6 +178,33 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
+"accept_invitation":
+{ Args: { "p_token": string }; Returns: string
+                           },
+"create_workspace":
+{ Args: { "p_name": string }; Returns: string
+                           },
+"get_invitation":
+{ Args: { "p_token": string }; Returns: {
+              "org_id": string,
+"org_name": string,
+"email": string,
+"role": Database["public"]['Enums']["member_role"],
+"inviter_email": string | null,
+"status": string
+            }[]
+                           },
+"is_org_owner":
+{ Args: { "org": string }; Returns: boolean
+                           },
+"list_workspace_members":
+{ Args: { "p_org": string }; Returns: {
+              "user_id": string,
+"email": string,
+"role": Database["public"]['Enums']["member_role"],
+"joined_at": string
+            }[]
+                           },
             "claim_next_job":
 { Args: { "p_worker": string }; Returns: {
               "attempts": number,
@@ -180,6 +228,9 @@ isOneToOne: false
       } },
 "is_org_member":
 { Args: { "org": string }; Returns: boolean
+                           },
+"soft_delete_property":
+{ Args: { "p_id": string }; Returns: undefined
                            }
           }
           Enums: {

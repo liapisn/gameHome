@@ -49,13 +49,22 @@ export function PhotoManager({
   orgId,
   photos: serverPhotos,
   levels,
+  autoEstimate,
 }: {
   propertyId: string;
   orgId: string;
   photos: Photo[];
   levels: Level[];
+  autoEstimate: PropertyMedia["autoEstimate"];
 }) {
   const router = useRouter();
+
+  // After an import, plans are read and then rooms estimated in the background: refresh until done.
+  useEffect(() => {
+    if (!autoEstimate) return;
+    const t = setInterval(() => router.refresh(), 5000);
+    return () => clearInterval(t);
+  }, [autoEstimate, router]);
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -232,7 +241,14 @@ export function PhotoManager({
           {busy && ` · uploading ${uploads.filter((u) => u.status !== "done" && u.status !== "error").length}…`}
           {photos.length > 1 && " · drag ⠿ to reorder"}
         </p>
-        {hasPlans && photos.length > 0 && (
+        {autoEstimate ? (
+          <span className="flex items-center gap-2 text-xs text-neutral-600" aria-live="polite">
+            <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900" />
+            {autoEstimate.status === "waiting"
+              ? "Reading the floor plan, then estimating each photo's room…"
+              : `Estimating rooms ${autoEstimate.done}/${autoEstimate.total}…`}
+          </span>
+        ) : hasPlans && photos.length > 0 && (
           <button
             type="button"
             disabled={!!estimateProgress}

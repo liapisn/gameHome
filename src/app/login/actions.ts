@@ -1,9 +1,9 @@
 "use server";
 
-import { headers } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/safe-next";
+import { siteOrigin } from "@/lib/site-origin";
 
 export type LoginState = { status: "idle" | "sent" | "error"; message?: string; email?: string };
 
@@ -13,15 +13,13 @@ export async function sendMagicLink(_prev: LoginState, formData: FormData): Prom
   const parsed = EmailSchema.safeParse(String(formData.get("email") ?? "").trim());
   if (!parsed.success) return { status: "error", message: "Enter a valid email address." };
 
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+  const origin = await siteOrigin();
   const next = safeNext(String(formData.get("next") ?? ""));
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data,
-    options: { emailRedirectTo: `${proto}://${host}/auth/callback?next=${encodeURIComponent(next)}` },
+    options: { emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}` },
   });
 
   if (error) {

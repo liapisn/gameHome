@@ -1,8 +1,8 @@
 /**
  * Estimate which room of the floor plans each photo was taken in, and store it on the photo
  * (media.room_estimate). The plans and drawings are loaded once per call and shared by its photos.
+ * Server-side only; no "server-only" guard because the local worker (scripts/worker.mts) uses it too.
  */
-import "server-only";
 import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FloorPlan } from "@/lib/floorplan";
