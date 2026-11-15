@@ -61,9 +61,12 @@ its price or rate limits are better. Nothing in code should name a model except 
    beside `geminiObjectModel`.
 4. Add `"gemini-4-argon": 65536` to `MAX_OUTPUT` only if the models API says so; otherwise leave
    the 32768 fallback.
-5. Timeout: `CALL_TIMEOUT_MS` default from 12 minutes to **90 s**, retries from 4 attempts to
-   **3**. The model build sets `GEMINI_CALL_TIMEOUT_MS=360000` itself (Part 4, step 8), since a
-   room agent call with many images can take minutes and runs with no time limit.
+5. Timeout: default from 12 minutes to **90 s**, retries from 4 attempts to **3**. Read
+   `GEMINI_CALL_TIMEOUT_MS` inside `gemini()` on every call (replace the module-level
+   `CALL_TIMEOUT_MS` constant with a `callTimeoutMs()` function): a script's imports run before its
+   own code, so a value the script sets at the top would be read too late. The model build sets
+   `GEMINI_CALL_TIMEOUT_MS=360000` (Part 4, step 8), since a room agent call with many images can
+   take minutes and runs with no time limit.
 6. Remove explicit `effort: "high"` where a call should now be low:
    - `src/lib/tour/place-photo.ts:124` → delete the line (defaults to low).
    - `src/lib/models3d/critic.ts:104` (house review) → `model: geminiRoomModel(), effort: "low"`.
@@ -151,9 +154,13 @@ const RoomDesign = z.object({
 An item missing from the answer gets a design sheet from the existing per-object `designSheet`
 call (Hydrogen) as a fallback, so one omission never leaves an item unbuilt.
 
-Large rooms: if there are more than 12 briefs, split the items into chunks of 12 and make one call
-per chunk with the same photos and the `style/palette/materials` from the first chunk passed in, so
-the sheet stays consistent and output stays within limits.
+Chunks: make one call per **6 items** (rooms of up to 6 items are one call). The first chunk
+writes `style/palette/materials`; later chunks get them passed in and return only `items`, so the
+sheet stays consistent. Why 6: a design sheet in today's cache is 5–9 KB (about 1.3–2.2k tokens),
+so 12 items can reach ~26k tokens of output against Carbon's 32,768 limit, which thinking also
+counts against, and at low thinking `structured.ts` has no `MAX_TOKENS` fallback. More calls cost
+more credits, which is fine. Items in `matches` across chunks still match: each chunk gets the
+first chunk's item summaries as text.
 
 ### 2. Item code (reuse `writeCode` in `code-worker.ts`)
 
@@ -221,15 +228,23 @@ Everything after it (placements, pictures, orientation, final build, report) sta
 - `designSheet` stays only as the fallback in step 1; the per-object `critique` and the
   `runCodeObjectWorker` loop are deleted (their pieces live in `room-agent.ts` and `buildItem`).
 - `src/lib/models3d/object-worker.ts`: move `fitFor` to `briefs.ts`, delete the file, update the
-  import in `room-worker.ts`.
+  imports in `room-worker.ts` and `scripts/build-models.mts` (see 7b).
 - `OBJECT_MAX_RUNS` env (replaced by `ROOM_ROUNDS`).
 - Update the header comments of `room-worker.ts`, `code-worker.ts` and `critic.ts` to point here.
+
+### 7b. One item on its own (`build-models.mts --item`)
+
+`npm run build:models -- --tour <id> --room <level>/<room> --item <id>` builds one object. Today
+it calls `runObjectWorker` directly, which is deleted. Instead it calls `runRoomAgent` with only
+that item's brief (same `assetId` as the room run, so a later room run reuses its cache). The room
+design sheet is then one call with that one item, and the critique judges it alone.
 
 ### 8. Where it runs
 
 The furniture build runs only from the CLI / worker (`npm run build:models`), never inside the
-Vercel workflow: one room takes minutes. `scripts/build-models.mts` sets
-`process.env.GEMINI_CALL_TIMEOUT_MS ??= "360000"` before anything else. The Vercel workflow
+Vercel workflow: one room takes minutes. The `build:models` npm script sets
+`GEMINI_CALL_TIMEOUT_MS=${GEMINI_CALL_TIMEOUT_MS:-360000}` on its command line (and Part 1.5 makes
+`structured.ts` read it per call, so setting it anywhere before the first call also works). The Vercel workflow
 (`src/workflows/build-tour.ts`) is unchanged and keeps `rounds: 1` in `furnishRoom`; with Part 1 its
 calls are ~12 s each, so 4 parallel calls per step fit. If a step still times out, split the step
 rather than raise timeouts; `TOUR_BUILDER=worker` with `npm run worker` is the fallback.
