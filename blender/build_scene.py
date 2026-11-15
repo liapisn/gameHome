@@ -8,7 +8,7 @@ Job: {
   "shell": "<house .glb in plan space, three.js Y-up>",
   "items": [{ "id", "label", "kind", "color", "material", "box": [x0, y0, x1, y1, z0, z1],
               # a generated model instead of the box (prepared: metres, front −Y, origin on the floor):
-              "asset": "<prepared .glb>", "pos": [x, y, z], "rot": <radians, plan>, "scale": s,
+              "asset": "<prepared .glb>", "pos": [x, y, z], "rot": <radians, plan>, "scale": s or [sx, sy, sz],
               # a picture: a framed plane at the box, textured with this image:
               "image": "<crop .jpg>", "size": [w, h] }],
   "turnAll": <degrees added to every model's rotation, for orientation renders>,
@@ -169,7 +169,8 @@ for it in job.get("items", []):
         # Plan rotation r (three.js, about Y) is the same angle about Blender's Z under (x, −y, h).
         obj.rotation_euler = (0, 0, it.get("rot", 0) + (turn_all if it.get("turnable", True) else 0))
         s = it.get("scale", 1)
-        obj.scale = (s, s, s)
+        # A number (uniform) or [x, y, z] (library models, stretched to the item's box).
+        obj.scale = tuple(s) if isinstance(s, list) else (s, s, s)
         obj["label"] = it.get("label", "")
         obj["kind"] = it.get("kind", "")
         scene.collection.objects.link(obj)

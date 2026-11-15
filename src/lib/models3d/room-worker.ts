@@ -22,8 +22,9 @@ import { itemBox, pointInPolygon } from "@/lib/scene/lift";
 import type { V3 } from "@/lib/scene/project";
 import type { RoomScene, SceneItem } from "@/lib/scene/types";
 import type { Tour } from "@/lib/tour/types";
-import { PICTURE, briefForItem, builtToMeasure, chairBrief, chairPlacements, itemViews, loadDetections } from "./briefs";
+import { BUILT_TO_MEASURE, PICTURE, briefForItem, builtToMeasure, chairBrief, chairPlacements, itemViews, loadDetections } from "./briefs";
 import { pickTurn, sameModels } from "./critic";
+import { libraryObject, modelStyle } from "./library";
 import { fitFor, runObjectWorker } from "./object-worker";
 import { cropViews } from "./crops";
 import type { ObjectBrief, ObjectResult } from "./types";
@@ -59,6 +60,12 @@ interface Placement {
   rot: number;
   /** Uniform scale from the model's built size to this copy's size. */
   scale: number;
+  /**
+   * Library models: stretched on every axis from the model's size to the item's box. Blender scales
+   * along the model's own axes before turning it, so at 90° or 270° the model's width spans the
+   * item's depth (see scaleFor).
+   */
+  stretch?: { item: Size; model: Size };
   floor: boolean;
   /** Turn found by the orientation check, degrees. */
   turn: number;
@@ -134,7 +141,26 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
 
   // ------------------------------------------------------------------ 2. object workers, all at once
   const results = new Map<string, ObjectResult>();
+  /** assetId → library model id, for the credits. */
+  const libraryIds = new Map<string, string>();
+  const library = modelStyle() === "library";
   await pool([...briefs.values()], OBJECT_CONCURRENCY, async (b) => {
+    if (library) {
+      // Fitted kitchens and wardrobes have no library match: they stay boxes sized to their wall run.
+      if (b.fit === "exact" || BUILT_TO_MEASURE.has(b.kind)) return;
+      const picked = await libraryObject(b.assetId, b, `${tour.id}/${b.assetId}`).catch((err) => {
+        say(`model ${b.assetId}: library failed — ${(err as Error).message.slice(0, 200)}`);
+        return null;
+      });
+      if (!picked) {
+        if (picked === null) say(`model ${b.assetId}: no library model for ${b.kind} "${b.label}", keeping the box`);
+        return;
+      }
+      results.set(b.assetId, picked.result);
+      libraryIds.set(b.assetId, picked.model.id);
+      say(`model ${b.assetId}: ${picked.result.reason}`);
+      return;
+    }
     const r = await runObjectWorker(b, log).catch((err): ObjectResult => ({ assetId: b.assetId, status: "failed", attempts: 0, reason: (err as Error).message }));
     results.set(b.assetId, r);
     say(`model ${b.assetId}: ${r.status} (${r.attempts} attempt(s)) — ${r.reason}`);
@@ -148,6 +174,13 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     const b = itemBox(i);
     const fit = fitFor({ w: i.w, d: i.d, h: i.h });
     const scale = fit === "flat" ? Math.max(i.w, i.d) / Math.max(r.size.w, r.size.d, 1e-3) : i.h / Math.max(r.size.h, 1e-3);
+    if (libraryIds.has(r.assetId)) {
+      // The measured box is what counts: stretch the library model to it on every axis.
+      const stretch = { item: { w: i.w, d: i.d, h: i.h }, model: r.size };
+      say(`library ${i.id}: ${libraryIds.get(r.assetId)} stretched ${(scaleFor({ scale: 1, stretch }, 0) as number[]).map((v) => v.toFixed(2)).join(" × ")}`);
+      placements.push({ id: i.id, label: i.label, kind: String(i.kind), assetId: r.assetId, x: i.x, y: i.y, z: b.z0, rot: i.rot, scale: 1, stretch, floor: b.z0 < 0.02, turn: 0, views: i.views });
+      continue;
+    }
     // A model far from its item's proportions would push through walls or neighbours: keep the box.
     const placed = [Math.max(r.size.w, r.size.d) * scale, Math.min(r.size.w, r.size.d) * scale];
     const want = [Math.max(i.w, i.d), Math.min(i.w, i.d)];
@@ -163,8 +196,10 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
   for (const t of tables) {
     const r = results.get(`${key}-${slug(t.id)}-chair`);
     if (r?.status !== "ok" || !r.glb) continue;
+    const want = briefs.get(r.assetId)?.size;
+    const stretch = libraryIds.has(r.assetId) && want && r.size ? { item: want, model: r.size } : undefined;
     chairPlacements(t).forEach((c, n) =>
-      placements.push({ id: `${t.id}-chair-${n + 1}`, label: "dining chair", kind: "generic", assetId: r.assetId, x: c.x, y: c.y, z: 0, rot: c.rot, scale: 1, floor: true, turn: 0, views: [] }),
+      placements.push({ id: `${t.id}-chair-${n + 1}`, label: "dining chair", kind: "generic", assetId: r.assetId, x: c.x, y: c.y, z: 0, rot: c.rot, scale: 1, stretch, floor: true, turn: 0, views: [] }),
     );
   }
 
@@ -186,12 +221,12 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
   if (!lights.length) lights.push([...polygonCentroid(room.polygon), ceiling - 0.35]);
   const cameras = photos.map((p) => ({ id: p.id, pose: p.pose!, width: RENDER_W, height: Math.round((RENDER_W * p.height) / p.width) }));
 
-  const jobItems = () => {
+  const jobItems = (turnAll = 0) => {
     const placed = new Set(placements.map((p) => p.id));
     const out: Record<string, unknown>[] = [];
     for (const p of placements) {
       const r = results.get(p.assetId)!;
-      out.push({ id: p.id, label: p.label, kind: p.kind, asset: r.glb, pos: [p.x, p.y, p.z], rot: p.rot + (p.turn * Math.PI) / 180, scale: p.scale, floor: p.floor });
+      out.push({ id: p.id, label: p.label, kind: p.kind, asset: r.glb, pos: [p.x, p.y, p.z], rot: p.rot + (p.turn * Math.PI) / 180, scale: scaleFor(p, p.turn + turnAll), floor: p.floor });
     }
     for (const i of items) {
       if (placed.has(i.id)) continue;
@@ -209,7 +244,7 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
       shell,
       roomId,
       look: scene.look ?? null,
-      items: jobItems(),
+      items: jobItems(opts.turnAll ?? 0),
       turnAll: opts.turnAll ?? 0,
       roomBox: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)],
       cameras,
@@ -294,7 +329,8 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     room: `${levelId}/${roomId}`,
     builtAt: new Date().toISOString(),
     models: [...results.values()],
-    placements: placements.map((p) => ({ id: p.id, assetId: p.assetId, turn: p.turn, scale: Math.round(p.scale * 1000) / 1000 })),
+    placements: placements.map((p) => ({ id: p.id, assetId: p.assetId, turn: p.turn, scale: round3(scaleFor(p, p.turn)) })),
+    library: placements.filter((p) => libraryIds.has(p.assetId)).map((p) => ({ itemId: p.id, modelId: libraryIds.get(p.assetId)! })),
     builtToMeasure: items.filter((i) => builtToMeasure(i)).map((i) => i.id),
     pictures: [...pictures.keys()],
     sizeConflicts: [...results.values()].filter((r) => r.sizeConflict).map((r) => ({ assetId: r.assetId, ...r.sizeConflict })),
@@ -310,4 +346,21 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     roomGlb: path.join(dir, "room.glb"),
     report: reportFile,
   };
+}
+
+const round3 = (s: number | number[]) => (Array.isArray(s) ? s.map((v) => Math.round(v * 1000) / 1000) : Math.round(s * 1000) / 1000);
+
+type Size = { w: number; d: number; h: number };
+
+/**
+ * The scale Blender gets for a placement turned `turn` degrees. Library models: per axis [x, y, z]
+ * of the model, from its size to the item's box; at 90° and 270° the model's width lies along the
+ * item's depth, so it is scaled to the depth (and its depth to the width).
+ */
+function scaleFor(p: Pick<Placement, "scale" | "stretch">, turn: number): number | [number, number, number] {
+  if (!p.stretch) return p.scale;
+  const { item: i, model: m } = p.stretch;
+  const across = Math.round((((turn % 360) + 360) % 360) / 90) % 2 === 1;
+  const [w, d] = across ? [i.d, i.w] : [i.w, i.d];
+  return [w / Math.max(m.w, 1e-3), d / Math.max(m.d, 1e-3), i.h / Math.max(m.h, 1e-3)];
 }

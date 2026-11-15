@@ -19,6 +19,7 @@ const MARKER: Record<string, string> = {
   "web_copy.py": "WEB_COPY_OK",
   "test_gh_parts.py": "GH_PARTS_OK",
   "run_object.py": "RUN_OBJECT_DONE",
+  "prep_library.py": "PREP_LIBRARY_DONE",
 };
 
 /** Write `job` beside `jobFile` and run a script from blender/ on it (on its own boxd machine; see run-blender.ts). */

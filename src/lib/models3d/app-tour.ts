@@ -11,6 +11,7 @@ import { MEDIA_BUCKET } from "@/lib/admin/media-paths";
 import { type PlanPaths, TOURS_BUCKET, photoMediaId } from "@/lib/admin/tour-paths";
 import type { RoomScene } from "@/lib/scene/types";
 import type { Tour } from "@/lib/tour/types";
+import { LIBRARY_CREDIT } from "./library";
 
 type Admin = ReturnType<typeof adminClient>;
 
@@ -20,6 +21,8 @@ export interface ModelsIndex {
   rooms: { levelId: string; roomId: string; path: string; bytes: number }[];
   /** The whole home (shell + every room's furniture), shown on the 3D model page. */
   house?: { path: string; bytes: number };
+  /** Credit lines the model page must show (licences of library models used). */
+  credits?: string[];
 }
 
 export interface AppTour {
@@ -86,6 +89,9 @@ export async function uploadModels(folder: string, rooms: { levelId: string; roo
     const { error } = await supabase.storage.from(TOURS_BUCKET).upload(p, body, { contentType: "model/gltf-binary", upsert: true });
     if (error) throw new Error(`Upload ${p}: ${error.message}`);
     index.rooms.push({ levelId: r.levelId, roomId: r.roomId, path: p, bytes: body.length });
+    // room.json beside room.glb lists the library models the room used (CC BY 4.0: credit required).
+    const report = path.join(path.dirname(r.glb), "room.json");
+    if (!index.credits && fs.existsSync(report) && (JSON.parse(fs.readFileSync(report, "utf8")) as { library?: unknown[] }).library?.length) index.credits = [LIBRARY_CREDIT];
   }
   if (houseGlb) {
     const p = `${folder}models/house.glb`;

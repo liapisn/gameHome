@@ -29,7 +29,7 @@ async function HouseModel({ params }: { params: PageProps<"/app/properties/[id]/
     .maybeSingle();
   const folder = row?.tour_path.replace(/[^/]+$/, "");
   const { data: blob } = folder ? await supabase.storage.from(TOURS_BUCKET).download(`${folder}models.json`) : { data: null };
-  const index = blob ? (JSON.parse(await blob.text()) as { builtAt?: string; house?: { path: string; bytes: number } }) : null;
+  const index = blob ? (JSON.parse(await blob.text()) as { builtAt?: string; house?: { path: string; bytes: number }; credits?: string[] }) : null;
   const signed = index?.house ? (await supabase.storage.from(TOURS_BUCKET).createSignedUrl(index.house.path, SIGNED_URL_TTL)).data : null;
 
   if (!row || !index?.house || !signed) {
@@ -54,6 +54,11 @@ async function HouseModel({ params }: { params: PageProps<"/app/properties/[id]/
         drag to turn, scroll to zoom
       </p>
       <HouseModelViewer url={signed.signedUrl} />
+      {index.credits?.map((c) => (
+        <p key={c} className="mt-2 text-xs text-neutral-500">
+          {c}
+        </p>
+      ))}
     </div>
   );
 }
