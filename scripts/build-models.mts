@@ -7,6 +7,7 @@
  *   npm run build:models -- --property <uuid>      # a tour built in the app: download, build, upload
  *   npm run build:models -- --property <uuid> --rescene   # … rebuilding its room scenes first (3 check
  *     rounds, DETECT_VOTES detect calls per photo) and uploading them with the models
+ *   … --property <uuid> --no-upload       # build locally only: nothing is written back to the app
  *     (needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY, e.g. --env-file=.env.production.local)
  *
  * Needs GEMINI_API_KEY and BOXD_API_KEY in .env.local (Blender runs on boxd, never here). Reads
@@ -35,6 +36,7 @@ const { values } = parseArgs({
     room: { type: "string" },
     item: { type: "string" },
     rescene: { type: "boolean", default: false },
+    "no-upload": { type: "boolean", default: false },
     rounds: { type: "string", default: "3" },
   },
 });
@@ -47,7 +49,12 @@ const t0 = Date.now();
 
 if (values.property) {
   // A tour built in the app: its current version from Storage, models back beside it.
-  const dir = path.resolve("exports", `app-${values.property}`);
+  // --no-upload is a local test: a fresh folder, never one an earlier build wrote.
+  const dir = path.resolve("exports", values["no-upload"] ? `app-${values.property}-local` : `app-${values.property}`);
+  if (values["no-upload"] && fs.existsSync(dir)) {
+    console.error(`${path.relative(process.cwd(), dir)} already exists: move it aside first (--no-upload never overwrites an earlier build).`);
+    process.exit(1);
+  }
   const app = await downloadAppTour(values.property, dir, { allPhotos: values.rescene });
   log(`app tour v${app.version}: ${app.scenes.length} furnished room(s), photos in ${path.relative(process.cwd(), dir)}`);
   const outRoot = path.join(dir, "models");
@@ -83,8 +90,12 @@ if (values.property) {
       }),
     );
     app.scenes = rebuilt;
-    await storeScenes(adminClient(), app.folder, rebuilt);
-    log(`rescene: ${rebuilt.length} scene(s) stored beside the tour (${app.folder}scenes.json)`);
+    fs.writeFileSync(path.join(sceneRoot, "scenes.json"), JSON.stringify(rebuilt, null, 2));
+    if (values["no-upload"]) log(`rescene: ${rebuilt.length} scene(s) kept locally (${path.relative(process.cwd(), sceneRoot)}/scenes.json), --no-upload`);
+    else {
+      await storeScenes(adminClient(), app.folder, rebuilt);
+      log(`rescene: ${rebuilt.length} scene(s) stored beside the tour (${app.folder}scenes.json)`);
+    }
   }
   const r = await runHouseWorker({ tour: app.tour, outRoot, log, scenes: app.scenes, plans: app.plans, sceneRoot: values.rescene ? sceneRoot : undefined });
   log(`house: ${r.summary}`);
@@ -106,6 +117,12 @@ if (values.property) {
     houseWeb = path.join(outRoot, "house-web.glb");
     await blenderJob("web_copy.py", path.join(outRoot, "house-web-job.json"), { glb: houseFull, out: houseWeb, maxTris: 250000, maxTex: 1024 });
     log(`web copy house: ${(fs.statSync(houseFull).size / 1e6).toFixed(1)} MB → ${(fs.statSync(houseWeb).size / 1e6).toFixed(1)} MB`);
+  }
+  if (values["no-upload"]) {
+    log(`--no-upload: ${rooms.length} room model(s)${houseWeb ? " and the house model" : ""} left in ${path.relative(process.cwd(), outRoot)}`);
+    log(`done in ${((Date.now() - t0) / 60000).toFixed(1)} min`);
+    await closePool();
+    process.exit(0);
   }
   const index = await uploadModels(app.folder, rooms, houseWeb);
   log(`uploaded ${index.rooms.length} room model(s)${index.house ? " and the house model" : ""} beside the tour (${app.folder}models.json)`);
