@@ -16,8 +16,8 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { briefForItem, itemViews, loadDetections } from "../src/lib/models3d/briefs";
 import { runHouseWorker } from "../src/lib/models3d/house-worker";
-import { runObjectWorker } from "../src/lib/models3d/object-worker";
 import { downloadAppTour, uploadModels } from "../src/lib/models3d/app-tour";
+import { runRoomAgent } from "../src/lib/models3d/room-agent";
 import { runRoomWorker } from "../src/lib/models3d/room-worker";
 import { closePool } from "../src/lib/boxd/runner";
 import { blenderJob, slug } from "../src/lib/models3d/util";
@@ -85,8 +85,13 @@ if (values.item) {
   // Same model id as the room worker gives it, so a later room run reuses this model.
   const brief = briefForItem(tour, item, itemViews(item, loadDetections(tour.id, levelId, roomId)), path.join(outRoot, "objects"), `${levelId}-${roomId}-${slug(item.id)}`);
   log(`object ${brief.assetId}: "${brief.label}", ${brief.views.length} view(s), target ${brief.size.w.toFixed(2)}×${brief.size.d.toFixed(2)}×${brief.size.h.toFixed(2)} m`);
-  const r = await runObjectWorker(brief, log);
-  log(`${r.status}: ${r.reason}${r.glb ? ` → ${path.relative(process.cwd(), r.glb)}` : ""}`);
+  // The room agent with this one item: same caches as a room run (its room sheet and the room's
+  // style are reused when the room was built before). Delete its agent.json to build it again.
+  fs.rmSync(path.join(brief.workDir, "agent.json"), { force: true });
+  const photos = [...new Set(brief.views.map((v) => v.photoFile))];
+  const results = await runRoomAgent({ briefs: [brief], photos, dir: path.join(outRoot, "rooms", `${levelId}-${roomId}`), log });
+  const r = results.get(brief.assetId)!;
+  log(`${r.status}${r.flag ? ` (flagged: ${r.flag.kind})` : ""}: ${r.reason}${r.glb ? ` → ${path.relative(process.cwd(), r.glb)}` : ""}`);
 } else if (values.room) {
   const [levelId, roomId] = values.room.split("/");
   const r = await runRoomWorker({ tour, levelId, roomId, outRoot, log });

@@ -75,6 +75,9 @@ the object's floor contact and its top on the object's top, within a few centime
 For misplaced ones give the object's real pixels so the position can be recomputed: floorPoints
 (visible bottom corners where it touches the floor), topPoints (straight above a floor point, on its
 top edge), faceCorners for wall-hung items, and a tight box.
+If the object's floor line is cut off by the edge of the photo (a sofa or bed whose base runs out
+of the frame), give only the floor points you can really see on the floor, or none. Never put a
+point on the image edge, on the object's top or on a cushion.
 
 Coordinates: points [y, x], boxes [ymin, xmin, ymax, xmax], normalised 0–1000 on the ORIGINAL photo.
 Then list clearly visible objects that have no box (same fields as a detection). Do not report

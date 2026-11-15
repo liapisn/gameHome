@@ -239,5 +239,37 @@ console.log("\nmerging and screening");
     `bathroom keeps toilet, built-in vanity at 0.3 and armchair at 0.45; drops sofa and a 0.3 guess (${s.dropped.map((d) => d.reason).join("; ")})`);
 }
 
+// ---------------------------------------------------------------- 6. floor-point guard
+{
+  console.log("\nfloor-point guard");
+  // A detection whose floor points are these plan points, seen from whichever pose shows them all.
+  const at = (kind: PhotoDetection["kind"], pts: [number, number][], h: number) => {
+    // A camera in a corner of the kitchen, turned until every point is in frame.
+    const search: PhotoPose[] = [[3.0, 7.1], [0.2, 7.1], [3.0, 1.6], [0.2, 1.6]].flatMap(([x, y]) =>
+      Array.from({ length: 36 }, (_, k) => ({ x, y, yaw: k * 10, pitch: 0, hfov: 110, height: 1.4, horizon: 0.5 })));
+    for (const pose of search) {
+      const cam = photoCamera(pose, aspect);
+      const uv = pts.map(([x, y]) => cam.project([x, y, 0], 0.3));
+      const top = pts.map(([x, y]) => cam.project([x, y, h], 0.3));
+      if (![...uv, ...top].every((u) => u && u[0] >= 0 && u[0] <= 1 && u[1] >= 0 && u[1] <= 1)) continue;
+      const all = [...uv, ...top] as [number, number][];
+      const det: PhotoDetection = {
+        id: `g:${kind}`, photoId: "g", label: String(kind), kind, mount: "floor", builtIn: false, color: "#888888", material: "wood",
+        box: [Math.min(...all.map((u) => u[1])) * 1000, Math.min(...all.map((u) => u[0])) * 1000, Math.max(...all.map((u) => u[1])) * 1000, Math.max(...all.map((u) => u[0])) * 1000],
+        floorPoints: (uv as [number, number][]).map(([u, v]) => [v * 1000, u * 1000]),
+        topPoints: [], faceCorners: [], againstWall: false,
+      };
+      return liftDetection(det, cam, room, ceiling);
+    }
+    throw new Error(`no pose shows ${kind} at ${JSON.stringify(pts)}`);
+  };
+  const sofa = at("sofa", [[1.2, 2.0], [1.2, 7.0]], 0.8);
+  check(!sofa.candidate && sofa.reason === "floor points span too far", `sofa whose floor points lift 5 m apart is dropped (${sofa.reason ?? "kept"})`);
+  const kitchen = at("kitchen", [[0.3, 2.0], [0.3, 7.0]], 0.9);
+  check(!!kitchen.candidate, `kitchen whose floor points span 5 m is kept (${kitchen.reason ?? "kept"})`);
+  const sideboard = at("sideboard", [[2.75, 3.0], [2.75, 4.4], [3.39, 3.0], [3.39, 4.4]], 0.8);
+  check(!!sideboard.candidate, `sideboard against a wall, back points 0.2 m behind the wall line, is kept (${sideboard.reason ?? "kept"})`);
+}
+
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");
 process.exit(failed ? 1 : 0);

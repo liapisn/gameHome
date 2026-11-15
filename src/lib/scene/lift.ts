@@ -171,6 +171,16 @@ export interface LiftResult {
 
 /** Contacts further than this from the camera don't count against a photo's placement. */
 export const NEAR_CONTACT = 4;
+/**
+ * Floor points further than this outside the room's outline are not trusted. Most furniture stands
+ * against a wall, and its back points land just behind the plan's wall line: keep this loose
+ * enough for that (docs/two-layer-plan.md, part 3).
+ */
+export const FLOOR_TOLERANCE = 0.25;
+/** Longest believable distance between two floor points of one object (points on a cut-off sofa's top or the image edge span metres). */
+export const MAX_SPAN = 4;
+/** Fitted kitchens are the one legitimately long run. */
+export const MAX_SPAN_KITCHEN = 6;
 
 const uvOf = ([y, x]: [number, number]): [number, number] => [x / 1000, y / 1000];
 
@@ -322,7 +332,7 @@ export function liftDetection(det: PhotoDetection, cam: PhotoCamera, room: Room,
     const [u, v] = uvOf(px);
     const p = cam.onPlane(u, v, 0);
     if (!p || Math.hypot(p[0] - cx, p[1] - cy) > 15) return;
-    if (nearRoom([p[0], p[1]], room)) inside++;
+    if (nearRoom([p[0], p[1]], room, FLOOR_TOLERANCE)) inside++;
     else outside++;
     floor.push([p[0], p[1]]);
     floorIdx.push(i);
@@ -332,10 +342,20 @@ export function liftDetection(det: PhotoDetection, cam: PhotoCamera, room: Room,
   let rect: Rect;
   let fit: Candidate["fit"];
   let extrapolated = false;
-  let pts = floor.filter((p) => nearRoom(p, room, 0.5));
+  let pts = floor.filter((p) => nearRoom(p, room, FLOOR_TOLERANCE));
   // Seen through an opening: its contacts are in another room. Leave it to that room's photos.
   if (floor.length >= 2 && pts.length === 0) {
     return { candidate: null, floorInside: inside, floorOutside: outside, near, reason: "outside the room" };
+  }
+  // Most points outside: the model pointed at the wrong place (an edge, the object's top). With
+  // only two points, one stray back point behind a wall line is not enough to drop it.
+  if (floor.length >= 3 && pts.length < floor.length / 2) {
+    return { candidate: null, floorInside: inside, floorOutside: outside, near, reason: "floor points outside the room" };
+  }
+  // Points spread over metres: on a cut-off item's top or on the photo's edge, not its feet.
+  const span = Math.max(0, ...pts.flatMap((a, i) => pts.slice(i + 1).map((b) => Math.hypot(a[0] - b[0], a[1] - b[1]))));
+  if (span > (kind === "kitchen" ? MAX_SPAN_KITCHEN : MAX_SPAN)) {
+    return { candidate: null, floorInside: inside, floorOutside: outside, near, reason: "floor points span too far" };
   }
 
   if (pts.length >= 2) {

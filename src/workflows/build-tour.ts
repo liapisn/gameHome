@@ -11,6 +11,7 @@
  */
 import path from "node:path";
 import { FatalError } from "workflow";
+import { withDeadline } from "@/lib/ai/structured";
 import { adminClient, claimJob, exportProperty, finishJob, saveNewPlans, storeScenes, storeTour, writeJobProgress } from "@/lib/admin/jobs";
 import { removeWorkdir, workdir } from "@/lib/admin/workdir";
 import type { FloorPlan } from "@/lib/floorplan";
@@ -20,6 +21,11 @@ import type { RoomScene } from "@/lib/scene/types";
 import type { Tour } from "@/lib/tour/types";
 
 const BATCH = 4;
+/**
+ * Time budget of a step that makes model calls: their timeouts and retries shrink to fit, so a
+ * stalled call can't push the step past Vercel's 300 s limit (docs/two-layer-plan.md, part 1).
+ */
+const STEP_BUDGET_MS = Number(process.env.STEP_BUDGET_MS ?? 270_000);
 
 export async function buildTourWorkflow(jobId: string) {
   "use workflow";
@@ -113,15 +119,17 @@ async function readPlans(jobId: string, propertyId: string): Promise<{ plans: Fl
 
 async function placeBatch(propertyId: string, title: string, plans: FloorPlan[], files: string[]) {
   "use step";
-  const dir = workdir();
-  try {
-    await exportProperty(adminClient(), propertyId, dir, { photos: files });
-    const prep = await prepareBuild(dir, plans);
-    const r = await placePhotos(dir, prep, files, { id: propertyId, title, concurrency: BATCH });
-    return { placements: r.placements, lastError: r.lastError };
-  } finally {
-    removeWorkdir(dir);
-  }
+  return withDeadline(STEP_BUDGET_MS, async () => {
+    const dir = workdir();
+    try {
+      await exportProperty(adminClient(), propertyId, dir, { photos: files });
+      const prep = await prepareBuild(dir, plans);
+      const r = await placePhotos(dir, prep, files, { id: propertyId, title, concurrency: BATCH });
+      return { placements: r.placements, lastError: r.lastError };
+    } finally {
+      removeWorkdir(dir);
+    }
+  });
 }
 
 async function assemble(jobId: string, propertyId: string, title: string, plans: FloorPlan[], placements: Placements) {
@@ -156,26 +164,29 @@ async function assemble(jobId: string, propertyId: string, title: string, plans:
 
 async function furnishRoom(propertyId: string, tour: Tour, plans: FloorPlan[], room: string): Promise<RoomScene | null> {
   "use step";
-  const [levelId, roomId] = room.split("/");
-  const plan = plans.find((p) => p.id === tour.levels.find((l) => l.id === levelId)?.planId);
-  if (!plan) return null;
-  const dir = workdir();
-  try {
-    const photos = scenePhotos(tour, levelId, roomId).map((p) => p.src);
-    await exportProperty(adminClient(), propertyId, dir, { photos, floorplans: false });
-    const { scene } = await buildRoomScene({
-      tour: { ...tour, mediaRoot: dir },
-      plan,
-      levelId,
-      roomId,
-      workDir: path.join(dir, "work"),
-      // One check round keeps a room well inside a function invocation.
-      rounds: 1,
-    });
-    return scene.items.some((i) => i.source === "photos") ? scene : null;
-  } finally {
-    removeWorkdir(dir);
-  }
+  return withDeadline(STEP_BUDGET_MS, async () => {
+    const [levelId, roomId] = room.split("/");
+    const plan = plans.find((p) => p.id === tour.levels.find((l) => l.id === levelId)?.planId);
+    if (!plan) return null;
+    const dir = workdir();
+    try {
+      const photos = scenePhotos(tour, levelId, roomId).map((p) => p.src);
+      await exportProperty(adminClient(), propertyId, dir, { photos, floorplans: false });
+      const { scene } = await buildRoomScene({
+        tour: { ...tour, mediaRoot: dir },
+        plan,
+        levelId,
+        roomId,
+        workDir: path.join(dir, "work"),
+        // One check round keeps a room well inside a function invocation (and is skipped when
+        // the step's budget runs low, see build-scene.ts).
+        rounds: 1,
+      });
+      return scene.items.some((i) => i.source === "photos") ? scene : null;
+    } finally {
+      removeWorkdir(dir);
+    }
+  });
 }
 
 async function saveScenes(folder: string, scenes: RoomScene[]) {

@@ -12,7 +12,7 @@ export interface ObjectView {
   box: Box2D;
 }
 
-/** Room worker → object worker: one model to make, possibly placed many times. */
+/** Room worker → room agent: one model to make, possibly placed many times. */
 export interface ObjectBrief {
   /** Model id; items that are the same object share it (a pair of nightstands, the dining chairs). */
   assetId: string;
@@ -32,7 +32,7 @@ export interface ObjectBrief {
   workDir: string;
 }
 
-/** Object worker → room worker. */
+/** Room agent → room worker: one brief's model. */
 export interface ObjectResult {
   assetId: string;
   status: "ok" | "failed";
@@ -52,4 +52,9 @@ export interface ObjectResult {
   script?: string;
   /** The photos show a clearly different overall size than the target: the scene's size needs fixing. */
   sizeConflict?: { target: { w: number; d: number; h: number }; estimate?: { w: number; d: number; h: number } };
+  /**
+   * The last try failed to build and there were no rounds left: `code` = the code errored, `infra` =
+   * the machine didn't finish. Not marked finished, so the next build retries it.
+   */
+  flag?: { kind: "code" | "infra"; error: string };
 }

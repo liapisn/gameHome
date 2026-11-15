@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import { type FloorPlan, ownerRoomIds, type Room, type RoomType } from "@/lib/floorplan";
+import { remainingMs } from "@/lib/ai/structured";
 import { applyCheck, checkPhoto, scoreScene, type CheckAnswer } from "@/lib/scene/check";
 import { detectPhoto, roomKindConflict } from "@/lib/scene/detect";
 import { gatePhoto, type GateAnswer } from "@/lib/scene/gate";
@@ -265,6 +266,12 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
   // ------------------------------------------------------------------ 3. check loop
   const rounds: RoomScene["rounds"] = [{ round: 0, score: state.score, kept: true, changes: 0 }];
   for (let round = 1; round <= (opts.rounds ?? 3); round++) {
+    // Inside a Vercel step's budget (withDeadline): a check only improves the scene, so with too
+    // little time left keep the scene as it is rather than fail the step.
+    if (remainingMs() < 60_000) {
+      log(`  round ${round}: skipped, ${Math.round(remainingMs() / 1000)} s left in the step`);
+      break;
+    }
     let next = state.dets;
     let changes = 0;
     const answers = await Promise.all(
@@ -281,7 +288,14 @@ export async function buildRoomScene(opts: BuildSceneOptions): Promise<{ scene: 
         });
         return { c, a };
       }),
-    );
+    ).catch((err: Error) => {
+      if (err.message.startsWith("out of step time")) return null;
+      throw err;
+    });
+    if (!answers) {
+      log(`  round ${round}: ran out of step time, keeping the scene as it was`);
+      break;
+    }
     for (const { c, a } of answers) {
       const r = applyCheck(next, state.items, c.photo.id, { ...a, missing: a.missing.map((m) => ({ ...m, faceCorners: m.faceCorners ?? [] })) });
       next = r.dets;
