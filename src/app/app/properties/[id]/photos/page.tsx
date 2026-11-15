@@ -15,5 +15,5 @@ async function Photos({ params }: { params: PageProps<"/app/properties/[id]/phot
   const { id } = await params;
   const media = await getPropertyMedia(id);
   if (!media) notFound();
-  return <PhotoManager propertyId={media.id} orgId={media.orgId} photos={media.photos} levels={media.levels} />;
+  return <PhotoManager propertyId={media.id} orgId={media.orgId} photos={media.photos} levels={media.levels} autoEstimate={media.autoEstimate} />;
 }

@@ -117,7 +117,10 @@ export function ProspertyImport() {
             Import
           </button>
         </div>
-        <p className="text-xs text-neutral-500">Fills in the details and copies all photos and the floor plan.</p>
+        <p className="text-xs text-neutral-500">
+          Fills in the details, copies all photos and the floor plan, then reads the plan&apos;s rooms and matches
+          each photo to its room.
+        </p>
       </form>
     );
   }
@@ -151,7 +154,7 @@ export function ProspertyImport() {
         <Step
           state={steps.floorplan}
           label={steps.floorplan === "skipped" ? "No floor plan on the listing" : "Copying the floor plan"}
-          doneLabel={`Floor plan${(plan?.floorplanUrls.length ?? 0) > 1 ? "s" : ""} copied`}
+          doneLabel={`Floor plan${(plan?.floorplanUrls.length ?? 0) > 1 ? "s" : ""} copied · reading rooms, then matching each photo to its room, in the background`}
         />
         <Step state={steps.open} label="Opening the property" doneLabel="Opening the property" />
       </ol>

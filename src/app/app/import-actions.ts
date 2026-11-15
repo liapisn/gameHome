@@ -7,11 +7,14 @@ import { z } from "zod";
 import { defaultLevelName, requireSession } from "@/lib/admin/data";
 import { MAX_PHOTOS_PER_PROPERTY, MEDIA_BUCKET, floorplanPath, photoPath, thumbPathFor } from "@/lib/admin/media-paths";
 import { fetchProspertyListing, prospertyListingId } from "@/lib/import/prosperty";
+import { startPlanRead } from "@/lib/admin/start-plan-read";
 
 /*
  * A Prosperty import runs as a few short steps that the page calls in turn, so it can show
  * where it is (an import of 25 photos takes a minute or two):
  *   startProspertyImport → importProspertyPhotos (in batches) → importProspertyFloorplans
+ * The last step also starts reading the plans into rooms in the background; once every floor
+ * is read, the photos' rooms are estimated from them (src/workflows/read-plan.ts).
  */
 
 /** Prosperty serves its images from this CDN only; no other URL is ever fetched. */
@@ -180,7 +183,10 @@ export async function importProspertyPhotos(
   }
 }
 
-/** Step 3: copy the floor plans, the n-th plan onto the n-th floor. */
+/**
+ * Step 3: copy the floor plans, the n-th plan onto the n-th floor, then start reading them into
+ * rooms; after the last read the photos' rooms are estimated. Both carry on after the page leaves.
+ */
 export async function importProspertyFloorplans(propertyId: string, urls: string[]): Promise<Result<{ saved: number }>> {
   try {
     const parsed = z.array(ImageUrl).max(10).parse(urls);
@@ -192,7 +198,7 @@ export async function importProspertyFloorplans(propertyId: string, urls: string
       .order("sort");
     if (error) throw new Error(error.message);
 
-    let saved = 0;
+    const copied: { levelId: string; path: string }[] = [];
     for (const [i, url] of parsed.slice(0, levels.length).entries()) {
       // Plans keep more resolution so printed dimensions stay legible for the parser.
       const file = await encode(await download(url), 4096, 92);
@@ -210,10 +216,11 @@ export async function importProspertyFloorplans(propertyId: string, urls: string
       if (mediaError) throw new Error(mediaError.message);
       const { error: levelError } = await supabase.from("levels").update({ floorplan_path: path }).eq("id", levels[i].id);
       if (levelError) throw new Error(levelError.message);
-      saved++;
+      copied.push({ levelId: levels[i].id, path });
     }
+    for (const { levelId, path } of copied) await startPlanRead(supabase, propertyId, levelId, path, { estimatePhotos: true });
     revalidatePath(`/app/properties/${propertyId}`, "layout");
-    return { ok: true, value: { saved } };
+    return { ok: true, value: { saved: copied.length } };
   } catch (e) {
     return fail(e);
   }
