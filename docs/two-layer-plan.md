@@ -12,8 +12,8 @@ code per object (`src/lib/models3d/code-worker.ts`), it runs on boxd (`src/lib/b
    with its own design sheet, critic and revise loop. After this change one **room agent** per room
    does all the thinking for its room. The per-object agent goes away. Part 4.
 
-Keep the testing small: type check, two self-test cases, one room built end to end, one house.
-Expected implementation time: about 2 hours.
+Keep the testing small: type check, three self-test cases, one room built end to end, one house.
+Expected implementation time: about 3 hours (Parts 1–3 about 1, Part 4 about 2).
 
 ## Why (benchmark, 2026-11-15)
 
@@ -72,7 +72,21 @@ its price or rate limits are better. Nothing in code should name a model except 
    - `src/lib/models3d/critic.ts:104` (house review) → `model: geminiRoomModel(), effort: "low"`.
    - `pickTurn` (`critic.ts:66`, `"medium"`) → delete the line.
    - `src/lib/floorplan-parser/parse.ts` and `src/lib/tour/estimate-room.ts` keep `"medium"`.
-7. Env: set `GEMINI_MODEL=gemini-4-hydrogen` in Vercel and `.env.local`; `GEMINI_MODEL_ROOM` and
+7. **Step deadline (Vercel).** `furnishRoom` runs gate → detect → check one after another, so
+   three stalled calls in a row (3 × 90 s + backoff each) can pass the 300 s step limit. Add to
+   `structured.ts`:
+   ```ts
+   export function withDeadline<T>(ms: number, fn: () => Promise<T>): Promise<T>  // AsyncLocalStorage
+   export function remainingMs(): number                                            // Infinity outside withDeadline
+   ```
+   Inside `gemini()`, each attempt's timeout is `min(callTimeoutMs(), remainingMs() - 10_000)`, and
+   no new attempt starts with less than 20 s left (it throws `out of step time`). In
+   `build-tour.ts`, wrap the bodies of `placeBatch` and `furnishRoom` in
+   `withDeadline(STEP_BUDGET_MS, …)` (env, default 270 s). In `build-scene.ts`, skip the check
+   round when `remainingMs() < 60_000` and keep the scene as it was before the check (the check
+   only improves a scene; a scene without it is still usable). The CLI never calls `withDeadline`,
+   so nothing changes there. No signatures change: the deadline travels with the async context.
+8. Env: set `GEMINI_MODEL=gemini-4-hydrogen` in Vercel and `.env.local`; `GEMINI_MODEL_ROOM` and
    `GEMINI_MODEL_OBJECT` only if overriding. (The owner sets Vercel; never commit keys.)
 
 ## Part 2: cut-off items in the prompts (`src/lib/scene/detect.ts`, `check.ts`)
@@ -90,19 +104,24 @@ real `floorPoints` of misplaced objects).
 
 In the floor-items branch (around line 335, where `pts` is filtered with `nearRoom(p, room, 0.5)`):
 
-1. **Outside the room:** filter with `nearRoom(p, room, 0.15)` instead of `0.5`. If the detection had
-   2 or more floor points and fewer than half survive, return
-   `{ candidate: null, …, reason: "floor points outside the room" }`.
+1. **Outside the room:** filter with `nearRoom(p, room, FLOOR_TOLERANCE)` (0.25) instead of `0.5`,
+   and use the same tolerance for the `inside`/`outside` counts above it (today they use the 0.25
+   default; keep them in step). Most of our items stand against a wall, and their back points land
+   just behind the plan's wall line, so: if the detection had **3 or more** floor points and fewer
+   than half survive, return `{ candidate: null, …, reason: "floor points outside the room" }`.
+   With 2 points, one surviving point is not enough to drop the item; the existing
+   "all points outside → seen through an opening" rule still applies.
 2. **Span too long:** after the filter, if the longest distance between two kept points is over
    **4 m** (over **6 m** for `kind === "kitchen"`, the only legitimate long run), return
    `{ candidate: null, …, reason: "floor points span too far" }`.
 3. The check loop needs no change: its corrections go back through `liftDetection`, so a
    correction that fails the guard is rejected like any other bad lift and the round is not kept.
-4. Name both thresholds as constants beside `NEAR_CONTACT` (`MAX_SPAN = 4`, `MAX_SPAN_KITCHEN = 6`,
-   `FLOOR_TOLERANCE = 0.15`).
+4. Name the thresholds as constants beside `NEAR_CONTACT` (`MAX_SPAN = 4`, `MAX_SPAN_KITCHEN = 6`,
+   `FLOOR_TOLERANCE = 0.25`).
 
-**Test:** two cases in `scripts/selftest-lift.mts`: a sofa whose two floor points lift 5 m apart is
-dropped; a kitchen whose points span 5 m is kept.
+**Test:** three cases in `scripts/selftest-lift.mts`: a sofa whose two floor points lift 5 m apart
+is dropped; a kitchen whose points span 5 m is kept; a sideboard against a wall with its back
+points 0.2 m behind the wall line is kept.
 
 ## Part 4: two-layer furniture build
 
@@ -180,9 +199,8 @@ its one retry on a fresh machine) into an exported function:
 export async function buildItem(brief: ObjectBrief, dir: string): Promise<RunResult | { infraError: string }>
 ```
 
-Same job as today (`run_object.py`, `res: 640`, `samples: 24`, plants free in `w, d`). A run whose
-code fails (`ok: false`) is fed straight back to step 2 with the error as feedback, as today; it
-does not wait for the critique.
+Same job as today (`run_object.py`, `res: 640`, `samples: 24`, plants free in `w, d`). A failed
+build never holds up the round: the item is flagged and rerun afterwards (see 5. Rounds).
 
 ### 4. Room critique (`room-agent.ts`)
 
@@ -203,15 +221,39 @@ The prompt is the existing per-object critic prompt, plus: "Judge them together:
 ### 5. Rounds
 
 - `ROOM_ROUNDS` (env, default **3**): round 1 builds every item; later rounds rewrite and rebuild
-  only items that failed the critique or failed to build, using `writeCode(..., prev)` with
-  `feedbackFrom(critique)`.
+  only items that failed the critique or were flagged, using `writeCode(..., prev)` with
+  `feedbackFrom(critique)` or the error as feedback.
+- **Failures are flagged, not dropped.** Each item has a `flag` (`null | "code" | "infra"`):
+  - `code`: the build ran but the code failed (`ok: false`, including "Size off"). The item skips
+    this round's critique and is rewritten in the next round with the error as its feedback.
+  - `infra`: Blender did not finish twice (machine stalls, account limit). Nothing is cached for
+    that run. The item is retried in the next round with the same code, on a fresh machine, without
+    a rewrite.
+  - **After the last round**, every item still flagged gets one more pass: a rewrite (code) or a
+    retry (infra), a build, and a critique for just those items. Rounds therefore never end on an
+    unreviewed failure because of timing.
+  - An item still failing after that keeps its best earlier run if it has one, otherwise it stays a
+    box. Either way it is listed in `room.json` under `flagged: [{ assetId, flag, error }]` and
+    logged, so a rerun (`--item` or the room again) picks it up: its failed runs are not cached.
 - Each item keeps its best-scoring run, exactly as `runCodeObjectWorker` picks today. The
   size-conflict rules stay as they are (two `sizeWrong` flags, or one plus a "Size off" error, stop
   that item and report the conflict).
-- An infrastructure failure (`infraError`) stops that item for this build without caching, as
-  today.
 - Output: `Map<assetId, ObjectResult>`, same shape as now, written to
   `objects/<assetId>/result.json`.
+
+### 5b. Reuse what is already built
+
+Today's per-object caches (`objects/<assetId>/design.json`, `r<n>/code.py`, `result.json`, renders)
+are reused, not thrown away:
+- **Design sheet:** an item whose `objects/<assetId>/design.json` exists sends it to the room design
+  call as its current sheet ("Keep what is right; align it with the room"). The room call still
+  returns a sheet for it, so style and `matches` apply to every item.
+- **Built runs:** an item whose best old run built (`ok: true`, highest old `critique.json` score)
+  enters round 1 with that run: no code is written or built for it, and the room critique judges
+  its renders with the rest. If it passes, it is done. If not, round 2 rewrites it from that code.
+- New runs continue the numbering (`r<k+1>`), so nothing old is overwritten. Old `critique.json`
+  files are only used to pick the best old run; the room critique's verdict is what counts.
+- To test the writing path from scratch, use another room or move the room's `objects/` aside.
 
 ### 6. Wiring (`room-worker.ts`)
 
@@ -252,9 +294,10 @@ rather than raise timeouts; `TOUR_BUILDER=worker` with `npm run worker` is the f
 ## Testing (keep it to this)
 
 1. `npx tsc --noEmit` and `npm run lint`.
-2. `npx tsx scripts/selftest-lift.mts` with the two new cases.
-3. One room end to end:
+2. `npx tsx scripts/selftest-lift.mts` with the three new cases.
+3. One room end to end, reusing the cached models (5b):
    `npm run build:models -- --tour listing-8218 --room main/r2`
+   Check in the log that old runs were picked up and only failing items were rewritten.
    Look at the `compare-*.jpg` images and `room.json`. Done when it finishes, most items are
    models (not boxes), and the sofa, coffee table and TV unit look like the photos.
 4. One whole house: `npm run build:models -- --tour listing-8218` (4 furnished rooms). Done when
@@ -270,7 +313,8 @@ the default for item code.
   timeout in Part 4 step 8 covers it.
 - **The room critique misses items** when there are many: the answer must list every `assetId`; an
   item without a verdict counts as passed with no score (keeps its run, logged).
-- **The 0.15 m tolerance drops good items** near doorways or on plan errors. If a room loses
-  furniture it had before, raise `FLOOR_TOLERANCE` to 0.25; don't remove the guard.
+- **The 0.25 m tolerance drops good items** where the plan's walls are off by more than that. If a
+  room loses furniture it had before, look at the plan first; raise `FLOOR_TOLERANCE` rather than
+  remove the guard.
 - **Hydrogen at low thinking writes weaker code.** The optional Carbon rerun above is the check;
   `GEMINI_MODEL_OBJECT` switches it without code changes.
