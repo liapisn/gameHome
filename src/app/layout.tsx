@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "gameHome · 3D home tours from a floor plan",
-  description: "Upload a floor plan, photos and videos. Get a walkable 3D tour to rent, sell or list your home, discoverable by people and AI agents.",
+  title: "gameHome · Furnished 3D homes from a floor plan and photos",
+  description: "Upload a floor plan and photos, or paste a listing link. gameHome reads the plan, places each photo in its room and rebuilds the furniture in 3D, so people can walk through the home before a viewing.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
