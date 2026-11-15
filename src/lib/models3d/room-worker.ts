@@ -130,7 +130,7 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     b.workDir = path.join(objectsDir, b.assetId);
     briefs.set(b.assetId, b);
   }
-  say(`${items.length} item(s): ${briefs.size} model(s) to make for ${generated.length} item(s)${tables.length ? ` + chairs` : ""}, ${items.length - generated.length} picture(s)`);
+  say(`${items.length} item(s): ${briefs.size} model(s) to make for ${generated.length} item(s)${tables.length ? ` + chairs` : ""}, ${items.filter((i) => PICTURE.has(i.kind)).length} picture(s), ${items.filter((i) => i.source !== "photos" && !PICTURE.has(i.kind)).length} rule-added box(es)`);
 
   // ------------------------------------------------------------------ 2. object workers, all at once
   const results = new Map<string, ObjectResult>();
