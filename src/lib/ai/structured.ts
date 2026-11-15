@@ -47,15 +47,17 @@ export async function generateStructured<T extends z.ZodType>(
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-const CALL_TIMEOUT_MS = Number(process.env.GEMINI_CALL_TIMEOUT_MS ?? 12 * 60_000);
+const CALL_TIMEOUT_MS = Number(process.env.GEMINI_CALL_TIMEOUT_MS ?? 90_000);
 
 /** Output token limits from the models API (GET /v1beta/models/<id>). */
 const MAX_OUTPUT: Record<string, number> = { "gemini-4-carbon": 32768, "gemini-4-hydrogen": 65536 };
 
 /** Default for every Gemini call; GEMINI_MODEL overrides it. */
-export const GEMINI_DEFAULT_MODEL = "gemini-4-carbon";
+export const GEMINI_DEFAULT_MODEL = "gemini-4-hydrogen";
 /** The object workers' model (many workers, about a dozen calls each). */
 export const geminiObjectModel = () => process.env.GEMINI_MODEL_OBJECT ?? "gemini-4-hydrogen";
+/** The house review: the stronger model, at low thinking. */
+export const geminiRoomModel = () => process.env.GEMINI_MODEL_ROOM ?? "gemini-4-carbon";
 
 /** JSON Schema for Gemini's responseJsonSchema: drop keys it rejects. */
 function geminiSchema(schema: z.ZodType): unknown {
@@ -88,7 +90,7 @@ async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
       // Gemini 4 accepts low, medium and high (not minimal). Thought summaries are streamed (and
       // skipped below) because without them nothing, not even headers, arrives until thinking ends:
       // past fetch's 5-minute header timeout on long calls.
-      thinkingConfig: { thinkingLevel: req.effort ?? "high", includeThoughts: true },
+      thinkingConfig: { thinkingLevel: req.effort ?? "low", includeThoughts: true },
       // The model's full output budget (thinking counts against it): the default is lower, and
       // long placements at high thinking ran out (finishReason MAX_TOKENS).
       maxOutputTokens: MAX_OUTPUT[model] ?? 32768,
@@ -96,7 +98,7 @@ async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
   };
 
   let lastError: unknown;
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     const backoff = () => {
       // One line per retry, so a slow step says what is happening instead of going quiet.
       console.warn(`gemini ${model}: attempt ${attempt + 1} failed (${String((lastError as Error)?.message ?? lastError).slice(0, 160)}); retrying`);
@@ -205,7 +207,7 @@ async function claude<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
   const stream = client.messages.stream({
     model,
     max_tokens: 32000,
-    output_config: { effort: req.effort ?? "high", format: zodOutputFormat(req.schema) },
+    output_config: { effort: req.effort ?? "low", format: zodOutputFormat(req.schema) },
     system: req.system,
     messages: [{ role: "user", content: [...shared, ...req.parts.map(toBlock)] }],
   });

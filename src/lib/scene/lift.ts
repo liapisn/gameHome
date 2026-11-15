@@ -171,6 +171,13 @@ export interface LiftResult {
 
 /** Contacts further than this from the camera don't count against a photo's placement. */
 export const NEAR_CONTACT = 4;
+/** Floor points further than this outside the room outline are pointing errors, not contacts. */
+export const FLOOR_TOLERANCE = 0.15;
+/** The longest footprint side a floor item may lift to; longer means the points are wrong. */
+export const MAX_SPAN = 4;
+/** Kitchen runs and big rugs are legitimately long. */
+export const MAX_SPAN_LONG = 6;
+const LONG_KINDS = new Set<string>(["kitchen", "rug"]);
 
 const uvOf = ([y, x]: [number, number]): [number, number] => [x / 1000, y / 1000];
 
@@ -332,10 +339,22 @@ export function liftDetection(det: PhotoDetection, cam: PhotoCamera, room: Room,
   let rect: Rect;
   let fit: Candidate["fit"];
   let extrapolated = false;
-  let pts = floor.filter((p) => nearRoom(p, room, 0.5));
+  let pts = floor.filter((p) => nearRoom(p, room, FLOOR_TOLERANCE));
   // Seen through an opening: its contacts are in another room. Leave it to that room's photos.
   if (floor.length >= 2 && pts.length === 0) {
     return { candidate: null, floorInside: inside, floorOutside: outside, near, reason: "outside the room" };
+  }
+  // Most of its points land outside: the pointing is off, so nothing it says can be trusted.
+  if (floor.length >= 2 && pts.length < floor.length / 2) {
+    return { candidate: null, floorInside: inside, floorOutside: outside, near, reason: "floor points outside the room" };
+  }
+  if (pts.length >= 2) {
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
+    const long = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+    if (long > (LONG_KINDS.has(kind) ? MAX_SPAN_LONG : MAX_SPAN)) {
+      return { candidate: null, floorInside: inside, floorOutside: outside, near, reason: "floor points span too far" };
+    }
   }
 
   if (pts.length >= 2) {

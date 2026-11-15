@@ -45,6 +45,9 @@ For every object that stands on or hangs in the room:
   its footprint that you can actually see (feet of a table or sofa, bottom corners of a cabinet's
   plinth or kickboard). Give 2–4 when visible, ordered left to right. Never guess hidden corners;
   never give points on the object's top or on the wall. For a rug, its visible corners.
+  If the object's floor line is cut off by the edge of the photo (a sofa or bed whose base runs out
+  of the frame), give only the floor points you can really see on the floor, or none. Never put a
+  point on the image edge, on the object's top or on a cushion.
 - topPoints: for one or two of the floorPoints, the point straight above it on the object's top
   edge (worktop edge, table top, sofa back, fridge top).
 - faceCorners (wall/ceiling items): the visible corners of the front face.

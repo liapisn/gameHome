@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import sharp from "sharp";
 import { z } from "zod";
-import { generateStructured, type Part } from "@/lib/ai/structured";
+import { geminiRoomModel, generateStructured, type Part } from "@/lib/ai/structured";
 
 const jpeg = async (file: string, size = 1024) =>
   (await sharp(file).rotate().resize(size, size, { fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 86 }).toBuffer()).toString("base64");
@@ -63,7 +63,6 @@ export async function pickTurn(label: string, photoCrop: string, renderCrops: st
       ...(await Promise.all(renderCrops.flatMap(async (r, i) => [text(`Render ${i + 1}:`), await img(r, 640)]))).flat(),
       text(`In which render does the ${label} face the same way as in the photo (look at its front, back, arms, legs, doors, screen)?`),
     ],
-    effort: "medium",
   });
   const turn = res.data.match === "none" ? null : (Number(res.data.match) - 1) * 90;
   return { turn, wrongModel: res.data.wrongModel, reason: res.data.reason };
@@ -101,7 +100,7 @@ export async function critiqueHouse(rooms: { room: string; pairs: string[] }[]) 
         "the right size, in the right place and facing the right way?",
     ),
   );
-  const res = await generateStructured({ schema: HouseReview, system: "You review 3D copies of real homes rebuilt from listing photos.", parts, effort: "high" });
+  const res = await generateStructured({ schema: HouseReview, system: "You review 3D copies of real homes rebuilt from listing photos.", parts, model: geminiRoomModel(), effort: "low" });
   const scores = res.data.rooms.map((r) => r.score);
   const pass = scores.length > 0 && Math.min(...scores) >= 6 && scores.reduce((a, b) => a + b, 0) / scores.length >= 7;
   return { ...res.data, pass };

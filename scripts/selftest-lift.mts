@@ -239,5 +239,27 @@ console.log("\nmerging and screening");
     `bathroom keeps toilet, built-in vanity at 0.3 and armchair at 0.45; drops sofa and a 0.3 guess (${s.dropped.map((d) => d.reason).join("; ")})`);
 }
 
+// ---------------------------------------------------------------- 6. lift guard (span, outside the room)
+{
+  console.log("\nlift guard");
+  // The first photo that sees at least two of the item's floor corners.
+  const guard = (t: Truth) => {
+    // Plus one photo from the room's far end, looking down its length.
+    for (const pose of [{ x: 1.6, y: 7.2, yaw: 270, pitch: -10, hfov: 110, height: 1.5, horizon: 0.5 }, ...poses]) {
+      const det = synth(t, pose, "g", 0, 0, () => 0.5);
+      if (det && det.floorPoints.length >= 2) return liftDetection(det, photoCamera(pose, aspect), room, ceiling);
+    }
+    return null;
+  };
+  const sofa = guard({ id: "sofa", kind: "sofa", mount: "floor", rect: [1.2, 1.5, 2.1, 6.0], z: [0, 0.8], wall: false });
+  check(!!sofa && !sofa.candidate && sofa.reason === "floor points span too far", `a sofa spanning 4.5 m is dropped (${sofa?.reason ?? "no detection"})`);
+  const kitchen = guard({ id: "kitchen", kind: "kitchen", mount: "floor", rect: [0, 1.5, 0.6, 6.0], z: [0, 0.9], wall: true });
+  check(!!kitchen?.candidate, `a kitchen run spanning 4.5 m is kept (${kitchen?.reason ?? "ok"})`);
+  const rug = guard({ id: "rug", kind: "rug", mount: "floor", rect: [0.1, 2.0, 3.1, 6.0], z: [0, 0.01], wall: false });
+  check(!!rug?.candidate, `a 3 × 4 m rug (5 m diagonal) is kept (${rug?.reason ?? "ok"})`);
+  const chair = guard({ id: "chair", kind: "armchair", mount: "floor", rect: [2.9, 3.0, 3.7, 3.8], z: [0, 0.9], wall: false });
+  check(!!chair && !chair.candidate && chair.reason === "floor points outside the room", `an armchair with most points outside the room is dropped (${chair?.reason ?? "no detection"})`);
+}
+
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");
 process.exit(failed ? 1 : 0);

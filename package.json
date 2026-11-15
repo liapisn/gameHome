@@ -10,11 +10,11 @@
     "parse:plan": "tsx --env-file=.env.local scripts/parse-floorplan.mts",
     "export:glb": "tsx --disable-warning=THREE_CJS_DEPRECATED scripts/export-glb.mts",
     "render:unreal": "scripts/render-unreal.sh",
-    "build:tour": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-tour.mts",
-    "worker": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/worker.mts",
-    "build:scene": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-scene.mts",
+    "build:tour": "GEMINI_CALL_TIMEOUT_MS=360000 tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-tour.mts",
+    "worker": "GEMINI_CALL_TIMEOUT_MS=360000 tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/worker.mts",
+    "build:scene": "GEMINI_CALL_TIMEOUT_MS=360000 tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-scene.mts",
     "blender:scene": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/blender-scene.mts",
-    "build:models": "tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-models.mts",
+    "build:models": "GEMINI_CALL_TIMEOUT_MS=360000 tsx --env-file=.env.local --disable-warning=THREE_CJS_DEPRECATED scripts/build-models.mts",
     "boxd:snapshot": "tsx --env-file=.env.local scripts/boxd-snapshot.mts"
   },
   "dependencies": {
