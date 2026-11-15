@@ -25,14 +25,14 @@ import type { Tour } from "@/lib/tour/types";
 import { PICTURE, briefForItem, builtToMeasure, chairBrief, chairPlacements, itemViews, loadDetections } from "./briefs";
 import { pickTurn, sameModels } from "./critic";
 import { fitFor, runObjectWorker } from "./object-worker";
-import { cropViews } from "./reference";
+import { cropViews } from "./crops";
 import type { ObjectBrief, ObjectResult } from "./types";
 import { blenderJob, cachedJson, pool, slug } from "./util";
 
 /** A placed model whose long side (both sides, for flat things) is more than this far off its item's stays a box. */
 const MAX_PROPORTION_OFF = 0.5;
-/** Object workers in flight at once (each runs two generators). */
-const OBJECT_CONCURRENCY = 8;
+/** Object workers in flight at once (each builds on its own boxd machine; the pool caps machines). */
+const OBJECT_CONCURRENCY = Number(process.env.OBJECT_CONCURRENCY ?? 30);
 const RENDER_W = 1024;
 
 export interface RoomRun {
@@ -85,7 +85,10 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
   const items = scene.items.map((i) => ({ ...i, views: itemViews(i, detections).filter((v) => gated.has(v.photoId)) }));
 
   // ------------------------------------------------------------------ 1. what gets a model
-  const generated = items.filter((i) => !builtToMeasure(i) && !PICTURE.has(i.kind));
+  // Items seen in the photos get a model (fitted units built to measure, see briefs.ts), except
+  // pictures. Items added by rules (a room the photos show empty) stay boxes: a convincing model
+  // would show furniture the home doesn't have.
+  const generated = items.filter((i) => !PICTURE.has(i.kind) && i.source === "photos");
   const firstCrops = new Map<string, string | null>();
   for (const i of generated) {
     if (!i.views.length) {
@@ -127,7 +130,7 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     b.workDir = path.join(objectsDir, b.assetId);
     briefs.set(b.assetId, b);
   }
-  say(`${items.length} item(s): ${briefs.size} model(s) to make for ${generated.length} item(s)${tables.length ? ` + chairs` : ""}, ${items.length - generated.length} built to measure or pictures`);
+  say(`${items.length} item(s): ${briefs.size} model(s) to make for ${generated.length} item(s)${tables.length ? ` + chairs` : ""}, ${items.filter((i) => PICTURE.has(i.kind)).length} picture(s), ${items.filter((i) => i.source !== "photos" && !PICTURE.has(i.kind)).length} rule-added box(es)`);
 
   // ------------------------------------------------------------------ 2. object workers, all at once
   const results = new Map<string, ObjectResult>();
@@ -226,11 +229,14 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
   if (judged.length && cameras.length) {
     say(`orientation: rendering every model at 0°, 90°, 180°, 270° from ${cameras.length} camera(s)`);
     const turns = [0, 90, 180, 270];
+    // The four builds run side by side, each on its own boxd machine.
     const renders: Record<number, Record<string, string>> = {};
-    for (const t of turns) {
-      const res = await build(`turn-${t}`, { turnAll: t });
-      renders[t] = Object.fromEntries(res.cameras.map((c) => [c.id, c.render!]));
-    }
+    await Promise.all(
+      turns.map(async (t) => {
+        const res = await build(`turn-${t}`, { turnAll: t });
+        renders[t] = Object.fromEntries(res.cameras.map((c) => [c.id, c.render!]));
+      }),
+    );
     await pool(judged, 6, async (p) => {
       // The photo where this copy is largest.
       const area = (b: number[]) => (b[2] - b[0]) * (b[3] - b[1]);
@@ -256,8 +262,13 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
       fs.mkdirSync(odir, { recursive: true });
       const photoCrop = await cropOf(path.resolve(tour.mediaRoot, photo.src), path.join(odir, "photo.jpg"));
       const renderCrops = await Promise.all(turns.map((t) => cropOf(renders[t][view.photoId], path.join(odir, `turn-${t}.jpg`))));
-      const v = await cachedJson(path.join(odir, "verdict.json"), () => pickTurn(p.label, photoCrop, renderCrops));
-      p.turn = v.turn ?? 0;
+      // One item's failed check must not sink the room: it keeps its turn.
+      const v = await cachedJson(path.join(odir, "verdict.json"), () => pickTurn(p.label, photoCrop, renderCrops)).catch((err) => {
+        say(`turn ${p.id}: check failed (${(err as Error).message.slice(0, 80)}), kept`);
+        return { turn: null, wrongModel: false, reason: "check failed" };
+      });
+      // "Wrong model" means the crop showed something else (often a neighbour): its turn means nothing.
+      p.turn = v.wrongModel ? 0 : (v.turn ?? 0);
       say(`turn ${p.id}: ${v.turn ?? "unclear, kept"}°${v.wrongModel ? " (looks like the wrong model)" : ""} — ${v.reason}`);
     });
     // Copies of a group that no photo judged keep the turn of their judged sibling.
@@ -286,6 +297,7 @@ export async function runRoomWorker(run: RoomRun): Promise<{ summary: string; ro
     placements: placements.map((p) => ({ id: p.id, assetId: p.assetId, turn: p.turn, scale: Math.round(p.scale * 1000) / 1000 })),
     builtToMeasure: items.filter((i) => builtToMeasure(i)).map((i) => i.id),
     pictures: [...pictures.keys()],
+    sizeConflicts: [...results.values()].filter((r) => r.sizeConflict).map((r) => ({ assetId: r.assetId, ...r.sizeConflict })),
     standIns: generated.filter((i) => !placements.some((p) => p.id === i.id)).map((i) => ({ id: i.id, reason: results.get(assetFor.get(i.id)!)?.reason ?? "no model" })),
     checks: final.checks,
     compare: final.cameras.map((c) => path.join(dir, `compare-${c.id}.jpg`)),

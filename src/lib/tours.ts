@@ -47,10 +47,36 @@ export function resolveTour(id: string): ResolvedTour | null {
       levels,
       mediaUrl: canServeMedia(tour.id) ? `/api/tour-media/${tour.id}` : null,
       scenes: getScenes(tour.id),
+      roomModels: localRoomModels(tour),
     };
   }
   const plan = getPlan(id);
   return plan ? planAsTour(plan) : null;
+}
+
+const EXPORTS_DIR = path.join(process.cwd(), "exports");
+const SAFE = /^[A-Za-z0-9_-]+$/;
+
+/** Dev only: the web copy of a room's generated furniture (npm run build:models), if built. */
+export function localRoomModelPath(tourId: string, roomFile: string): string | null {
+  if (!isDev || !SAFE.test(tourId) || !SAFE.test(roomFile)) return null;
+  const file = path.join(EXPORTS_DIR, tourId, "models", "rooms", roomFile, "room-web.glb");
+  return fs.existsSync(file) ? file : null;
+}
+
+/** Dev only: generated room models of a fixture tour, keyed by roomKey, served by /api/tour-models. */
+function localRoomModels(tour: Tour): Record<string, string> | undefined {
+  if (!isDev) return undefined;
+  const out: Record<string, string> = {};
+  for (const l of tour.levels) {
+    const dir = path.join(EXPORTS_DIR, tour.id, "models", "rooms");
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.startsWith(`${l.id}-`) || !localRoomModelPath(tour.id, f)) continue;
+      out[`${l.id}/${f.slice(l.id.length + 1)}`] = `/api/tour-models/${tour.id}/${f}`;
+    }
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 /** Rooms furnished from photos (npm run build:scene), keyed by roomKey. Only the viewer's fields are kept. */

@@ -15,27 +15,17 @@ export async function cachedJson<T>(file: string, make: () => Promise<T>): Promi
 /** The line each script in blender/ prints when it finished. */
 const MARKER: Record<string, string> = {
   "build_scene.py": "BUILD_SCENE_OK",
-  "prep_prop.py": "PREP_OK",
-  "render_compare.py": "COMPARE_DONE",
   "join_house.py": "JOIN_HOUSE_OK",
   "web_copy.py": "WEB_COPY_OK",
+  "test_gh_parts.py": "GH_PARTS_OK",
+  "run_object.py": "RUN_OBJECT_DONE",
 };
 
-/**
- * Blender runs one at a time: several Cycles renders at once exhaust the GPU (Metal "Command buffer
- * not completed"), and a failed render would count as a failed attempt. Generation stays parallel.
- */
-let blenderQueue: Promise<unknown> = Promise.resolve();
-
-/** Write `job` beside `jobFile` and run a script from blender/ on it (queued: one Blender at a time). */
+/** Write `job` beside `jobFile` and run a script from blender/ on it (on its own boxd machine; see run-blender.ts). */
 export function blenderJob(script: string, jobFile: string, job: unknown): Promise<string> {
-  const run = blenderQueue.then(() => {
-    fs.mkdirSync(path.dirname(jobFile), { recursive: true });
-    fs.writeFileSync(jobFile, JSON.stringify(job, null, 2));
-    return runBlender(path.resolve("blender", script), [jobFile], undefined, MARKER[script] ?? "BUILD_SCENE_OK");
-  });
-  blenderQueue = run.catch(() => {});
-  return run;
+  fs.mkdirSync(path.dirname(jobFile), { recursive: true });
+  fs.writeFileSync(jobFile, JSON.stringify(job, null, 2));
+  return runBlender(path.resolve("blender", script), [jobFile], undefined, MARKER[script] ?? "BUILD_SCENE_OK");
 }
 
 /** Run tasks with at most `n` at once, keeping order of results. */

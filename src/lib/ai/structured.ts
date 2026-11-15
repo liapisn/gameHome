@@ -2,7 +2,8 @@
  * Provider-neutral "image(s) + prompt → JSON matching a zod schema".
  *
  * Gemini is used when GEMINI_API_KEY is set (REST, no SDK). Otherwise Claude, via
- * ANTHROPIC_API_KEY or Vercel AI Gateway. GEMINI_MODEL / CLAUDE_MODEL override the defaults.
+ * ANTHROPIC_API_KEY or Vercel AI Gateway. GEMINI_MODEL / CLAUDE_MODEL override the defaults;
+ * a request's own `model` overrides both (Gemini only).
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
@@ -22,6 +23,8 @@ export interface StructuredRequest<T extends z.ZodType> {
   parts: Part[];
   /** Spend more reasoning on hard visual geometry. */
   effort?: "low" | "medium" | "high";
+  /** Gemini model id for this call only (e.g. the object workers' GEMINI_MODEL_OBJECT). */
+  model?: string;
 }
 
 export interface StructuredResult<T> {
@@ -44,6 +47,16 @@ export async function generateStructured<T extends z.ZodType>(
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
+const CALL_TIMEOUT_MS = Number(process.env.GEMINI_CALL_TIMEOUT_MS ?? 12 * 60_000);
+
+/** Output token limits from the models API (GET /v1beta/models/<id>). */
+const MAX_OUTPUT: Record<string, number> = { "gemini-4-carbon": 32768, "gemini-4-hydrogen": 65536 };
+
+/** Default for every Gemini call; GEMINI_MODEL overrides it. */
+export const GEMINI_DEFAULT_MODEL = "gemini-4-carbon";
+/** The object workers' model (many workers, about a dozen calls each). */
+export const geminiObjectModel = () => process.env.GEMINI_MODEL_OBJECT ?? "gemini-4-hydrogen";
+
 /** JSON Schema for Gemini's responseJsonSchema: drop keys it rejects. */
 function geminiSchema(schema: z.ZodType): unknown {
   const strip = (node: unknown): unknown => {
@@ -62,7 +75,7 @@ function geminiSchema(schema: z.ZodType): unknown {
 }
 
 async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<StructuredResult<z.infer<T>>> {
-  const model = process.env.GEMINI_MODEL ?? "gemini-pro-latest";
+  const model = req.model ?? process.env.GEMINI_MODEL ?? GEMINI_DEFAULT_MODEL;
   const toPart = (p: Part) =>
     p.type === "text" ? { text: p.text } : { inline_data: { mime_type: p.mediaType, data: p.data } };
 
@@ -72,38 +85,86 @@ async function gemini<T extends z.ZodType>(req: StructuredRequest<T>): Promise<S
     generationConfig: {
       responseMimeType: "application/json",
       responseJsonSchema: geminiSchema(req.schema),
-      // Gemini 3 exposes two thinking levels.
-      thinkingConfig: { thinkingLevel: req.effort === "low" ? "low" : "high" },
+      // Gemini 4 accepts low, medium and high (not minimal). Thought summaries are streamed (and
+      // skipped below) because without them nothing, not even headers, arrives until thinking ends:
+      // past fetch's 5-minute header timeout on long calls.
+      thinkingConfig: { thinkingLevel: req.effort ?? "high", includeThoughts: true },
+      // The model's full output budget (thinking counts against it): the default is lower, and
+      // long placements at high thinking ran out (finishReason MAX_TOKENS).
+      maxOutputTokens: MAX_OUTPUT[model] ?? 32768,
     },
   };
 
   let lastError: unknown;
   for (let attempt = 0; attempt < 4; attempt++) {
-    const res = await fetch(`${GEMINI_URL}/${model}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY! },
-      body: JSON.stringify(body),
-    });
+    const backoff = () => {
+      // One line per retry, so a slow step says what is happening instead of going quiet.
+      console.warn(`gemini ${model}: attempt ${attempt + 1} failed (${String((lastError as Error)?.message ?? lastError).slice(0, 160)}); retrying`);
+      return new Promise((r) => setTimeout(r, 2000 * 2 ** attempt));
+    };
+    // Streamed (SSE) with thought summaries: data flows while the model thinks, so long calls stay
+    // inside fetch's header and body timeouts.
+    let res: Response;
+    try {
+      res = await fetch(`${GEMINI_URL}/${model}:streamGenerateContent?alt=sse`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY! },
+        body: JSON.stringify(body),
+        // A whole call (stream included) gets at most this long, then it is retried: a stalled
+        // stream would otherwise hang the build for good.
+        signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
+      });
+    } catch (e) {
+      lastError = e; // network error: retry
+      await backoff();
+      continue;
+    }
     if (res.status === 429 || res.status >= 500) {
       lastError = new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
-      await new Promise((r) => setTimeout(r, 2000 * 2 ** attempt));
+      await backoff();
       continue;
     }
     if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 500)}`);
 
-    const json = await res.json();
-    const candidate = json.candidates?.[0];
-    if (!candidate || candidate.finishReason !== "STOP") {
-      throw new Error(`Gemini did not finish: ${candidate?.finishReason ?? JSON.stringify(json.promptFeedback)}`);
+    let text = "";
+    let finishReason: string | undefined;
+    let last: { modelVersion?: string; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number }; promptFeedback?: unknown } = {};
+    try {
+      let buf = "";
+      const decoder = new TextDecoder();
+      for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
+        buf += decoder.decode(chunk, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line.startsWith("data:")) continue;
+          const ev = JSON.parse(line.slice(5));
+          last = ev;
+          const cand = ev.candidates?.[0];
+          for (const p of (cand?.content?.parts ?? []) as { text?: string; thought?: boolean }[]) if (p.text && !p.thought) text += p.text;
+          if (cand?.finishReason) finishReason = cand.finishReason;
+        }
+      }
+    } catch (e) {
+      lastError = e; // stream cut off: retry
+      await backoff();
+      continue;
     }
-    const text = (candidate.content.parts as { text?: string; thought?: boolean }[])
-      .filter((p) => p.text && !p.thought)
-      .map((p) => p.text)
-      .join("");
+    if (finishReason === "MAX_TOKENS" && body.generationConfig.thinkingConfig.thinkingLevel !== "low") {
+      // Thinking used up the output budget: once more with less thinking.
+      lastError = new Error("Gemini did not finish: MAX_TOKENS");
+      body.generationConfig.thinkingConfig.thinkingLevel = body.generationConfig.thinkingConfig.thinkingLevel === "high" ? "medium" : "low";
+      await backoff();
+      continue;
+    }
+    if (finishReason !== "STOP") {
+      throw new Error(`Gemini did not finish: ${finishReason ?? JSON.stringify(last.promptFeedback)}`);
+    }
     return {
       data: req.schema.parse(JSON.parse(text)),
-      model: json.modelVersion ?? model,
-      usage: { input: json.usageMetadata?.promptTokenCount ?? 0, output: json.usageMetadata?.candidatesTokenCount ?? 0 },
+      model: last.modelVersion ?? model,
+      usage: { input: last.usageMetadata?.promptTokenCount ?? 0, output: last.usageMetadata?.candidatesTokenCount ?? 0 },
     };
   }
   throw lastError;

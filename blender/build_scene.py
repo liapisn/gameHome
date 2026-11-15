@@ -44,15 +44,11 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 
 # ------------------------------------------------------------------ render settings
-for engine in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT", "CYCLES"):
-    try:
-        scene.render.engine = engine
-        break
-    except TypeError:
-        continue
-if scene.render.engine == "CYCLES":
-    scene.cycles.samples = job.get("samples", 32)
-    scene.cycles.use_denoising = True
+# Cycles on CPU: the boxd machines have no GPU, and there Eevee is slower than Cycles.
+scene.render.engine = "CYCLES"
+scene.cycles.device = "CPU"
+scene.cycles.samples = job.get("samples", 32)
+scene.cycles.use_denoising = True
 scene.view_settings.view_transform = "Standard"
 world = bpy.data.worlds.new("world")
 world.use_nodes = True
@@ -109,6 +105,8 @@ def asset_mesh(path):
     before = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=path)
     new = [o for o in bpy.data.objects if o not in before]
+    # Names, not references: joining deletes the joined parts (models built as code have many).
+    new_names = [o.name for o in new]
     meshes = [o for o in new if o.type == "MESH"]
     if len(meshes) > 1:
         bpy.ops.object.select_all(action="DESELECT")
@@ -126,8 +124,9 @@ def asset_mesh(path):
     ob.select_set(True)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     data = ob.data
-    for o in new:
-        if o.name in bpy.data.objects:
+    for name in new_names:
+        o = bpy.data.objects.get(name)
+        if o is not None:
             bpy.data.objects.remove(o)
     _assets[path] = data
     return data

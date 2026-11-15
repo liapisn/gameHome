@@ -18,6 +18,8 @@ type Admin = ReturnType<typeof adminClient>;
 export interface ModelsIndex {
   builtAt: string;
   rooms: { levelId: string; roomId: string; path: string; bytes: number }[];
+  /** The whole home (shell + every room's furniture), shown on the 3D model page. */
+  house?: { path: string; bytes: number };
 }
 
 export interface AppTour {
@@ -74,8 +76,8 @@ export async function downloadAppTour(propertyId: string, dir: string): Promise<
   return { tour: local, plans, scenes, folder, version: row.version };
 }
 
-/** Upload room models beside the tour and the index the Tour page reads. */
-export async function uploadModels(folder: string, rooms: { levelId: string; roomId: string; glb: string }[]): Promise<ModelsIndex> {
+/** Upload room models (and the house model) beside the tour, and the index the Tour and 3D model pages read. */
+export async function uploadModels(folder: string, rooms: { levelId: string; roomId: string; glb: string }[], houseGlb?: string): Promise<ModelsIndex> {
   const supabase = adminClient();
   const index: ModelsIndex = { builtAt: new Date().toISOString(), rooms: [] };
   for (const r of rooms) {
@@ -84,6 +86,13 @@ export async function uploadModels(folder: string, rooms: { levelId: string; roo
     const { error } = await supabase.storage.from(TOURS_BUCKET).upload(p, body, { contentType: "model/gltf-binary", upsert: true });
     if (error) throw new Error(`Upload ${p}: ${error.message}`);
     index.rooms.push({ levelId: r.levelId, roomId: r.roomId, path: p, bytes: body.length });
+  }
+  if (houseGlb) {
+    const p = `${folder}models/house.glb`;
+    const body = fs.readFileSync(houseGlb);
+    const { error } = await supabase.storage.from(TOURS_BUCKET).upload(p, body, { contentType: "model/gltf-binary", upsert: true });
+    if (error) throw new Error(`Upload ${p}: ${error.message}`);
+    index.house = { path: p, bytes: body.length };
   }
   const { error } = await supabase.storage
     .from(TOURS_BUCKET)

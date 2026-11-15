@@ -5,7 +5,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { buildDollhouseScene } from "@/lib/dollhouse-geometry";
-import { spendTotal } from "@/lib/fal/client";
 import type { FloorPlan } from "@/lib/floorplan";
 import { sceneToGlb } from "@/lib/glb";
 import type { RoomScene } from "@/lib/scene/types";
@@ -24,7 +23,6 @@ export async function runHouseWorker(o: {
   plans?: FloorPlan[];
 }) {
   const { tour, outRoot, log } = o;
-  const spent0 = spendTotal();
   // Furnished rooms: those with a scene (npm run build:scene, or the app's scenes.json).
   const rooms = (
     o.rooms ??
@@ -78,8 +76,8 @@ export async function runHouseWorker(o: {
       )
     : null;
   if (critique) {
-    log(`review: ${critique.pass ? "pass" : "not yet"} · ${Object.entries(critique.scores).map(([k, v]) => `${k} ${v}`).join(", ")}`);
-    for (const f of critique.fixes) log(`  fix ${f.room}: ${f.fix}`);
+    log(`review: ${critique.pass ? "pass" : "not yet"} · ${critique.rooms.map((r) => `${r.room} ${r.score}`).join(", ")} — ${critique.summary}`);
+    for (const r of critique.rooms) for (const p of r.problems) log(`  ${r.room}: ${p}`);
   }
 
   const house = {
@@ -88,7 +86,6 @@ export async function runHouseWorker(o: {
     glb: built.length ? houseGlb : null,
     rooms: runs.map((r) => ({ room: r.key, summary: r.summary, report: r.report, error: r.error })),
     critique,
-    spendUsd: Math.round((spendTotal() - spent0) * 100) / 100,
   };
   fs.writeFileSync(path.join(outRoot, "house.json"), JSON.stringify(house, null, 2));
   const models = reports.flatMap((r) => r.models);
