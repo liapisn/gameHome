@@ -8,7 +8,7 @@ gameHome turns what a listing already has, a floor plan and ordinary photos, int
 
 ## Built with Prosperty
 
-[Prosperty](https://theprosperty.com) is a sponsor of the GenAI Summit hackathon, and its listings power our demo: paste a Prosperty listing link, and gameHome brings in the floor plans and photos and builds a 3D tour of that home.
+[Prosperty](https://theprosperty.com) is a sponsor of the GenAI Summit hackathon, and its listings power our demo: paste a Prosperty listing link, and gameHome brings in the floor plans and photos, reads the rooms and matches each photo to its room. One press of **Generate** then builds a 3D tour of that home.
 
 ## Team
 

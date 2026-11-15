@@ -1,6 +1,6 @@
 # gameHome: Development guide
 
-Turn a floor plan, photos and videos of a house or apartment into a walkable 3D tour, to rent, sell or list it. Tours are backed by structured floor plan data and exposed over MCP, so AI agents can search and compare homes.
+Turn a floor plan, photos and videos of a house or apartment into a walkable 3D tour, to rent, sell or list it. Tours are backed by structured floor plan data. Exposing that over MCP, so AI agents can search and compare homes, is planned but not built yet.
 
 The product and technical spec is in [PRODUCT.md](PRODUCT.md).
 
@@ -23,7 +23,7 @@ npm run dev
 
 ## Model credentials
 
-Vision calls go through `src/lib/ai/structured.ts`: Gemini when `GEMINI_API_KEY` is set (`GEMINI_MODEL` overrides `gemini-4-carbon`; the object workers use `GEMINI_MODEL_OBJECT`, default `gemini-4-hydrogen`), otherwise Claude via `ANTHROPIC_API_KEY` or Vercel AI Gateway (`AI_GATEWAY_API_KEY`, or `VERCEL_OIDC_TOKEN` from `vercel env pull`). Put keys in `.env.local`.
+Vision calls go through `src/lib/ai/structured.ts`: Gemini when `GEMINI_API_KEY` is set (`GEMINI_MODEL` overrides the default `gemini-4-hydrogen`; furniture building has its own: `GEMINI_MODEL_OBJECT` for the per-item code workers, default `gemini-4-hydrogen`, and `GEMINI_MODEL_ROOM` for the room agent and critic, default `gemini-4-carbon`), otherwise Claude via `ANTHROPIC_API_KEY` or Vercel AI Gateway (`AI_GATEWAY_API_KEY`, or `VERCEL_OIDC_TOKEN` from `vercel env pull`). Put keys in `.env.local`.
 
 ## Blender runs on boxd
 
@@ -36,7 +36,7 @@ npm run boxd:snapshot -- --clean     # delete pool machines a crashed run left b
 
 ## Admin: generating tours from uploads
 
-Owners upload floor plans and photos in `/app`, then press **Generate** on the property's Generate tab. That queues a job and starts a durable workflow on Vercel (`src/workflows/build-tour.ts`): plans → photo placement in parallel batches → poses → stored tour → rooms furnished from their photos in parallel (`scenes.json`). Nothing has to run locally. Needs `SUPABASE_SERVICE_ROLE_KEY` and the model key on the deployment; `TOUR_FURNISH=0` skips furnishing.
+Owners upload floor plans and photos in `/app`, or paste a Prosperty listing link (`src/app/app/import-actions.ts`). An import copies the photos with the Prosperty watermark removed (`src/lib/import/prosperty-watermark.ts`), then reads the plans into rooms and estimates each photo's room in the background (`src/workflows/read-plan.ts`). Either way, owners then press **Generate** on the property's Generate tab. That queues a job and starts a durable workflow on Vercel (`src/workflows/build-tour.ts`): plans → photo placement in parallel batches → poses → stored tour → rooms furnished from their photos in parallel (`scenes.json`). Nothing has to run locally. Needs `SUPABASE_SERVICE_ROLE_KEY` and the model key on the deployment; `TOUR_FURNISH=0` skips furnishing.
 
 To build on your own machine instead, set `TOUR_BUILDER=worker` on the deployment (jobs are then only queued) and run the worker:
 
